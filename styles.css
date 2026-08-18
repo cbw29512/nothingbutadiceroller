@@ -248,7 +248,7 @@ body {
 .rendered-die.shape-d20 { clip-path: polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%); }
 .rendered-die.shape-d100 { clip-path: polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%); }
 
-/* === DICE SKINS (Expanded) === */
+/* === DICE SKINS === */
 body.skin-ruby_red .rendered-die { background: linear-gradient(145deg, #e63946, #9b111e); color: #ffffff; }
 body.skin-sapphire_blue .rendered-die { background: linear-gradient(145deg, #0284c7, #03045e); color: #ffffff; }
 body.skin-emerald_green .rendered-die { background: linear-gradient(145deg, #10b981, #064e3b); color: #ffffff; }
@@ -257,13 +257,12 @@ body.skin-marble_white .rendered-die { background: linear-gradient(145deg, #ffff
 body.skin-obsidian_crackle .rendered-die { background: linear-gradient(145deg, #27272a, #09090b); color: #ef4444; border: 1px solid #ef4444; }
 body.skin-gold_leaf .rendered-die { background: linear-gradient(145deg, #fef08a, #eab308); color: #1c1917; }
 body.skin-neon_cyan .rendered-die { background: #06b6d4; color: #000000; box-shadow: 0 0 12px #06b6d4; }
-/* New Skins */
 body.skin-cosmic_nebula .rendered-die { background: radial-gradient(circle at 30% 30%, #ff007f, #3a0ca3, #03071e); color: #70e000; text-shadow: 0 0 4px #70e000; }
 body.skin-dragon_scale .rendered-die { background: linear-gradient(135deg, #d97706 0%, #78350f 50%, #292524 100%); color: #fef08a; }
 body.skin-frostbite .rendered-die { background: linear-gradient(180deg, #e0f2fe, #38bdf8, #0284c7); color: #0f172a; }
 body.skin-blood_moon .rendered-die { background: radial-gradient(circle, #991b1b 0%, #450a0a 70%, #000000 100%); color: #fca5a5; }
 
-/* === TRAY THEMES (Expanded) === */
+/* === TRAY THEMES === */
 body.tray-green_felt .dice-tray { background: radial-gradient(circle, #2d6a4f 0%, #081c15 100%); border-color: #1b4332; }
 body.tray-red_velvet .dice-tray { background: radial-gradient(circle, #9d0208 0%, #370000 100%); border-color: #5c0002; }
 body.tray-midnight_leather .dice-tray { background: radial-gradient(circle, #2b2d42 0%, #11121a 100%); border-color: #1a1c29; }
@@ -272,7 +271,6 @@ body.tray-dungeon_stone .dice-tray { background: radial-gradient(circle, #4a4e69
 body.tray-mystic_obsidian .dice-tray { background: radial-gradient(circle, #3c096c 0%, #0d001a 100%); border-color: #240046; }
 body.tray-neon_cyberpunk .dice-tray { background: linear-gradient(135deg, #0d0221 0%, #002b36 100%); border-color: #00f0ff; box-shadow: inset 0 0 20px rgba(0, 240, 255, 0.2), 0 0 15px #00f0ff; }
 body.tray-synthwave .dice-tray { background: linear-gradient(180deg, #18002e 0%, #4c1d95 100%); border-color: #ff007f; box-shadow: inset 0 0 20px rgba(255, 0, 127, 0.2), 0 0 15px #ff007f; }
-/* New Trays */
 body.tray-arcane_sanctum .dice-tray { background: radial-gradient(circle at center, #311042 0%, #12041d 80%, #05000a 100%); border-color: #a855f7; box-shadow: inset 0 0 25px rgba(168, 85, 247, 0.3); }
 body.tray-celestial_void .dice-tray { background: radial-gradient(ellipse at bottom, #1e1b4b 0%, #0f172a 60%, #020617 100%); border-color: #38bdf8; box-shadow: inset 0 0 20px rgba(56, 189, 248, 0.25); }
 body.tray-lava_pit .dice-tray { background: radial-gradient(circle, #7f1d1d 0%, #450a0a 60%, #180202 100%); border-color: #f97316; box-shadow: inset 0 0 25px rgba(249, 115, 22, 0.4); }
@@ -315,6 +313,77 @@ body.tray-royal_gold .dice-tray { background: radial-gradient(circle, #451a03 0%
 .history-formula { font-weight: bold; font-size: 0.9rem; margin-top: 2px; }
 .history-breakdown { font-size: 0.8rem; color: #e5e7eb; margin-top: 2px; }
 .history-total { font-size: 1.1rem; font-weight: 800; color: #10b981; margin-top: 4px; text-align: right; }
+
+/* === NAT 20 CELEBRATION EFFECTS === */
+.nat20-banner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  background: linear-gradient(135deg, #f59e0b, #ef4444);
+  color: #ffffff;
+  font-size: 1.5rem;
+  font-weight: 900;
+  padding: 0.75rem 1.5rem;
+  border-radius: 999px;
+  box-shadow: 0 0 25px rgba(245, 158, 11, 0.8), 0 0 50px rgba(239, 68, 68, 0.6);
+  pointer-events: none;
+  z-index: 50;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+  animation: nat20Pop 1.8s ease-out forwards;
+}
+
+@keyframes nat20Pop {
+  0% { transform: translate(-50%, -50%) scale(0) rotate(-10deg); opacity: 0; }
+  20% { transform: translate(-50%, -50%) scale(1.2) rotate(3deg); opacity: 1; }
+  35% { transform: translate(-50%, -50%) scale(1) rotate(0deg); opacity: 1; }
+  80% { transform: translate(-50%, -50%) scale(1) rotate(0deg); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(0.8) rotate(5deg); opacity: 0; }
+}
+
+/* === NAT 1 DOOM EFFECTS === */
+.nat1-banner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  background: linear-gradient(135deg, #7f1d1d, #000000);
+  color: #ef4444;
+  border: 2px solid #ef4444;
+  font-size: 1.5rem;
+  font-weight: 900;
+  padding: 0.75rem 1.5rem;
+  border-radius: 999px;
+  box-shadow: 0 0 25px rgba(239, 68, 68, 0.8), 0 0 50px rgba(0, 0, 0, 0.9);
+  pointer-events: none;
+  z-index: 50;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+  animation: nat1Pop 1.8s ease-out forwards;
+}
+
+@keyframes nat1Pop {
+  0% { transform: translate(-50%, -50%) scale(0) rotate(10deg); opacity: 0; }
+  15% { transform: translate(-50%, -50%) scale(1.2) rotate(-3deg); opacity: 1; }
+  30% { transform: translate(-50%, -50%) scale(1) rotate(0deg); opacity: 1; }
+  80% { transform: translate(-50%, -50%) scale(1) rotate(0deg); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(0.8) rotate(-5deg); opacity: 0; }
+}
+
+.dice-tray.doom-shake {
+  animation: trayShake 0.4s ease-in-out;
+}
+
+@keyframes trayShake {
+  0%, 100% { transform: translate(0, 0); }
+  20% { transform: translate(-8px, 6px); }
+  40% { transform: translate(8px, -6px); }
+  60% { transform: translate(-5px, -4px); }
+  80% { transform: translate(5px, 4px); }
+}
 
 @media (max-width: 480px) {
   .dice-selector { grid-template-columns: repeat(4, 1fr); }

@@ -40,6 +40,7 @@ const DIE_SKINS = [
   { id: 'skin-blood_moon', name: 'Blood Moon' }
 ];
 
+// Standard Rolling Sound
 function playDiceSound() {
   if (!state.soundEnabled) return;
   try {
@@ -65,6 +66,100 @@ function playDiceSound() {
   } catch (err) {
     console.log('Audio Context error deferred:', err);
   }
+}
+
+// Nat 20 Fanfare Synthesizer
+function playNat20Fanfare() {
+  if (!state.soundEnabled) return;
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+    const ctx = new AudioContext();
+    const notes = [523.25, 659.25, 783.99, 1046.50];
+    notes.forEach((freq, index) => {
+      setTimeout(() => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, ctx.currentTime);
+        gain.gain.setValueAtTime(0.3, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.3);
+      }, index * 90);
+    });
+  } catch (err) {
+    console.log('Audio Context error deferred:', err);
+  }
+}
+
+// Nat 1 Doom Sound Synthesizer
+function playNat1DoomSound() {
+  if (!state.soundEnabled) return;
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+    const ctx = new AudioContext();
+    const notes = [146.83, 116.54, 87.31];
+    notes.forEach((freq, index) => {
+      setTimeout(() => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(freq, ctx.currentTime);
+        gain.gain.setValueAtTime(0.4, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.35);
+      }, index * 120);
+    });
+  } catch (err) {
+    console.log('Audio Context error deferred:', err);
+  }
+}
+
+function triggerNat20Effect() {
+  const diceTray = document.getElementById('dice-tray');
+  if (!diceTray) return;
+
+  const existing = diceTray.querySelector('.nat20-banner, .nat1-banner');
+  if (existing) existing.remove();
+
+  const banner = document.createElement('div');
+  banner.className = 'nat20-banner';
+  banner.textContent = '🎉 NATURAL 20! 🎉';
+  diceTray.appendChild(banner);
+
+  playNat20Fanfare();
+
+  setTimeout(() => {
+    if (banner.parentNode) banner.remove();
+  }, 1800);
+}
+
+function triggerNat1Effect() {
+  const diceTray = document.getElementById('dice-tray');
+  if (!diceTray) return;
+
+  const existing = diceTray.querySelector('.nat20-banner, .nat1-banner');
+  if (existing) existing.remove();
+
+  const banner = document.createElement('div');
+  banner.className = 'nat1-banner';
+  banner.textContent = '💀 CRITICAL FAIL! 💀';
+  diceTray.appendChild(banner);
+
+  diceTray.classList.add('doom-shake');
+  playNat1DoomSound();
+
+  setTimeout(() => {
+    diceTray.classList.remove('doom-shake');
+    if (banner.parentNode) banner.remove();
+  }, 1800);
 }
 
 function getDieSides(type) {
@@ -326,6 +421,19 @@ function performRoll() {
   state.selectedDice = newDiceList;
   state.hasRolled = true;
   updateTrayPreview(true);
+
+  // Nat 20 and Nat 1 Trigger Check
+  const activeD20s = state.selectedDice.filter(die => die.type === 'd20' && !die.isDropped);
+  const hasNat20 = activeD20s.some(die => die.value === 20);
+  const hasNat1 = activeD20s.some(die => die.value === 1);
+
+  setTimeout(() => {
+    if (hasNat20) {
+      triggerNat20Effect();
+    } else if (hasNat1) {
+      triggerNat1Effect();
+    }
+  }, 650);
 
   const { finalTotal, breakdownStr } = calculateTotal();
   const diceCounts = {};
