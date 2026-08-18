@@ -57,6 +57,7 @@ function bindEvents() {
     bindDiceButtons('.die-btn');
     bindDiceButtons('.mobile-die-btn');
     bindModeButtons();
+    document.addEventListener('d20modechange', syncControls);
 
     document.getElementById('keep-btn')?.addEventListener('click', () => {
       state.keepDice = !state.keepDice;
