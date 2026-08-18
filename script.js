@@ -15,7 +15,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function initDicePhysics() {
     try {
-        diceBox = new DiceBox({
+        // Dynamically import DiceBox from unpkg as an ES module with explicit fallback
+        const DiceBoxLib = window.DiceBox || (await import('https://unpkg.com/@3d-dice/dice-box@1.1.5/dist/dice-box.es.min.js')).default;
+
+        diceBox = new DiceBoxLib({
             element: '#diceTray',
             origin: 'https://unpkg.com/@3d-dice/dice-box@1.1.5/dist/',
             assetPath: 'assets/',
@@ -35,8 +38,10 @@ async function initDicePhysics() {
 
         await diceBox.init();
         document.getElementById('diceTray').style.backgroundColor = currentTrayColor;
+        console.log("3D DiceBox initialized successfully!");
     } catch (e) {
         console.error("Failed to initialize 3D dice physics engine:", e);
+        alert("DiceBox Init Error: " + e.message);
     }
 }
 
