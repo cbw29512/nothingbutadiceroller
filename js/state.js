@@ -16,8 +16,7 @@ const KEYS = {
   dieSkin: 'dieSkin',
   history: 'rollHistory',
   soundEnabled: 'soundEnabled',
-  keepDice: 'keepDice',
-  d20Mode: 'd20Mode'
+  keepDice: 'keepDice'
 };
 
 export function applyBodyTheme() {
@@ -37,7 +36,10 @@ export function loadPreferences() {
     state.dieSkin = localStorage.getItem(KEYS.dieSkin) || state.dieSkin;
     state.soundEnabled = localStorage.getItem(KEYS.soundEnabled) !== 'false';
     state.keepDice = localStorage.getItem(KEYS.keepDice) === 'true';
-    state.d20Mode = localStorage.getItem(KEYS.d20Mode) || state.d20Mode;
+    state.d20Mode = 'normal';
+
+    // D20 mode is a one-roll action, never a persistent preference.
+    localStorage.removeItem('d20Mode');
 
     const savedHistory = localStorage.getItem(KEYS.history);
     state.history = savedHistory ? JSON.parse(savedHistory) : [];
@@ -45,6 +47,7 @@ export function loadPreferences() {
   } catch (err) {
     console.error('Failed to load preferences; defaults will be used:', err);
     state.history = [];
+    state.d20Mode = 'normal';
   } finally {
     applyBodyTheme();
   }
@@ -57,7 +60,6 @@ export function savePreferences() {
     localStorage.setItem(KEYS.history, JSON.stringify(state.history));
     localStorage.setItem(KEYS.soundEnabled, String(state.soundEnabled));
     localStorage.setItem(KEYS.keepDice, String(state.keepDice));
-    localStorage.setItem(KEYS.d20Mode, state.d20Mode);
     applyBodyTheme();
   } catch (err) {
     console.error('Failed to save preferences:', err);
