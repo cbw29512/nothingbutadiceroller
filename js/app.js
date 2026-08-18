@@ -17,9 +17,19 @@ function setDrawer(drawer, open) {
 
 function syncControls() {
   try {
-    document.querySelectorAll('[data-adv]').forEach(button => {
-      button.classList.toggle('active', button.dataset.adv === state.d20Mode);
-      button.setAttribute('aria-pressed', String(button.dataset.adv === state.d20Mode));
+    document.querySelectorAll('[data-quick-roll]').forEach(button => {
+      const isActive = state.rolling && button.dataset.quickRoll === state.d20Mode;
+      button.classList.toggle('active', isActive);
+      button.disabled = state.rolling;
+    });
+
+    document.querySelectorAll('.die-btn, .mobile-die-btn, .pool-chip').forEach(button => {
+      button.disabled = state.rolling;
+    });
+
+    ['roll-btn', 'mobile-roll-btn', 'clear-btn', 'mobile-clear-btn', 'keep-btn'].forEach(id => {
+      const button = document.getElementById(id);
+      if (button) button.disabled = state.rolling;
     });
 
     const keepBtn = document.getElementById('keep-btn');
@@ -42,13 +52,9 @@ function bindDiceButtons(selector) {
   });
 }
 
-function bindModeButtons() {
-  document.querySelectorAll('[data-adv]').forEach(button => {
-    button.addEventListener('click', () => {
-      state.d20Mode = button.dataset.adv || 'normal';
-      savePreferences();
-      syncControls();
-    });
+function bindQuickRollButtons() {
+  document.querySelectorAll('[data-quick-roll]').forEach(button => {
+    button.addEventListener('click', () => performRoll(button.dataset.quickRoll));
   });
 }
 
@@ -56,8 +62,8 @@ function bindEvents() {
   try {
     bindDiceButtons('.die-btn');
     bindDiceButtons('.mobile-die-btn');
-    bindModeButtons();
-    document.addEventListener('d20modechange', syncControls);
+    bindQuickRollButtons();
+    document.addEventListener('rollstatechange', syncControls);
 
     document.getElementById('keep-btn')?.addEventListener('click', () => {
       state.keepDice = !state.keepDice;
@@ -71,9 +77,9 @@ function bindEvents() {
       syncControls();
     });
 
-    document.getElementById('roll-btn')?.addEventListener('click', performRoll);
+    document.getElementById('roll-btn')?.addEventListener('click', () => performRoll('normal'));
+    document.getElementById('mobile-roll-btn')?.addEventListener('click', () => performRoll('normal'));
     document.getElementById('clear-btn')?.addEventListener('click', clearPool);
-    document.getElementById('mobile-roll-btn')?.addEventListener('click', performRoll);
     document.getElementById('mobile-clear-btn')?.addEventListener('click', clearPool);
 
     const stylesDrawer = document.getElementById('styles-drawer');
@@ -101,7 +107,7 @@ function bindEvents() {
         setDrawer(stylesDrawer, false);
         setDrawer(historyDrawer, false);
       }
-      if (event.key === 'Enter' && event.ctrlKey) performRoll();
+      if (event.key === 'Enter' && event.ctrlKey) performRoll('normal');
     });
   } catch (err) {
     console.error('Failed to bind application events:', err);
