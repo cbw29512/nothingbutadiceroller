@@ -35,11 +35,16 @@ function syncControls() {
   }
 }
 
+function bindDiceButtons(selector) {
+  document.querySelectorAll(selector).forEach(button => {
+    button.addEventListener('click', () => addDie(button.dataset.type));
+  });
+}
+
 function bindEvents() {
   try {
-    document.querySelectorAll('.die-btn').forEach(button => {
-      button.addEventListener('click', () => addDie(button.dataset.type));
-    });
+    bindDiceButtons('.die-btn');
+    bindDiceButtons('.mobile-die-btn');
 
     document.querySelectorAll('.adv-btn').forEach(button => {
       button.addEventListener('click', () => {
@@ -63,6 +68,8 @@ function bindEvents() {
 
     document.getElementById('roll-btn')?.addEventListener('click', performRoll);
     document.getElementById('clear-btn')?.addEventListener('click', clearPool);
+    document.getElementById('mobile-roll-btn')?.addEventListener('click', performRoll);
+    document.getElementById('mobile-clear-btn')?.addEventListener('click', clearPool);
 
     const stylesDrawer = document.getElementById('styles-drawer');
     const historyDrawer = document.getElementById('history-drawer');
