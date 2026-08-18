@@ -17,6 +17,7 @@ async function initDicePhysics() {
     try {
         diceBox = new DiceBox({
             element: '#diceTray',
+            assetPath: 'https://unpkg.com/@3d-dice/dice-box@1.1.5/dist/assets/',
             theme: currentTheme,
             loader: 'generic',
             gravity: 1,
@@ -45,11 +46,13 @@ function loadSavedCustomDice() {
         const customBtnNode = document.getElementById('customDieBtn');
 
         saved.forEach(die => {
-            const btn = document.createElement('button');
-            btn.className = 'die-btn saved-custom';
-            btn.setAttribute('data-die', die);
-            btn.textContent = die;
-            selector.insertBefore(btn, customBtnNode);
+            if (!document.querySelector(`.die-btn[data-die="${die}"]`)) {
+                const btn = document.createElement('button');
+                btn.className = 'die-btn saved-custom';
+                btn.setAttribute('data-die', die);
+                btn.textContent = die;
+                selector.insertBefore(btn, customBtnNode);
+            }
         });
     } catch (e) {
         console.error("Error loading custom dice:", e);
@@ -149,8 +152,6 @@ async function executeRoll() {
         return;
     }
 
-    // Build notation string for Dice Box (e.g., "1d20+1d6")
-    // For Advantage/Disadvantage, roll 2 d20s physically
     let rollNotationParts = [];
     selectedDice.forEach(die => {
         if (die === 'd20' && currentAdvantage !== 'normal') {
@@ -169,14 +170,11 @@ async function executeRoll() {
         let breakdownParts = [];
         let rollRecords = [];
 
-        // Process results from the 3D physics engine
         if (Array.isArray(results)) {
-            // Handle advantage / disadvantage sorting if d20 was rolled with adv/dis
             let d20Results = results.filter(r => r.sides === 20 || r.type === 'd20');
             let otherResults = results.filter(r => r.sides !== 20 && r.type !== 'd20');
 
             if (currentAdvantage !== 'normal' && d20Results.length >= 2) {
-                // Sort d20 rolls
                 d20Results.sort((a, b) => a.value - b.value);
                 const lowest = d20Results[0].value;
                 const highest = d20Results[1].value;
