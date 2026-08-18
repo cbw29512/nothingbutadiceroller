@@ -17,8 +17,9 @@ function setDrawer(drawer, open) {
 
 function syncControls() {
   try {
-    document.querySelectorAll('.adv-btn').forEach(button => {
+    document.querySelectorAll('[data-adv]').forEach(button => {
       button.classList.toggle('active', button.dataset.adv === state.d20Mode);
+      button.setAttribute('aria-pressed', String(button.dataset.adv === state.d20Mode));
     });
 
     const keepBtn = document.getElementById('keep-btn');
@@ -41,18 +42,21 @@ function bindDiceButtons(selector) {
   });
 }
 
+function bindModeButtons() {
+  document.querySelectorAll('[data-adv]').forEach(button => {
+    button.addEventListener('click', () => {
+      state.d20Mode = button.dataset.adv || 'normal';
+      savePreferences();
+      syncControls();
+    });
+  });
+}
+
 function bindEvents() {
   try {
     bindDiceButtons('.die-btn');
     bindDiceButtons('.mobile-die-btn');
-
-    document.querySelectorAll('.adv-btn').forEach(button => {
-      button.addEventListener('click', () => {
-        state.d20Mode = button.dataset.adv || 'normal';
-        savePreferences();
-        syncControls();
-      });
-    });
+    bindModeButtons();
 
     document.getElementById('keep-btn')?.addEventListener('click', () => {
       state.keepDice = !state.keepDice;
