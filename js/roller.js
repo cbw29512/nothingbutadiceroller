@@ -4,15 +4,14 @@ import { buildPhysicsNotation, countDice, getSkinColor } from './utils.js';
 import { clearPhysics, rollPhysics } from './physics.js';
 import { renderHistory, renderPool, renderResults, setStatus, showCrit } from './ui.js';
 
+function emitRollState() {
+  document.dispatchEvent(new Event('rollstatechange'));
+}
+
 function normalizeSides(rawSides) {
-  try {
-    if (typeof rawSides === 'number') return rawSides;
-    const normalized = String(rawSides ?? '').toLowerCase().replace(/^d/, '').replace('%', '100');
-    return Number(normalized);
-  } catch (err) {
-    console.error('Failed to normalize die sides:', err);
-    return 0;
-  }
+  if (typeof rawSides === 'number') return rawSides;
+  const normalized = String(rawSides ?? '').toLowerCase().replace(/^d/, '').replace('%', '100');
+  return Number(normalized);
 }
 
 function normalizeGroups(results) {
@@ -33,13 +32,6 @@ function normalizeGroups(results) {
   }
 }
 
-function readGroup(group) {
-  const rolls = Array.isArray(group?.rolls) ? group.rolls : [];
-  const values = rolls.map(roll => Number(roll?.value ?? roll?.result)).filter(Number.isFinite);
-  const sides = normalizeSides(group?.sides ?? rolls[0]?.sides);
-  return { sides, values };
-}
-
 function parseRollResults(results, rollMode) {
   try {
     let total = 0;
@@ -47,7 +39,9 @@ function parseRollResults(results, rollMode) {
     const keptD20s = [];
 
     normalizeGroups(results).forEach(group => {
-      const { sides, values } = readGroup(group);
+      const rolls = Array.isArray(group?.rolls) ? group.rolls : [];
+      const values = rolls.map(roll => Number(roll?.value ?? roll?.result)).filter(Number.isFinite);
+      const sides = normalizeSides(group?.sides ?? rolls[0]?.sides);
       if (!values.length) return;
 
       if (sides === 20 && rollMode !== 'normal' && values.length >= 2) {
@@ -62,8 +56,7 @@ function parseRollResults(results, rollMode) {
         total += value;
         if (sides === 20) keptD20s.push(value);
       });
-      const label = values.length === 1 ? `d${sides} = ${values[0]}` : `${values.length}d${sides} = ${values.join(' + ')}`;
-      parts.push(label);
+      parts.push(values.length === 1 ? `d${sides} = ${values[0]}` : `${values.length}d${sides} = ${values.join(' + ')}`);
     });
 
     const prefix = parts.length === 1 ? 'Base roll: ' : 'Base rolls: ';
@@ -85,6 +78,7 @@ function formulaFor(pool, rollMode) {
 
 export function addDie(type) {
   try {
+    if (state.rolling) return;
     if (state.hasRolled && !state.keepDice) state.selectedDice = [];
     state.selectedDice.push({ type });
     state.hasRolled = false;
@@ -96,20 +90,29 @@ export function addDie(type) {
 
 export async function clearPool() {
   try {
+    if (state.rolling) return;
     state.selectedDice = [];
     state.hasRolled = false;
+    state.d20Mode = 'normal';
     renderPool();
     renderResults();
+    emitRollState();
     await clearPhysics();
   } catch (err) {
     console.error('Failed to clear dice pool:', err);
   }
 }
 
-export async function performRoll() {
+export async function performRoll(requestedMode = 'normal') {
   if (state.rolling) return;
 
-  const rollMode = state.d20Mode;
+  const rollMode = ['advantage', 'disadvantage'].includes(requestedMode)
+    ? requestedMode
+    : 'normal';
+
+  state.rolling = true;
+  state.d20Mode = rollMode;
+  emitRollState();
 
   try {
     if (!state.physicsReady) throw new Error('3D physics is not ready yet.');
@@ -119,8 +122,7 @@ export async function performRoll() {
       return;
     }
 
-    state.rolling = true;
-    setStatus('Rolling…');
+    setStatus(rollMode === 'normal' ? 'Rolling…' : `Rolling ${rollMode}…`);
     document.getElementById('tray-empty-state')?.classList.add('hidden');
     playDiceSound();
 
@@ -136,11 +138,8 @@ export async function performRoll() {
       total: String(parsed.total),
     });
     if (state.history.length > 30) state.history.length = 30;
-
-    if (rollMode !== 'normal') state.d20Mode = 'normal';
     savePreferences();
     renderHistory();
-    document.dispatchEvent(new Event('d20modechange'));
 
     if (parsed.keptD20s.includes(20)) {
       showCrit('nat20');
@@ -155,5 +154,7 @@ export async function performRoll() {
     setStatus(err.message || 'Roll failed.', 'error');
   } finally {
     state.rolling = false;
+    state.d20Mode = 'normal';
+    emitRollState();
   }
 }
