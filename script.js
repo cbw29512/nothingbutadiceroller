@@ -31,10 +31,39 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function setupDiceSelector() {
-    const dieButtons = document.querySelectorAll('.die-btn');
-    dieButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
-            const die = btn.getAttribute('data-die');
+    const selector = document.querySelector('.dice-selector');
+    selector.addEventListener('click', (e) => {
+        const btn = e.target.closest('.die-btn');
+        if (!btn) return;
+
+        const die = btn.getAttribute('data-die');
+
+        if (die === 'custom') {
+            const input = prompt("Enter number of sides for your custom die (e.g., 7, 33, 150):");
+            if (input !== null) {
+                const sides = parseInt(input.trim());
+                if (!isNaN(sides) && sides > 0) {
+                    const customDie = 'd' + sides;
+                    selectedDice.push(customDie);
+
+                    // Create a removable custom button in the grid
+                    const customBtn = document.createElement('button');
+                    customBtn.className = 'die-btn selected custom-added';
+                    customBtn.setAttribute('data-die', customDie);
+                    customBtn.textContent = customDie;
+
+                    // Allow clicking it again to deselect/remove
+                    customBtn.addEventListener('click', () => {
+                        selectedDice = selectedDice.filter(d => d !== customDie);
+                        customBtn.remove();
+                    });
+
+                    selector.insertBefore(customBtn, document.getElementById('customDieBtn'));
+                } else {
+                    alert('Please enter a valid positive number.');
+                }
+            }
+        } else {
             if (btn.classList.contains('selected')) {
                 btn.classList.remove('selected');
                 selectedDice = selectedDice.filter(d => d !== die);
@@ -42,7 +71,7 @@ function setupDiceSelector() {
                 btn.classList.add('selected');
                 selectedDice.push(die);
             }
-        });
+        }
     });
 }
 
@@ -54,7 +83,6 @@ function setupAdvantageToggle() {
             btn.classList.add('active');
             currentAdvantage = btn.getAttribute('data-adv');
 
-            // Automatically select d20 when advantage or disadvantage is chosen
             const d20Btn = document.querySelector('.die-btn[data-die="d20"]');
             if (currentAdvantage !== 'normal') {
                 if (!selectedDice.includes('d20')) {
@@ -164,6 +192,9 @@ function clearTray() {
     selectedDice = [];
     document.querySelectorAll('.die-btn').forEach(b => b.classList.remove('selected'));
     
+    // Remove any dynamic custom buttons from the grid
+    document.querySelectorAll('.custom-added').forEach(b => b.remove());
+
     document.querySelectorAll('.adv-btn').forEach(b => b.classList.remove('active'));
     document.querySelector('.adv-btn[data-adv="normal"]').classList.add('active');
     currentAdvantage = 'normal';
