@@ -1,13 +1,42 @@
-import DiceBox from 'https://unpkg.com/@3d-dice/dice-box@1.1.5/dist/dice-box.es.min.js';
-
 let diceBox = null;
+let DiceBoxClass = null;
+
+const DICEBOX_VERSION = '1.1.4';
+const DICEBOX_SOURCES = [
+  `https://cdn.jsdelivr.net/npm/@3d-dice/dice-box@${DICEBOX_VERSION}/dist/dice-box.es.min.js`,
+  `https://unpkg.com/@3d-dice/dice-box@${DICEBOX_VERSION}/dist/dice-box.es.min.js`,
+];
+
+async function loadDiceBoxModule() {
+  if (DiceBoxClass) return DiceBoxClass;
+
+  const failures = [];
+  for (const source of DICEBOX_SOURCES) {
+    try {
+      const module = await import(source);
+      const candidate = module?.default || module?.DiceBox;
+      if (typeof candidate !== 'function') {
+        throw new Error('DiceBox constructor was not exported.');
+      }
+      DiceBoxClass = candidate;
+      console.info(`DiceBox ${DICEBOX_VERSION} loaded from ${source}`);
+      return DiceBoxClass;
+    } catch (err) {
+      failures.push(`${source}: ${err?.message || err}`);
+      console.warn('DiceBox source failed:', source, err);
+    }
+  }
+
+  throw new Error(`Unable to load DiceBox ${DICEBOX_VERSION}. ${failures.join(' | ')}`);
+}
 
 export async function initDicePhysics(themeColor = '#b91c1c') {
   try {
+    const DiceBox = await loadDiceBoxModule();
     diceBox = new DiceBox({
       container: '#dice-tray',
       assetPath: 'assets/',
-      origin: 'https://unpkg.com/@3d-dice/dice-box@1.1.5/dist/',
+      origin: `https://unpkg.com/@3d-dice/dice-box@${DICEBOX_VERSION}/dist/`,
       theme: 'default',
       themeColor,
       gravity: 1,
@@ -19,7 +48,7 @@ export async function initDicePhysics(themeColor = '#b91c1c') {
       startingHeight: 8,
       spinForce: 5,
       throwForce: 5,
-      scale: 5
+      scale: 5,
     });
 
     await diceBox.init();
@@ -38,7 +67,9 @@ export function isPhysicsReady() {
 
 export async function rollPhysics(notation, themeColor) {
   if (!diceBox) throw new Error('DiceBox is not initialized.');
-  if (!Array.isArray(notation) || notation.length === 0) throw new Error('No valid dice notation to roll.');
+  if (!Array.isArray(notation) || notation.length === 0) {
+    throw new Error('No valid dice notation to roll.');
+  }
 
   try {
     await Promise.resolve(diceBox.updateConfig({ themeColor }));
