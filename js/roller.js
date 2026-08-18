@@ -40,7 +40,7 @@ function readGroup(group) {
   return { sides, values };
 }
 
-function parseRollResults(results) {
+function parseRollResults(results, rollMode) {
   try {
     let total = 0;
     const parts = [];
@@ -50,11 +50,11 @@ function parseRollResults(results) {
       const { sides, values } = readGroup(group);
       if (!values.length) return;
 
-      if (sides === 20 && state.d20Mode !== 'normal' && values.length >= 2) {
-        const kept = state.d20Mode === 'advantage' ? Math.max(...values) : Math.min(...values);
+      if (sides === 20 && rollMode !== 'normal' && values.length >= 2) {
+        const kept = rollMode === 'advantage' ? Math.max(...values) : Math.min(...values);
         total += kept;
         keptD20s.push(kept);
-        parts.push(`d20 = ${values.join(', ')} • ${state.d20Mode === 'advantage' ? 'ADV' : 'DIS'} keeps ${kept}`);
+        parts.push(`d20 = ${values.join(', ')} • ${rollMode === 'advantage' ? 'ADV' : 'DIS'} keeps ${kept}`);
         return;
       }
 
@@ -78,9 +78,9 @@ function parseRollResults(results) {
   }
 }
 
-function formulaFor(pool) {
+function formulaFor(pool, rollMode) {
   const formula = Object.entries(countDice(pool)).map(([type, count]) => `${count}${type}`).join(' + ');
-  return state.d20Mode === 'normal' ? formula : `${formula} (${state.d20Mode})`;
+  return rollMode === 'normal' ? formula : `${formula} (${rollMode})`;
 }
 
 export function addDie(type) {
@@ -109,9 +109,11 @@ export async function clearPool() {
 export async function performRoll() {
   if (state.rolling) return;
 
+  const rollMode = state.d20Mode;
+
   try {
     if (!state.physicsReady) throw new Error('3D physics is not ready yet.');
-    const { pool, notation } = buildPhysicsNotation(state.selectedDice, state.d20Mode);
+    const { pool, notation } = buildPhysicsNotation(state.selectedDice, rollMode);
     if (!notation.length) {
       setStatus('Choose at least one die.', 'error');
       return;
@@ -123,19 +125,22 @@ export async function performRoll() {
     playDiceSound();
 
     const results = await rollPhysics(notation, getSkinColor(state.dieSkin));
-    const parsed = parseRollResults(results);
+    const parsed = parseRollResults(results, rollMode);
     state.hasRolled = true;
     renderResults(parsed.total, parsed.breakdown);
 
     state.history.unshift({
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-      formula: formulaFor(pool),
+      formula: formulaFor(pool, rollMode),
       breakdown: parsed.breakdown,
       total: String(parsed.total),
     });
     if (state.history.length > 30) state.history.length = 30;
+
+    if (rollMode !== 'normal') state.d20Mode = 'normal';
     savePreferences();
     renderHistory();
+    document.dispatchEvent(new Event('d20modechange'));
 
     if (parsed.keptD20s.includes(20)) {
       showCrit('nat20');
