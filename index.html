@@ -54,11 +54,6 @@
           Keep pool after roll
         </button>
 
-        <div class="action-buttons">
-          <button id="clear-btn" class="btn danger" type="button">Clear</button>
-          <button id="roll-btn" class="btn primary" type="button">Roll Dice</button>
-        </div>
-
         <p id="physics-status" class="status-line" role="status">Loading 3D physics…</p>
       </section>
 
@@ -66,6 +61,11 @@
         <div id="dice-tray" class="dice-tray" aria-label="3D physics dice tray">
           <div id="tray-empty-state" class="tray-empty-state">Choose dice, then roll.</div>
           <div id="tray-effects" class="tray-effects" aria-live="assertive"></div>
+        </div>
+
+        <div class="action-buttons tray-actions" aria-label="Roll actions">
+          <button id="clear-btn" class="btn danger" type="button">Clear</button>
+          <button id="roll-btn" class="btn primary" type="button">Roll Dice</button>
         </div>
 
         <div class="results-bar" aria-live="polite">
