@@ -141,6 +141,12 @@ export async function performRoll(requestedMode = 'normal') {
     savePreferences();
     renderHistory();
 
+    // Keep Pool means exactly that: when off, the next pool starts empty.
+    if (!state.keepDice) {
+      state.selectedDice = [];
+      renderPool();
+    }
+
     if (parsed.keptD20s.includes(20)) {
       showCrit('nat20');
       playNat20Fanfare();
