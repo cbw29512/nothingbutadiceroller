@@ -36,17 +36,18 @@ async function validateBuild() {
       'styles.css',
       'themes.css',
       'js/app.js',
+      'js/deployment.js',
       'js/physics.js',
       'js/roller.js',
     ];
 
-    await Promise.all(required.map((path) => access(resolve(dist, path))));
+    await Promise.all(required.map(path => access(resolve(dist, path))));
 
     const html = await readFile(resolve(dist, 'index.html'), 'utf8');
     const expectedReferences = [
-      'href="styles.css"',
-      'href="themes.css"',
-      'src="js/app.js"',
+      'href="/styles.css"',
+      'href="/themes.css"',
+      'src="/js/app.js"',
     ];
 
     for (const reference of expectedReferences) {
