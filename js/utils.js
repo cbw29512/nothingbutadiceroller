@@ -49,10 +49,13 @@ export function countDice(selectedDice) {
   }
 }
 
-export function buildPhysicsNotation(selectedDice, d20Mode) {
+export function buildPhysicsNotation(selectedDice, d20Mode = 'normal') {
   try {
     const pool = [...selectedDice];
-    if (pool.length === 0 && d20Mode !== 'normal') pool.push({ type: 'd20' });
+    const hasD20 = pool.some(die => die.type === 'd20');
+
+    // Advantage/disadvantage are quick-roll actions. They always need a d20.
+    if (d20Mode !== 'normal' && !hasD20) pool.push({ type: 'd20' });
 
     const counts = countDice(pool);
     const notation = [];
