@@ -32,10 +32,10 @@ async function loadDiceBoxModule() {
 
 function getDiceScale() {
   try {
-    return window.matchMedia?.('(max-width: 700px)').matches ? 9 : 7;
+    return window.matchMedia?.('(max-width: 700px)').matches ? 11 : 8;
   } catch (err) {
     console.warn('Unable to detect viewport for dice scale:', err);
-    return 7;
+    return 8;
   }
 }
 
