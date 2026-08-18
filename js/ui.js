@@ -38,6 +38,8 @@ export function renderPool() {
 export function renderHistory() {
   try {
     const list = document.getElementById('history-list');
+    const historyBtn = document.getElementById('open-history-btn');
+    if (historyBtn) historyBtn.textContent = `History${state.history.length ? ` (${state.history.length})` : ''}`;
     if (!list) return;
     list.replaceChildren();
 
