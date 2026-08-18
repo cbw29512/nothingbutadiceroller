@@ -15,25 +15,38 @@ function normalizeSides(rawSides) {
   }
 }
 
-function readGroup(group) {
+function normalizeGroups(results) {
   try {
-    const rolls = Array.isArray(group?.rolls) ? group.rolls : [];
-    const values = rolls.map(roll => Number(roll?.value ?? roll?.result)).filter(Number.isFinite);
-    const sides = normalizeSides(group?.sides ?? rolls[0]?.sides);
-    return { sides, values };
+    if (!Array.isArray(results)) return [];
+    if (results.some(item => Array.isArray(item?.rolls))) return results;
+
+    const grouped = new Map();
+    results.forEach((die, index) => {
+      const groupId = die?.groupId ?? index;
+      if (!grouped.has(groupId)) grouped.set(groupId, { sides: die?.sides, rolls: [] });
+      grouped.get(groupId).rolls.push(die);
+    });
+    return [...grouped.values()];
   } catch (err) {
-    console.error('Failed to read DiceBox result group:', err);
-    return { sides: 0, values: [] };
+    console.error('Failed to normalize DiceBox result structure:', err);
+    return [];
   }
 }
 
-function parseRollResults(groups) {
+function readGroup(group) {
+  const rolls = Array.isArray(group?.rolls) ? group.rolls : [];
+  const values = rolls.map(roll => Number(roll?.value ?? roll?.result)).filter(Number.isFinite);
+  const sides = normalizeSides(group?.sides ?? rolls[0]?.sides);
+  return { sides, values };
+}
+
+function parseRollResults(results) {
   try {
     let total = 0;
     const parts = [];
     const keptD20s = [];
 
-    groups.forEach(group => {
+    normalizeGroups(results).forEach(group => {
       const { sides, values } = readGroup(group);
       if (!values.length) return;
 
@@ -41,7 +54,7 @@ function parseRollResults(groups) {
         const kept = state.d20Mode === 'advantage' ? Math.max(...values) : Math.min(...values);
         total += kept;
         keptD20s.push(kept);
-        parts.push(`d20 ${state.d20Mode}: [${values.join(', ')}] → ${kept}`);
+        parts.push(`d20 = ${values.join(', ')} • ${state.d20Mode === 'advantage' ? 'ADV' : 'DIS'} keeps ${kept}`);
         return;
       }
 
@@ -49,10 +62,16 @@ function parseRollResults(groups) {
         total += value;
         if (sides === 20) keptD20s.push(value);
       });
-      parts.push(`${values.length}d${sides}: [${values.join(', ')}]`);
+      const label = values.length === 1 ? `d${sides} = ${values[0]}` : `${values.length}d${sides} = ${values.join(' + ')}`;
+      parts.push(label);
     });
 
-    return { total, breakdown: parts.join(' | '), keptD20s };
+    const prefix = parts.length === 1 ? 'Base roll: ' : 'Base rolls: ';
+    return {
+      total,
+      breakdown: parts.length ? `${prefix}${parts.join(' | ')}` : 'No roll result returned',
+      keptD20s,
+    };
   } catch (err) {
     console.error('Failed to parse DiceBox results:', err);
     return { total: 0, breakdown: 'Unable to parse roll results', keptD20s: [] };
@@ -60,13 +79,8 @@ function parseRollResults(groups) {
 }
 
 function formulaFor(pool) {
-  try {
-    const formula = Object.entries(countDice(pool)).map(([type, count]) => `${count}${type}`).join(' + ');
-    return state.d20Mode === 'normal' ? formula : `${formula} (${state.d20Mode})`;
-  } catch (err) {
-    console.error('Failed to build history formula:', err);
-    return 'Roll';
-  }
+  const formula = Object.entries(countDice(pool)).map(([type, count]) => `${count}${type}`).join(' + ');
+  return state.d20Mode === 'normal' ? formula : `${formula} (${state.d20Mode})`;
 }
 
 export function addDie(type) {
@@ -108,16 +122,16 @@ export async function performRoll() {
     document.getElementById('tray-empty-state')?.classList.add('hidden');
     playDiceSound();
 
-    const groups = await rollPhysics(notation, getSkinColor(state.dieSkin));
-    const parsed = parseRollResults(Array.isArray(groups) ? groups : []);
+    const results = await rollPhysics(notation, getSkinColor(state.dieSkin));
+    const parsed = parseRollResults(results);
     state.hasRolled = true;
-    renderResults(parsed.total, parsed.breakdown || 'Roll complete');
+    renderResults(parsed.total, parsed.breakdown);
 
     state.history.unshift({
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
       formula: formulaFor(pool),
       breakdown: parsed.breakdown,
-      total: String(parsed.total)
+      total: String(parsed.total),
     });
     if (state.history.length > 30) state.history.length = 30;
     savePreferences();
