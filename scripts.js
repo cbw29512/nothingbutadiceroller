@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     // --- STATE MANAGEMENT ---
-    let dicePool = []; // Array of die types to roll, e.g. ['d20', 'd6', 'd6']
-    let advMode = 'normal'; // 'normal', 'advantage', 'disadvantage'
+    let dicePool = []; 
+    let advMode = 'normal'; 
     let rollHistory = JSON.parse(localStorage.getItem('dice_history')) || [];
     let currentSkin = localStorage.getItem('dice_skin') || 'ruby_red';
     let currentTray = localStorage.getItem('tray_theme') || 'green_felt';
@@ -13,14 +13,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const rollBtn = document.getElementById('rollBtn');
     const clearBtn = document.getElementById('clearBtn');
     
-    // Drawers
     const historyDrawer = document.getElementById('historyDrawer');
     const themeDrawer = document.getElementById('themeDrawer');
     const historyList = document.getElementById('historyList');
 
     // --- INITIALIZATION ---
-    document.body.classList.add(`skin-${currentSkin}`);
-    document.body.classList.add(`tray-${currentTray}`);
+    document.body.className = `skin-${currentSkin} tray-${currentTray}`;
     updateTrayPlaceholder();
     renderHistory();
 
@@ -57,28 +55,23 @@ document.addEventListener('DOMContentLoaded', () => {
     window.openThemes = () => themeDrawer.classList.remove('hidden');
     window.closeThemes = () => themeDrawer.classList.add('hidden');
 
-    // Theme Switchers
     window.setSkin = (skinName) => {
-        document.body.className = document.body.className.replace(/skin-\S+/g, '');
-        document.body.classList.add(`skin-${skinName}`);
+        document.body.className = document.body.className.replace(/skin-\S+/g, `skin-${skinName}`);
         currentSkin = skinName;
         localStorage.setItem('dice_skin', skinName);
     };
 
     window.setTray = (trayName) => {
-        document.body.className = document.body.className.replace(/tray-\S+/g, '');
-        document.body.classList.add(`tray-${trayName}`);
+        document.body.className = document.body.className.replace(/tray-\S+/g, `tray-${trayName}`);
         currentTray = trayName;
         localStorage.setItem('tray_theme', trayName);
     };
 
-    // --- POOL DISPLAY UPDATE ---
     function updatePoolDisplay() {
         if (dicePool.length === 0) {
             breakdownText.textContent = 'No dice selected';
             return;
         }
-        // Count frequencies of each die type
         const counts = dicePool.reduce((acc, die) => {
             acc[die] = (acc[die] || 0) + 1;
             return acc;
@@ -97,6 +90,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Secure Random Roll Helper
+    function rollDie(sides) {
+        try {
+            const array = new Uint32Array(1);
+            window.crypto.getRandomValues(array);
+            return (array[0] % sides) + 1;
+        } catch (e) {
+            return Math.floor(Math.random() * sides) + 1;
+        }
+    }
+
     // --- CORE ROLL ENGINE ---
     function executeRoll() {
         if (dicePool.length === 0) {
@@ -110,16 +114,14 @@ document.addEventListener('DOMContentLoaded', () => {
         let hasNat20 = false;
         let hasNat1 = false;
 
-        // Process each die in the pool
         dicePool.forEach((dieStr, index) => {
-            const sides = parseInt(dieStr.substring(1));
+            const sides = parseInt(dieStr.substring(1), 10);
             let finalVal = 0;
             let droppedVal = null;
 
-            // Handle Advantage / Disadvantage for d20 rolls
             if (sides === 20 && advMode !== 'normal') {
-                const roll1 = Math.floor(Math.random() * 20) + 1;
-                const roll2 = Math.floor(Math.random() * 20) + 1;
+                const roll1 = rollDie(20);
+                const roll2 = rollDie(20);
 
                 if (advMode === 'advantage') {
                     finalVal = Math.max(roll1, roll2);
@@ -132,16 +134,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (finalVal === 20) hasNat20 = true;
                 if (finalVal === 1) hasNat1 = true;
 
-                // Render Main Die
                 createDieElement(dieStr, finalVal, index * 80);
-                // Render Dropped Die
                 createDieElement(dieStr, droppedVal, index * 80 + 40, true);
 
                 totalSum += finalVal;
-                rollBreakdown.push(`${dieStr}[${roll1}, ${roll2} $\rightarrow$ **${finalVal}**]`);
+                rollBreakdown.push(`${dieStr}[${roll1}, ${roll2} -> **${finalVal}**]`);
             } else {
-                // Standard Roll
-                finalVal = Math.floor(Math.random() * sides) + 1;
+                finalVal = rollDie(sides);
                 
                 if (sides === 20) {
                     if (finalVal === 20) hasNat20 = true;
@@ -154,15 +153,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // Update Results Bar
         totalNumber.textContent = totalSum;
         breakdownText.innerHTML = rollBreakdown.join(' + ');
 
-        // Trigger Crit Effects if applicable
         if (hasNat20) triggerNat20Effect();
         if (hasNat1) triggerNat1Effect();
 
-        // Save to History
         saveToHistory({
             time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
             formula: `${dicePool.length} Dice (${advMode.toUpperCase()})`,
@@ -171,13 +167,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- RENDER DIE ELEMENT WITH 3D PHYSICS VARIABLES ---
     function createDieElement(dieType, value, delayMs, isDropped = false) {
         const dieEl = document.createElement('div');
         dieEl.className = `rendered-die shape-${dieType} rolling`;
         if (isDropped) dieEl.classList.add('dropped');
 
-        // Random physics trajectory variables for CSS keyframe animation
         const startX = (Math.random() - 0.5) * 200;
         const startY = -150 - Math.random() * 100;
         const midX = (Math.random() - 0.5) * 80;
@@ -205,16 +199,9 @@ document.addEventListener('DOMContentLoaded', () => {
             <span class="die-label">${dieType.toUpperCase()}</span>
         `;
 
-        // Click to inspect individual die
-        dieEl.addEventListener('click', () => {
-            dieEl.style.transform = 'scale(1.2) rotate(10deg)';
-            setTimeout(() => dieEl.style.transform = '', 200);
-        });
-
         diceTray.appendChild(dieEl);
     }
 
-    // --- EFFECTS ---
     function triggerNat20Effect() {
         const banner = document.createElement('div');
         banner.className = 'nat20-banner';
@@ -234,10 +221,9 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => banner.remove(), 1800);
     }
 
-    // --- HISTORY MANAGEMENT ---
     function saveToHistory(record) {
         rollHistory.unshift(record);
-        if (rollHistory.length > 25) rollHistory.pop(); // Keep last 25 rolls
+        if (rollHistory.length > 25) rollHistory.pop();
         localStorage.setItem('dice_history', JSON.stringify(rollHistory));
         renderHistory();
     }
