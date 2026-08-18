@@ -130,7 +130,7 @@ export async function performRoll() {
       showCrit('nat1');
       playNat1DoomSound();
     }
-    setStatus('3D physics ready.', 'ready');
+    setStatus(`Saved to history • ${state.history.length} roll${state.history.length === 1 ? '' : 's'}`, 'ready');
   } catch (err) {
     console.error('Roll execution failed:', err);
     setStatus(err.message || 'Roll failed.', 'error');
