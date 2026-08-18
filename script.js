@@ -15,10 +15,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function initDicePhysics() {
     try {
-        // Load DiceBox using jsDelivr's reliable ESM CDN endpoint
-        const DiceBoxLib = window.DiceBox || (await import('https://cdn.jsdelivr.net/npm/@3d-dice/dice-box@1.1.5/+esm')).default;
+        if (typeof DiceBox === 'undefined') {
+            throw new Error("DiceBox library failed to load from CDN script tag.");
+        }
 
-        diceBox = new DiceBoxLib({
+        diceBox = new DiceBox({
             element: '#diceTray',
             origin: 'https://cdn.jsdelivr.net/npm/@3d-dice/dice-box@1.1.5/dist/',
             assetPath: 'assets/',

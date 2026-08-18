@@ -3,31 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Physics Dice Roller & Tabletop Companion</title>
-    <link rel="stylesheet" href="styles.css">
-    <!-- 3D Dice Physics Engine -->
-    <script src="https://unpkg.com/@3d-dice/dice-box@1.1.5/dist/dice-box.min.js"></script>
+    <title>3D Physics Dice Roller</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
-    <!-- Header -->
-    <header class="app-header">
-        <div class="logo">
-            <h1>🎲 3D Physics Dice Roller</h1>
-        </div>
-        <div class="header-controls">
-            <button class="btn secondary" onclick="openHistory()">📜 History</button>
-            <button class="btn secondary" onclick="openThemes()">🎨 Themes</button>
-        </div>
-    </header>
-
-    <!-- Main Container -->
-    <main class="app-container">
-
-        <!-- Controls Panel -->
-        <section class="controls-panel">
-            <div class="section-label">Select Dice</div>
-            <div class="dice-selector" id="diceSelectorGrid">
+    <div id="app">
+        <!-- Main Controls Sidebar -->
+        <div class="sidebar">
+            <h2>Dice Roller</h2>
+            
+            <div class="section-title">SELECT DICE</div>
+            <div id="diceSelectorGrid" class="dice-grid">
                 <button class="die-btn" data-die="d4">d4</button>
                 <button class="die-btn" data-die="d6">d6</button>
                 <button class="die-btn" data-die="d8">d8</button>
@@ -35,91 +21,40 @@
                 <button class="die-btn" data-die="d12">d12</button>
                 <button class="die-btn" data-die="d20">d20</button>
                 <button class="die-btn" data-die="d100">d100</button>
-                <button class="die-btn" data-die="custom" id="customDieBtn">Custom</button>
+                <button class="die-btn" id="customDieBtn" data-die="custom">Custom</button>
             </div>
 
-            <div class="advantage-toggle">
-                <div class="section-label">Advantage / Disadvantage (d20)</div>
-                <div class="adv-btn-group">
-                    <button class="adv-btn active" data-adv="normal">Normal</button>
-                    <button class="adv-btn" data-adv="advantage">Advantage</button>
-                    <button class="adv-btn" data-adv="disadvantage">Disadvantage</button>
-                </div>
+            <div class="section-title">ADVANTAGE / DISADVANTAGE (D20)</div>
+            <div class="adv-grid">
+                <button class="adv-btn active" data-adv="normal">Normal</button>
+                <button class="adv-btn" data-adv="advantage">Advantage</button>
+                <button class="adv-btn" data-adv="disadvantage">Disadvantage</button>
             </div>
 
             <div class="action-buttons">
-                <button class="btn danger" id="clearBtn">Clear</button>
-                <button class="btn primary" id="rollBtn">Roll Dice!</button>
+                <button id="clearBtn" class="action-btn clear-btn">Clear</button>
+                <button id="rollBtn" class="action-btn roll-btn">Roll Dice!</button>
             </div>
-        </section>
-
-        <!-- Tray Container -->
-        <section class="tray-container">
-            <!-- 3D Dice Canvas Target -->
-            <div class="dice-tray" id="diceTray"></div>
-
-            <!-- Results Bar -->
-            <div class="results-bar">
-                <div class="results-label">
-                    <span>Total Result</span>
-                    <span class="breakdown-text" id="breakdownText">No active roll</span>
-                </div>
-                <div class="total-number" id="totalNumber">0</div>
-            </div>
-        </section>
-
-    </main>
-
-    <!-- Footer -->
-    <footer class="app-footer">
-        <div class="support-section">
-            <p>Powered by 3D Physics &bull; Built for immersive tabletop adventures.</p>
         </div>
-    </footer>
 
-    <!-- History Drawer -->
-    <div class="drawer hidden" id="historyDrawer">
-        <div class="drawer-backdrop" onclick="closeHistory()"></div>
-        <div class="drawer-content">
-            <div class="drawer-header">
-                <h3>Roll History</h3>
-                <button class="close-btn" onclick="closeHistory()">&times;</button>
+        <!-- 3D Dice Tray Container -->
+        <div id="diceTray" class="dice-tray"></div>
+
+        <!-- Results Footer Bar -->
+        <div class="results-bar">
+            <div class="total-section">
+                <span class="label">TOTAL RESULT</span>
+                <span id="totalNumber" class="value">0</span>
             </div>
-            <div class="history-list" id="historyList">
-                <div style="color: #71717a; text-align: center; margin-top: 2rem;">No roll history yet.</div>
+            <div class="breakdown-section">
+                <span id="breakdownText" class="breakdown">No active roll</span>
             </div>
         </div>
     </div>
 
-    <!-- Theme & Skin Drawer -->
-    <div class="drawer hidden" id="themeDrawer">
-        <div class="drawer-backdrop" onclick="closeThemes()"></div>
-        <div class="drawer-content">
-            <div class="drawer-header">
-                <h3>Customization</h3>
-                <button class="close-btn" onclick="closeThemes()">&times;</button>
-            </div>
-            
-            <div class="section-label">Dice Theme / Color</div>
-            <div class="picker-grid">
-                <button class="swatch-btn" onclick="setTheme('default')">Default</button>
-                <button class="swatch-btn" onclick="setTheme('purple')">Purple</button>
-                <button class="swatch-btn" onclick="setTheme('green')">Green</button>
-                <button class="swatch-btn" onclick="setTheme('red')">Red</button>
-                <button class="swatch-btn" onclick="setTheme('blue')">Blue</button>
-                <button class="swatch-btn" onclick="setTheme('black')">Black</button>
-            </div>
-
-            <div class="section-label" style="margin-top: 1rem;">Tray Backgrounds</div>
-            <div class="picker-grid">
-                <button class="swatch-btn" onclick="setTray('#0d2818')">Green Felt</button>
-                <button class="swatch-btn" onclick="setTray('#3b0a0a')">Red Velvet</button>
-                <button class="swatch-btn" onclick="setTray('#111318')">Midnight</button>
-                <button class="swatch-btn" onclick="setTray('#21262d')">Dungeon Stone</button>
-            </div>
-        </div>
-    </div>
-
+    <!-- Load DiceBox Library Globally via CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@3d-dice/dice-box@1.1.5/dist/dice-box.min.js"></script>
+    <!-- Load App Logic -->
     <script src="script.js"></script>
 </body>
 </html>
