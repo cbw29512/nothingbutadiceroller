@@ -3,15 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Dice Roller & Tabletop Companion</title>
+    <title>3D Physics Dice Roller & Tabletop Companion</title>
     <link rel="stylesheet" href="styles.css">
+    <!-- 3D Dice Physics Engine -->
+    <script src="https://unpkg.com/@3d-dice/dice-box@1.1.5/dist/dice-box.min.js"></script>
 </head>
 <body>
 
     <!-- Header -->
     <header class="app-header">
         <div class="logo">
-            <h1>🎲 3D Dice Roller</h1>
+            <h1>🎲 3D Physics Dice Roller</h1>
         </div>
         <div class="header-controls">
             <button class="btn secondary" onclick="openHistory()">📜 History</button>
@@ -25,7 +27,7 @@
         <!-- Controls Panel -->
         <section class="controls-panel">
             <div class="section-label">Select Dice</div>
-            <div class="dice-selector">
+            <div class="dice-selector" id="diceSelectorGrid">
                 <button class="die-btn" data-die="d4">d4</button>
                 <button class="die-btn" data-die="d6">d6</button>
                 <button class="die-btn" data-die="d8">d8</button>
@@ -53,9 +55,8 @@
 
         <!-- Tray Container -->
         <section class="tray-container">
-            <div class="dice-tray" id="diceTray">
-                <div class="tray-placeholder">Select your dice above and hit Roll!</div>
-            </div>
+            <!-- 3D Dice Canvas Target -->
+            <div class="dice-tray" id="diceTray"></div>
 
             <!-- Results Bar -->
             <div class="results-bar">
@@ -73,7 +74,7 @@
     <footer class="app-footer">
         <div class="footer-content">
             <div class="support-section">
-                <p>Built for immersive tabletop adventures.</p>
+                <p>Powered by 3D Physics &bull; Built for immersive tabletop adventures.</p>
             </div>
         </div>
     </footer>
@@ -101,26 +102,22 @@
                 <button class="close-btn" onclick="closeThemes()">&times;</button>
             </div>
             
-            <div class="section-label">Dice Skins</div>
+            <div class="section-label">Dice Theme / Color</div>
             <div class="picker-grid">
-                <button class="swatch-btn" onclick="setSkin('ruby_red')">Ruby Red</button>
-                <button class="swatch-btn" onclick="setSkin('sapphire_blue')">Sapphire Blue</button>
-                <button class="swatch-btn" onclick="setSkin('emerald_green')">Emerald Green</button>
-                <button class="swatch-btn" onclick="setSkin('amethyst_purple')">Amethyst</button>
-                <button class="swatch-btn" onclick="setSkin('marble_white')">Marble White</button>
-                <button class="swatch-btn" onclick="setSkin('gold_leaf')">Gold Leaf</button>
-                <button class="swatch-btn" onclick="setSkin('neon_cyan')">Neon Cyan</button>
-                <button class="swatch-btn" onclick="setSkin('blood_moon')">Blood Moon</button>
+                <button class="swatch-btn" onclick="setTheme('default')">Default</button>
+                <button class="swatch-btn" onclick="setTheme('purple')">Purple</button>
+                <button class="swatch-btn" onclick="setTheme('green')">Green</button>
+                <button class="swatch-btn" onclick="setTheme('red')">Red</button>
+                <button class="swatch-btn" onclick="setTheme('blue')">Blue</button>
+                <button class="swatch-btn" onclick="setTheme('black')">Black</button>
             </div>
 
-            <div class="section-label" style="margin-top: 1rem;">Tray Themes</div>
+            <div class="section-label" style="margin-top: 1rem;">Tray Backgrounds</div>
             <div class="picker-grid">
-                <button class="swatch-btn" onclick="setTray('green_felt')">Green Felt</button>
-                <button class="swatch-btn" onclick="setTray('red_velvet')">Red Velvet</button>
-                <button class="swatch-btn" onclick="setTray('midnight_leather')">Midnight</button>
-                <button class="swatch-btn" onclick="setTray('dungeon_stone')">Dungeon Stone</button>
-                <button class="swatch-btn" onclick="setTray('neon_cyberpunk')">Cyberpunk</button>
-                <button class="swatch-btn" onclick="setTray('lava_pit')">Lava Pit</button>
+                <button class="swatch-btn" onclick="setTray('#0d2818')">Green Felt</button>
+                <button class="swatch-btn" onclick="setTray('#3b0a0a')">Red Velvet</button>
+                <button class="swatch-btn" onclick="setTray('#111318')">Midnight</button>
+                <button class="swatch-btn" onclick="setTray('#21262d')">Dungeon Stone</button>
             </div>
         </div>
     </div>

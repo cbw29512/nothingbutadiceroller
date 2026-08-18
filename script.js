@@ -1,37 +1,63 @@
 let selectedDice = [];
 let currentAdvantage = 'normal';
 let rollHistory = [];
-let currentSkin = 'ruby_red';
-let currentTray = 'green_felt';
+let diceBox = null;
+let currentTheme = localStorage.getItem('dice_theme') || 'default';
+let currentTrayColor = localStorage.getItem('dice_tray_color') || '#0d2818';
 
-const skinColors = {
-    ruby_red: { bg: '#da3633', text: '#ffffff' },
-    sapphire_blue: { bg: '#1f6feb', text: '#ffffff' },
-    emerald_green: { bg: '#238636', text: '#ffffff' },
-    amethyst_purple: { bg: '#8957e5', text: '#ffffff' },
-    marble_white: { bg: '#f0f6fc', text: '#161b22' },
-    gold_leaf: { bg: '#d4a72c', text: '#161b22' },
-    neon_cyan: { bg: '#38d9a9', text: '#161b22' },
-    blood_moon: { bg: '#6e0ad6', text: '#ffffff' }
-};
-
-const trayBackgrounds = {
-    green_felt: '#0d2818',
-    red_velvet: '#3b0a0a',
-    midnight_leather: '#111318',
-    dungeon_stone: '#21262d',
-    neon_cyberpunk: '#120726',
-    lava_pit: '#2e1005'
-};
-
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    loadSavedCustomDice();
+    await initDicePhysics();
     setupDiceSelector();
     setupAdvantageToggle();
     setupActions();
 });
 
+async function initDicePhysics() {
+    try {
+        diceBox = new DiceBox({
+            element: '#diceTray',
+            theme: currentTheme,
+            loader: 'generic',
+            gravity: 1,
+            mass: 1,
+            friction: 0.8,
+            restitution: 0.2,
+            linearDamping: 0.5,
+            angularDamping: 0.4,
+            startingHeight: 8,
+            spinForce: 6,
+            throwForce: 6,
+            scale: 6
+        });
+
+        await diceBox.init();
+        document.getElementById('diceTray').style.backgroundColor = currentTrayColor;
+    } catch (e) {
+        console.error("Failed to initialize 3D dice physics engine:", e);
+    }
+}
+
+function loadSavedCustomDice() {
+    try {
+        const saved = JSON.parse(localStorage.getItem('saved_custom_dice') || '[]');
+        const selector = document.getElementById('diceSelectorGrid');
+        const customBtnNode = document.getElementById('customDieBtn');
+
+        saved.forEach(die => {
+            const btn = document.createElement('button');
+            btn.className = 'die-btn saved-custom';
+            btn.setAttribute('data-die', die);
+            btn.textContent = die;
+            selector.insertBefore(btn, customBtnNode);
+        });
+    } catch (e) {
+        console.error("Error loading custom dice:", e);
+    }
+}
+
 function setupDiceSelector() {
-    const selector = document.querySelector('.dice-selector');
+    const selector = document.getElementById('diceSelectorGrid');
     selector.addEventListener('click', (e) => {
         const btn = e.target.closest('.die-btn');
         if (!btn) return;
@@ -44,21 +70,30 @@ function setupDiceSelector() {
                 const sides = parseInt(input.trim());
                 if (!isNaN(sides) && sides > 0) {
                     const customDie = 'd' + sides;
-                    selectedDice.push(customDie);
 
-                    // Create a removable custom button in the grid
-                    const customBtn = document.createElement('button');
-                    customBtn.className = 'die-btn selected custom-added';
-                    customBtn.setAttribute('data-die', customDie);
-                    customBtn.textContent = customDie;
+                    try {
+                        let saved = JSON.parse(localStorage.getItem('saved_custom_dice') || '[]');
+                        if (!saved.includes(customDie)) {
+                            saved.push(customDie);
+                            localStorage.setItem('saved_custom_dice', JSON.stringify(saved));
+                        }
+                    } catch (err) {
+                        console.error("Error saving custom die:", err);
+                    }
 
-                    // Allow clicking it again to deselect/remove
-                    customBtn.addEventListener('click', () => {
-                        selectedDice = selectedDice.filter(d => d !== customDie);
-                        customBtn.remove();
-                    });
+                    if (!document.querySelector(`.die-btn[data-die="${customDie}"]`)) {
+                        const newBtn = document.createElement('button');
+                        newBtn.className = 'die-btn saved-custom';
+                        newBtn.setAttribute('data-die', customDie);
+                        newBtn.textContent = customDie;
+                        selector.insertBefore(newBtn, document.getElementById('customDieBtn'));
+                    }
 
-                    selector.insertBefore(customBtn, document.getElementById('customDieBtn'));
+                    const targetBtn = document.querySelector(`.die-btn[data-die="${customDie}"]`);
+                    if (targetBtn && !targetBtn.classList.contains('selected')) {
+                        targetBtn.classList.add('selected');
+                        selectedDice.push(customDie);
+                    }
                 } else {
                     alert('Please enter a valid positive number.');
                 }
@@ -99,7 +134,7 @@ function setupActions() {
     document.getElementById('clearBtn').addEventListener('click', clearTray);
 }
 
-function executeRoll() {
+async function executeRoll() {
     if (currentAdvantage !== 'normal' && !selectedDice.includes('d20')) {
         selectedDice.push('d20');
     }
@@ -109,92 +144,89 @@ function executeRoll() {
         return;
     }
 
-    const tray = document.getElementById('diceTray');
-    tray.innerHTML = '';
+    if (!diceBox) {
+        alert('3D physics engine is still loading. Please wait a second and try again.');
+        return;
+    }
 
-    let totalSum = 0;
-    let breakdownParts = [];
-    let currentRollRecord = { timestamp: new Date().toLocaleTimeString(), rolls: [], total: 0 };
-    const skin = skinColors[currentSkin] || skinColors.ruby_red;
-
+    // Build notation string for Dice Box (e.g., "1d20+1d6")
+    // For Advantage/Disadvantage, roll 2 d20s physically
+    let rollNotationParts = [];
     selectedDice.forEach(die => {
-        const sides = parseInt(die.substring(1));
-
         if (die === 'd20' && currentAdvantage !== 'normal') {
-            const roll1 = Math.floor(Math.random() * 20) + 1;
-            const roll2 = Math.floor(Math.random() * 20) + 1;
-            
-            let keptRoll, droppedRoll;
-            if (currentAdvantage === 'advantage') {
-                keptRoll = Math.max(roll1, roll2);
-                droppedRoll = Math.min(roll1, roll2);
-            } else {
-                keptRoll = Math.min(roll1, roll2);
-                droppedRoll = Math.max(roll1, roll2);
-            }
-
-            totalSum += keptRoll;
-            breakdownParts.push(`d20 (${currentAdvantage}): ${keptRoll} [${roll1}, ${roll2}]`);
-            currentRollRecord.rolls.push({ die: 'd20', result: keptRoll, display: `${keptRoll} (${roll1}, ${roll2} ${currentAdvantage === 'advantage' ? 'adv' : 'dis'})` });
-
-            // Render Die 1
-            const dieEl1 = document.createElement('div');
-            dieEl1.className = 'rolled-die';
-            dieEl1.style.backgroundColor = skin.bg;
-            dieEl1.style.color = skin.text;
-            if (roll1 !== keptRoll && roll1 === droppedRoll) {
-                dieEl1.style.opacity = '0.4';
-                dieEl1.style.border = '2px dashed currentColor';
-            }
-            dieEl1.innerHTML = `<span style="font-size:0.6rem;">D20 (${currentAdvantage.toUpperCase()[0]})</span><span style="font-size:1.1rem;">${roll1}</span>`;
-            tray.appendChild(dieEl1);
-
-            // Render Die 2
-            const dieEl2 = document.createElement('div');
-            dieEl2.className = 'rolled-die';
-            dieEl2.style.backgroundColor = skin.bg;
-            dieEl2.style.color = skin.text;
-            if (roll2 !== keptRoll && roll2 === droppedRoll) {
-                dieEl2.style.opacity = '0.4';
-                dieEl2.style.border = '2px dashed currentColor';
-            }
-            dieEl2.innerHTML = `<span style="font-size:0.6rem;">D20 (${currentAdvantage.toUpperCase()[0]})</span><span style="font-size:1.1rem;">${roll2}</span>`;
-            tray.appendChild(dieEl2);
-
+            rollNotationParts.push('2d20');
         } else {
-            const rollResult = Math.floor(Math.random() * sides) + 1;
-            totalSum += rollResult;
-            breakdownParts.push(`${die}: ${rollResult}`);
-            currentRollRecord.rolls.push({ die, result: rollResult, display: `${rollResult}` });
-
-            const dieEl = document.createElement('div');
-            dieEl.className = 'rolled-die';
-            dieEl.style.backgroundColor = skin.bg;
-            dieEl.style.color = skin.text;
-            dieEl.innerHTML = `<span style="font-size:0.65rem;">${die.toUpperCase()}</span><span style="font-size:1.1rem;">${rollResult}</span>`;
-            tray.appendChild(dieEl);
+            rollNotationParts.push(`1${die}`);
         }
     });
 
-    currentRollRecord.total = totalSum;
-    rollHistory.unshift(currentRollRecord);
-    updateHistoryUI();
+    const notation = rollNotationParts.join('+');
 
-    document.getElementById('totalNumber').textContent = totalSum;
-    document.getElementById('breakdownText').textContent = breakdownParts.join(' | ');
+    try {
+        const results = await diceBox.roll(notation);
+        
+        let totalSum = 0;
+        let breakdownParts = [];
+        let rollRecords = [];
+
+        // Process results from the 3D physics engine
+        if (Array.isArray(results)) {
+            // Handle advantage / disadvantage sorting if d20 was rolled with adv/dis
+            let d20Results = results.filter(r => r.sides === 20 || r.type === 'd20');
+            let otherResults = results.filter(r => r.sides !== 20 && r.type !== 'd20');
+
+            if (currentAdvantage !== 'normal' && d20Results.length >= 2) {
+                // Sort d20 rolls
+                d20Results.sort((a, b) => a.value - b.value);
+                const lowest = d20Results[0].value;
+                const highest = d20Results[1].value;
+                const kept = currentAdvantage === 'advantage' ? highest : lowest;
+                const dropped = currentAdvantage === 'advantage' ? lowest : highest;
+
+                totalSum += kept;
+                breakdownParts.push(`d20 (${currentAdvantage}): ${kept} [${lowest}, ${highest}]`);
+                rollRecords.push({ die: 'd20', result: kept, display: `${kept} (${lowest}, ${highest} ${currentAdvantage === 'advantage' ? 'adv' : 'dis'})` });
+            } else {
+                d20Results.forEach(r => {
+                    totalSum += r.value;
+                    breakdownParts.push(`d20: ${r.value}`);
+                    rollRecords.push({ die: 'd20', result: r.value, display: `${r.value}` });
+                });
+            }
+
+            otherResults.forEach(r => {
+                totalSum += r.value;
+                const dieName = `d${r.sides || r.type.replace('d','')}`;
+                breakdownParts.push(`${dieName}: ${r.value}`);
+                rollRecords.push({ die: dieName, result: r.value, display: `${r.value}` });
+            });
+        }
+
+        document.getElementById('totalNumber').textContent = totalSum;
+        document.getElementById('breakdownText').textContent = breakdownParts.join(' | ') || `Total: ${results.reduce((sum, r) => sum + r.value, 0)}`;
+
+        rollHistory.unshift({
+            timestamp: new Date().toLocaleTimeString(),
+            rolls: rollRecords.length > 0 ? rollRecords : results.map(r => ({ die: r.type, result: r.value, display: r.value })),
+            total: totalSum > 0 ? totalSum : results.reduce((sum, r) => sum + r.value, 0)
+        });
+        updateHistoryUI();
+
+    } catch (err) {
+        console.error("Roll execution error:", err);
+    }
 }
 
 function clearTray() {
-    const tray = document.getElementById('diceTray');
-    tray.innerHTML = '<div class="tray-placeholder">Select your dice above and hit Roll!</div>';
+    if (diceBox) {
+        diceBox.clear();
+    }
     document.getElementById('totalNumber').textContent = '0';
     document.getElementById('breakdownText').textContent = 'No active roll';
+    
     selectedDice = [];
     document.querySelectorAll('.die-btn').forEach(b => b.classList.remove('selected'));
     
-    // Remove any dynamic custom buttons from the grid
-    document.querySelectorAll('.custom-added').forEach(b => b.remove());
-
     document.querySelectorAll('.adv-btn').forEach(b => b.classList.remove('active'));
     document.querySelector('.adv-btn[data-adv="normal"]').classList.add('active');
     currentAdvantage = 'normal';
@@ -216,15 +248,19 @@ function closeThemes() {
     document.getElementById('themeDrawer').classList.add('hidden');
 }
 
-function setSkin(skinName) {
-    currentSkin = skinName;
+async function setTheme(themeName) {
+    currentTheme = themeName;
+    localStorage.setItem('dice_theme', themeName);
+    if (diceBox) {
+        await diceBox.updateConfig({ theme: themeName });
+    }
     closeThemes();
 }
 
-function setTray(trayName) {
-    currentTray = trayName;
-    const tray = document.getElementById('diceTray');
-    tray.style.backgroundColor = trayBackgrounds[trayName] || '#0d2818';
+function setTray(colorHex) {
+    currentTrayColor = colorHex;
+    localStorage.setItem('dice_tray_color', colorHex);
+    document.getElementById('diceTray').style.backgroundColor = colorHex;
     closeThemes();
 }
 
