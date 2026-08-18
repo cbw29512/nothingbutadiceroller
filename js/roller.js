@@ -4,11 +4,22 @@ import { buildPhysicsNotation, countDice, getSkinColor } from './utils.js';
 import { clearPhysics, rollPhysics } from './physics.js';
 import { renderHistory, renderPool, renderResults, setStatus, showCrit } from './ui.js';
 
+function normalizeSides(rawSides) {
+  try {
+    if (typeof rawSides === 'number') return rawSides;
+    const normalized = String(rawSides ?? '').toLowerCase().replace(/^d/, '').replace('%', '100');
+    return Number(normalized);
+  } catch (err) {
+    console.error('Failed to normalize die sides:', err);
+    return 0;
+  }
+}
+
 function readGroup(group) {
   try {
     const rolls = Array.isArray(group?.rolls) ? group.rolls : [];
     const values = rolls.map(roll => Number(roll?.value ?? roll?.result)).filter(Number.isFinite);
-    const sides = Number(group?.sides ?? rolls[0]?.sides);
+    const sides = normalizeSides(group?.sides ?? rolls[0]?.sides);
     return { sides, values };
   } catch (err) {
     console.error('Failed to read DiceBox result group:', err);
