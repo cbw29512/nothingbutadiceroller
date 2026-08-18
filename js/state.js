@@ -6,29 +6,60 @@ export const state = {
   soundEnabled: true,
   trayTheme: 'tray-green_felt',
   dieSkin: 'skin-ruby_red',
-  history: []
+  history: [],
+  physicsReady: false,
+  rolling: false
 };
 
-// Default custom face mappings: 20 -> 💀, 1 -> ☠️
-export let activeCustomFaces = { "20": "💀", "1": "☠️" };
+const KEYS = {
+  trayTheme: 'trayTheme',
+  dieSkin: 'dieSkin',
+  history: 'rollHistory',
+  soundEnabled: 'soundEnabled',
+  keepDice: 'keepDice',
+  d20Mode: 'd20Mode'
+};
+
+export function applyBodyTheme() {
+  try {
+    const trayClasses = [...document.body.classList].filter(name => name.startsWith('tray-'));
+    const skinClasses = [...document.body.classList].filter(name => name.startsWith('skin-'));
+    document.body.classList.remove(...trayClasses, ...skinClasses);
+    document.body.classList.add(state.trayTheme, state.dieSkin);
+  } catch (err) {
+    console.error('Failed to apply saved appearance:', err);
+  }
+}
 
 export function loadPreferences() {
-  const savedTheme = localStorage.getItem('trayTheme');
-  const savedSkin = localStorage.getItem('dieSkin');
-  const savedHistory = localStorage.getItem('rollHistory');
+  try {
+    state.trayTheme = localStorage.getItem(KEYS.trayTheme) || state.trayTheme;
+    state.dieSkin = localStorage.getItem(KEYS.dieSkin) || state.dieSkin;
+    state.soundEnabled = localStorage.getItem(KEYS.soundEnabled) !== 'false';
+    state.keepDice = localStorage.getItem(KEYS.keepDice) === 'true';
+    state.d20Mode = localStorage.getItem(KEYS.d20Mode) || state.d20Mode;
 
-  if (savedTheme) state.trayTheme = savedTheme;
-  if (savedSkin) state.dieSkin = savedSkin;
-  if (savedHistory) {
-    try { state.history = JSON.parse(savedHistory); } catch(e) { state.history = []; }
+    const savedHistory = localStorage.getItem(KEYS.history);
+    state.history = savedHistory ? JSON.parse(savedHistory) : [];
+    if (!Array.isArray(state.history)) state.history = [];
+  } catch (err) {
+    console.error('Failed to load preferences; defaults will be used:', err);
+    state.history = [];
+  } finally {
+    applyBodyTheme();
   }
-
-  document.body.className = state.trayTheme + ' ' + state.dieSkin;
 }
 
 export function savePreferences() {
-  localStorage.setItem('trayTheme', state.trayTheme);
-  localStorage.setItem('dieSkin', state.dieSkin);
-  localStorage.setItem('rollHistory', JSON.stringify(state.history));
-  document.body.className = state.trayTheme + ' ' + state.dieSkin;
+  try {
+    localStorage.setItem(KEYS.trayTheme, state.trayTheme);
+    localStorage.setItem(KEYS.dieSkin, state.dieSkin);
+    localStorage.setItem(KEYS.history, JSON.stringify(state.history));
+    localStorage.setItem(KEYS.soundEnabled, String(state.soundEnabled));
+    localStorage.setItem(KEYS.keepDice, String(state.keepDice));
+    localStorage.setItem(KEYS.d20Mode, state.d20Mode);
+    applyBodyTheme();
+  } catch (err) {
+    console.error('Failed to save preferences:', err);
+  }
 }

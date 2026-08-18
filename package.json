@@ -1,4 +1,7 @@
 {
+  "scripts": {
+    "build": "node scripts/build.mjs"
+  },
   "dependencies": {
     "@netlify/blobs": "^11.0.1",
     "obscenity": "^0.4.6"
