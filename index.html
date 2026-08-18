@@ -8,46 +8,100 @@
 </head>
 <body>
     <div id="app">
-        <!-- Main Controls Sidebar -->
-        <div class="sidebar">
-            <h2>Dice Roller</h2>
-            
-            <div class="section-title">SELECT DICE</div>
-            <div id="diceSelectorGrid" class="dice-grid">
-                <button class="die-btn" data-die="d4">d4</button>
-                <button class="die-btn" data-die="d6">d6</button>
-                <button class="die-btn" data-die="d8">d8</button>
-                <button class="die-btn" data-die="d10">d10</button>
-                <button class="die-btn" data-die="d12">d12</button>
-                <button class="die-btn" data-die="d20">d20</button>
-                <button class="die-btn" data-die="d100">d100</button>
-                <button class="die-btn" id="customDieBtn" data-die="custom">Custom</button>
+        <!-- App Header with Navigation Buttons -->
+        <header class="app-header">
+            <div class="logo">
+                <h1>3D Physics Dice Roller</h1>
+            </div>
+            <div class="header-controls">
+                <button class="btn secondary" onclick="openThemes()">Themes & Tray</button>
+                <button class="btn secondary" onclick="openHistory()">Roll History</button>
+            </div>
+        </header>
+
+        <div class="app-container">
+            <!-- Main Controls Sidebar -->
+            <div class="controls-panel">
+                <div class="section-label">Select Dice</div>
+                <div id="diceSelectorGrid" class="dice-selector">
+                    <button class="die-btn" data-die="d4">d4</button>
+                    <button class="die-btn" data-die="d6">d6</button>
+                    <button class="die-btn" data-die="d8">d8</button>
+                    <button class="die-btn" data-die="d10">d10</button>
+                    <button class="die-btn" data-die="d12">d12</button>
+                    <button class="die-btn" data-die="d20">d20</button>
+                    <button class="die-btn" data-die="d100">d100</button>
+                    <button class="die-btn" id="customDieBtn" data-die="custom">Custom</button>
+                </div>
+
+                <div class="section-label">Advantage / Disadvantage (D20)</div>
+                <div class="advantage-toggle">
+                    <div class="adv-btn-group">
+                        <button class="adv-btn active" data-adv="normal">Normal</button>
+                        <button class="adv-btn" data-adv="advantage">Advantage</button>
+                        <button class="adv-btn" data-adv="disadvantage">Disadvantage</button>
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button id="clearBtn" class="btn danger">Clear</button>
+                    <button id="rollBtn" class="btn primary">Roll Dice!</button>
+                </div>
             </div>
 
-            <div class="section-title">ADVANTAGE / DISADVANTAGE (D20)</div>
-            <div class="adv-grid">
-                <button class="adv-btn active" data-adv="normal">Normal</button>
-                <button class="adv-btn" data-adv="advantage">Advantage</button>
-                <button class="adv-btn" data-adv="disadvantage">Disadvantage</button>
-            </div>
+            <!-- 3D Dice Tray Container -->
+            <div class="tray-container">
+                <div id="diceTray" class="dice-tray"></div>
 
-            <div class="action-buttons">
-                <button id="clearBtn" class="action-btn clear-btn">Clear</button>
-                <button id="rollBtn" class="action-btn roll-btn">Roll Dice!</button>
+                <!-- Results Footer Bar -->
+                <div class="results-bar">
+                    <div class="results-label">
+                        <span>Total Result</span>
+                        <span id="breakdownText" class="breakdown-text">No active roll</span>
+                    </div>
+                    <div id="totalNumber" class="total-number">0</div>
+                </div>
             </div>
         </div>
 
-        <!-- 3D Dice Tray Container -->
-        <div id="diceTray" class="dice-tray"></div>
-
-        <!-- Results Footer Bar -->
-        <div class="results-bar">
-            <div class="total-section">
-                <span class="label">TOTAL RESULT</span>
-                <span id="totalNumber" class="value">0</span>
+        <!-- History Drawer -->
+        <div id="historyDrawer" class="drawer hidden">
+            <div class="drawer-backdrop" onclick="closeHistory()"></div>
+            <div class="drawer-content">
+                <div class="drawer-header">
+                    <h2>Roll History</h2>
+                    <button class="close-btn" onclick="closeHistory()">&times;</button>
+                </div>
+                <div id="historyList" class="history-list">
+                    <div style="color: #71717a; text-align: center; margin-top: 2rem;">No roll history yet.</div>
+                </div>
             </div>
-            <div class="breakdown-section">
-                <span id="breakdownText" class="breakdown">No active roll</span>
+        </div>
+
+        <!-- Theme & Tray Customization Drawer -->
+        <div id="themeDrawer" class="drawer hidden">
+            <div class="drawer-backdrop" onclick="closeThemes()"></div>
+            <div class="drawer-content">
+                <div class="drawer-header">
+                    <h2>Appearance & Themes</h2>
+                    <button class="close-btn" onclick="closeThemes()">&times;</button>
+                </div>
+                
+                <div class="section-label">DiceBox Themes</div>
+                <div class="picker-grid">
+                    <button class="swatch-btn" onclick="setTheme('default')">Default</button>
+                    <button class="swatch-btn" onclick="setTheme('smooth')">Smooth</button>
+                    <button class="swatch-btn" onclick="setTheme('metal')">Metal</button>
+                    <button class="swatch-btn" onclick="setTheme('wood')">Wood</button>
+                </div>
+
+                <div class="section-label" style="margin-top: 1rem;">Tray Color</div>
+                <div class="picker-grid">
+                    <button class="swatch-btn" onclick="setTray('#0d2818')">Green Felt</button>
+                    <button class="swatch-btn" onclick="setTray('#2c0b0e')">Red Velvet</button>
+                    <button class="swatch-btn" onclick="setTray('#1a1a1a')">Midnight</button>
+                    <button class="swatch-btn" onclick="setTray('#1f2937')">Slate</button>
+                </div>
             </div>
         </div>
     </div>
