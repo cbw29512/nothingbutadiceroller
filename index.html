@@ -42,11 +42,11 @@
         </div>
 
         <div>
-          <span class="section-label">D20 mode</span>
-          <div class="adv-btn-group" role="group" aria-label="D20 roll mode">
-            <button class="adv-btn active" data-adv="normal" type="button">Normal</button>
-            <button class="adv-btn" data-adv="advantage" type="button">Advantage</button>
-            <button class="adv-btn" data-adv="disadvantage" type="button">Disadvantage</button>
+          <span class="section-label">D20 quick rolls</span>
+          <p class="control-help">Press once to roll immediately. ADV/DIS reset after the roll.</p>
+          <div class="adv-btn-group quick-roll-group" aria-label="D20 quick rolls">
+            <button class="adv-btn" data-quick-roll="advantage" type="button">Roll ADV</button>
+            <button class="adv-btn" data-quick-roll="disadvantage" type="button">Roll DIS</button>
           </div>
         </div>
 
@@ -88,10 +88,9 @@
         <button class="mobile-die-btn featured" data-type="d20" type="button">d20</button>
         <button class="mobile-die-btn" data-type="d100" type="button">d100</button>
       </div>
-      <div class="mobile-mode-row" role="group" aria-label="Mobile d20 roll mode">
-        <button class="mobile-mode-btn active" data-adv="normal" type="button">NORM</button>
-        <button class="mobile-mode-btn" data-adv="advantage" type="button">ADV</button>
-        <button class="mobile-mode-btn" data-adv="disadvantage" type="button">DIS</button>
+      <div class="mobile-mode-row" aria-label="D20 quick rolls">
+        <button class="mobile-mode-btn" data-quick-roll="advantage" type="button" aria-label="Roll with advantage">ADV</button>
+        <button class="mobile-mode-btn" data-quick-roll="disadvantage" type="button" aria-label="Roll with disadvantage">DIS</button>
       </div>
       <div class="mobile-action-row">
         <button id="mobile-clear-btn" class="btn danger" type="button">Clear</button>
