@@ -59,8 +59,8 @@ function setupAdvantageToggle() {
             if (currentAdvantage !== 'normal') {
                 if (!selectedDice.includes('d20')) {
                     selectedDice.push('d20');
-                    if (d20Btn) d20Btn.classList.add('selected');
                 }
+                if (d20Btn) d20Btn.classList.add('selected');
             }
         });
     });
@@ -72,7 +72,6 @@ function setupActions() {
 }
 
 function executeRoll() {
-    // Safety check: ensure d20 is included if advantage/disadvantage is active
     if (currentAdvantage !== 'normal' && !selectedDice.includes('d20')) {
         selectedDice.push('d20');
     }
@@ -88,38 +87,65 @@ function executeRoll() {
     let totalSum = 0;
     let breakdownParts = [];
     let currentRollRecord = { timestamp: new Date().toLocaleTimeString(), rolls: [], total: 0 };
+    const skin = skinColors[currentSkin] || skinColors.ruby_red;
 
     selectedDice.forEach(die => {
         const sides = parseInt(die.substring(1));
-        let rollResult = 0;
-        let displayVal = '';
 
         if (die === 'd20' && currentAdvantage !== 'normal') {
             const roll1 = Math.floor(Math.random() * 20) + 1;
             const roll2 = Math.floor(Math.random() * 20) + 1;
+            
+            let keptRoll, droppedRoll;
             if (currentAdvantage === 'advantage') {
-                rollResult = Math.max(roll1, roll2);
-                displayVal = `${rollResult} (${roll1}, ${roll2} adv)`;
+                keptRoll = Math.max(roll1, roll2);
+                droppedRoll = Math.min(roll1, roll2);
             } else {
-                rollResult = Math.min(roll1, roll2);
-                displayVal = `${rollResult} (${roll1}, ${roll2} dis)`;
+                keptRoll = Math.min(roll1, roll2);
+                droppedRoll = Math.max(roll1, roll2);
             }
+
+            totalSum += keptRoll;
+            breakdownParts.push(`d20 (${currentAdvantage}): ${keptRoll} [${roll1}, ${roll2}]`);
+            currentRollRecord.rolls.push({ die: 'd20', result: keptRoll, display: `${keptRoll} (${roll1}, ${roll2} ${currentAdvantage === 'advantage' ? 'adv' : 'dis'})` });
+
+            // Render Die 1
+            const dieEl1 = document.createElement('div');
+            dieEl1.className = 'rolled-die';
+            dieEl1.style.backgroundColor = skin.bg;
+            dieEl1.style.color = skin.text;
+            if (roll1 !== keptRoll && roll1 === droppedRoll) {
+                dieEl1.style.opacity = '0.4';
+                dieEl1.style.border = '2px dashed currentColor';
+            }
+            dieEl1.innerHTML = `<span style="font-size:0.6rem;">D20 (${currentAdvantage.toUpperCase()[0]})</span><span style="font-size:1.1rem;">${roll1}</span>`;
+            tray.appendChild(dieEl1);
+
+            // Render Die 2
+            const dieEl2 = document.createElement('div');
+            dieEl2.className = 'rolled-die';
+            dieEl2.style.backgroundColor = skin.bg;
+            dieEl2.style.color = skin.text;
+            if (roll2 !== keptRoll && roll2 === droppedRoll) {
+                dieEl2.style.opacity = '0.4';
+                dieEl2.style.border = '2px dashed currentColor';
+            }
+            dieEl2.innerHTML = `<span style="font-size:0.6rem;">D20 (${currentAdvantage.toUpperCase()[0]})</span><span style="font-size:1.1rem;">${roll2}</span>`;
+            tray.appendChild(dieEl2);
+
         } else {
-            rollResult = Math.floor(Math.random() * sides) + 1;
-            displayVal = `${rollResult}`;
+            const rollResult = Math.floor(Math.random() * sides) + 1;
+            totalSum += rollResult;
+            breakdownParts.push(`${die}: ${rollResult}`);
+            currentRollRecord.rolls.push({ die, result: rollResult, display: `${rollResult}` });
+
+            const dieEl = document.createElement('div');
+            dieEl.className = 'rolled-die';
+            dieEl.style.backgroundColor = skin.bg;
+            dieEl.style.color = skin.text;
+            dieEl.innerHTML = `<span style="font-size:0.65rem;">${die.toUpperCase()}</span><span style="font-size:1.1rem;">${rollResult}</span>`;
+            tray.appendChild(dieEl);
         }
-
-        totalSum += rollResult;
-        breakdownParts.push(`${die}: ${displayVal}`);
-        currentRollRecord.rolls.push({ die, result: rollResult, display: displayVal });
-
-        const dieEl = document.createElement('div');
-        dieEl.className = 'rolled-die';
-        const skin = skinColors[currentSkin] || skinColors.ruby_red;
-        dieEl.style.backgroundColor = skin.bg;
-        dieEl.style.color = skin.text;
-        dieEl.innerHTML = `<span style="font-size:0.65rem;">${die.toUpperCase()}</span><span style="font-size:1.1rem;">${rollResult}</span>`;
-        tray.appendChild(dieEl);
     });
 
     currentRollRecord.total = totalSum;
@@ -138,7 +164,6 @@ function clearTray() {
     selectedDice = [];
     document.querySelectorAll('.die-btn').forEach(b => b.classList.remove('selected'));
     
-    // Reset advantage back to normal on clear
     document.querySelectorAll('.adv-btn').forEach(b => b.classList.remove('active'));
     document.querySelector('.adv-btn[data-adv="normal"]').classList.add('active');
     currentAdvantage = 'normal';
