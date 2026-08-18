@@ -161,6 +161,7 @@ body {
   border: 6px solid #111;
   transition: all 0.3s ease;
   position: relative;
+  overflow: hidden;
 }
 
 .tray-placeholder {
@@ -185,7 +186,7 @@ body {
 .breakdown-text { font-size: 0.85rem; color: #d1d5db; font-weight: normal; margin-top: 2px; }
 .total-number { font-size: 2.2rem; font-weight: 800; color: #10b981; }
 
-/* Rendered Dice Shapes & Styles */
+/* Rendered Dice Shapes & Physics Animations */
 .rendered-die {
   width: 62px;
   height: 62px;
@@ -199,6 +200,7 @@ body {
   filter: drop-shadow(0px 4px 6px rgba(0, 0, 0, 0.6));
   transition: transform 0.15s ease;
   cursor: pointer;
+  will-change: transform;
 }
 
 .rendered-die .die-label { font-size: 0.65rem; opacity: 0.9; margin-top: 2px; }
@@ -210,13 +212,30 @@ body {
   transform: scale(0.85);
 }
 
-.rendered-die.rolling { animation: diceTumble 0.5s ease-out; }
+/* Dynamic TTRPG Physics Motion Keyframes */
+.rendered-die.rolling {
+  animation: dicePhysics 0.65s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
 
-@keyframes diceTumble {
-  0% { transform: scale(0.4) rotate(0deg) translateY(-30px); }
-  50% { transform: scale(1.15) rotate(180deg) translateY(8px); }
-  75% { transform: scale(0.9) rotate(270deg) translateY(-4px); }
-  100% { transform: scale(1) rotate(360deg) translateY(0); }
+@keyframes dicePhysics {
+  0% {
+    transform: translate(var(--start-x, -40px), var(--start-y, -60px)) rotate(0deg) scale(0.3);
+    opacity: 0.2;
+  }
+  30% {
+    transform: translate(var(--mid-x, 20px), var(--mid-y, -20px)) rotate(var(--spin-mid, 240deg)) scale(1.25);
+    opacity: 1;
+  }
+  65% {
+    transform: translate(var(--bounce-x, -10px), var(--bounce-y, 10px)) rotate(var(--spin-bounce, 480deg)) scale(0.9);
+  }
+  85% {
+    transform: translate(var(--settle-x, 4px), var(--settle-y, -4px)) rotate(var(--spin-settle, 680deg)) scale(1.05);
+  }
+  100% {
+    transform: translate(0, 0) rotate(var(--spin-final, 720deg)) scale(1);
+    opacity: 1;
+  }
 }
 
 .rendered-die.shape-d4 { clip-path: polygon(50% 0%, 100% 100%, 0% 100%); }

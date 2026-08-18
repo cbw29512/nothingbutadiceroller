@@ -218,6 +218,29 @@ function updateTrayPreview(isRolling = false) {
     dieDiv.setAttribute('tabindex', '0');
     dieDiv.setAttribute('aria-label', `Remove ${die.type.toUpperCase()} from tray`);
 
+    // Inject randomized CSS Variables for motion trajectory on roll
+    if (isRolling) {
+      const startX = (Math.random() * 160 - 80) + 'px';
+      const startY = (Math.random() * -120 - 40) + 'px';
+      const midX = (Math.random() * 80 - 40) + 'px';
+      const midY = (Math.random() * 40 - 20) + 'px';
+      const bounceX = (Math.random() * 30 - 15) + 'px';
+      const bounceY = (Math.random() * 30 - 15) + 'px';
+      const spinMid = (Math.random() > 0.5 ? 360 : -360) + 'deg';
+      const spinBounce = (Math.random() > 0.5 ? 720 : -720) + 'deg';
+      const spinFinal = (Math.random() * 40 - 20) + 'deg';
+
+      dieDiv.style.setProperty('--start-x', startX);
+      dieDiv.style.setProperty('--start-y', startY);
+      dieDiv.style.setProperty('--mid-x', midX);
+      dieDiv.style.setProperty('--mid-y', midY);
+      dieDiv.style.setProperty('--bounce-x', bounceX);
+      dieDiv.style.setProperty('--bounce-y', bounceY);
+      dieDiv.style.setProperty('--spin-mid', spinMid);
+      dieDiv.style.setProperty('--spin-bounce', spinBounce);
+      dieDiv.style.setProperty('--spin-final', spinFinal);
+    }
+
     if (!die.rolled) dieDiv.style.opacity = '0.7';
 
     const displayVal = die.rolled ? die.value : '?';
