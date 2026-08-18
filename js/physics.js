@@ -30,6 +30,15 @@ async function loadDiceBoxModule() {
   throw new Error(`Unable to load DiceBox ${DICEBOX_VERSION}. ${failures.join(' | ')}`);
 }
 
+function getDiceScale() {
+  try {
+    return window.matchMedia?.('(max-width: 700px)').matches ? 8 : 6;
+  } catch (err) {
+    console.warn('Unable to detect viewport for dice scale:', err);
+    return 6;
+  }
+}
+
 export async function initDicePhysics(themeColor = '#b91c1c') {
   try {
     const DiceBox = await loadDiceBoxModule();
@@ -48,7 +57,7 @@ export async function initDicePhysics(themeColor = '#b91c1c') {
       startingHeight: 8,
       spinForce: 5,
       throwForce: 5,
-      scale: 5,
+      scale: getDiceScale(),
     });
 
     await diceBox.init();
@@ -72,7 +81,10 @@ export async function rollPhysics(notation, themeColor) {
   }
 
   try {
-    await Promise.resolve(diceBox.updateConfig({ themeColor }));
+    await Promise.resolve(diceBox.updateConfig({
+      themeColor,
+      scale: getDiceScale(),
+    }));
     return await diceBox.roll(notation);
   } catch (err) {
     console.error('DiceBox roll failed:', err);
