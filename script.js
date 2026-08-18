@@ -15,12 +15,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function initDicePhysics() {
     try {
-        // Dynamically import DiceBox from unpkg as an ES module with explicit fallback
-        const DiceBoxLib = window.DiceBox || (await import('https://unpkg.com/@3d-dice/dice-box@1.1.5/dist/dice-box.es.min.js')).default;
+        // Load DiceBox using jsDelivr's reliable ESM CDN endpoint
+        const DiceBoxLib = window.DiceBox || (await import('https://cdn.jsdelivr.net/npm/@3d-dice/dice-box@1.1.5/+esm')).default;
 
         diceBox = new DiceBoxLib({
             element: '#diceTray',
-            origin: 'https://unpkg.com/@3d-dice/dice-box@1.1.5/dist/',
+            origin: 'https://cdn.jsdelivr.net/npm/@3d-dice/dice-box@1.1.5/dist/',
             assetPath: 'assets/',
             theme: currentTheme,
             loader: 'generic',
