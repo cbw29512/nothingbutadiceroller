@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#090c12">
   <title>Nothing But A Dice Roller</title>
   <link rel="stylesheet" href="/styles.css">
@@ -77,6 +77,22 @@
         </div>
       </section>
     </main>
+
+    <nav class="mobile-play-dock" aria-label="Mobile dice controls">
+      <div class="mobile-dice-row">
+        <button class="mobile-die-btn" data-type="d4" type="button">d4</button>
+        <button class="mobile-die-btn" data-type="d6" type="button">d6</button>
+        <button class="mobile-die-btn" data-type="d8" type="button">d8</button>
+        <button class="mobile-die-btn" data-type="d10" type="button">d10</button>
+        <button class="mobile-die-btn" data-type="d12" type="button">d12</button>
+        <button class="mobile-die-btn featured" data-type="d20" type="button">d20</button>
+        <button class="mobile-die-btn" data-type="d100" type="button">d100</button>
+      </div>
+      <div class="mobile-action-row">
+        <button id="mobile-clear-btn" class="btn danger" type="button">Clear</button>
+        <button id="mobile-roll-btn" class="btn primary mobile-roll" type="button">ROLL DICE</button>
+      </div>
+    </nav>
 
     <aside id="history-drawer" class="drawer hidden" aria-hidden="true">
       <button class="drawer-backdrop" type="button" aria-label="Close history"></button>
