@@ -17,7 +17,8 @@ async function initDicePhysics() {
     try {
         diceBox = new DiceBox({
             element: '#diceTray',
-            assetPath: 'https://unpkg.com/@3d-dice/dice-box@1.1.5/dist/assets/',
+            origin: 'https://unpkg.com/@3d-dice/dice-box@1.1.5/dist/',
+            assetPath: 'assets/',
             theme: currentTheme,
             loader: 'generic',
             gravity: 1,
