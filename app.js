@@ -18,7 +18,11 @@ const TRAY_THEMES = [
   { id: 'tray-dungeon_stone', name: 'Dungeon Stone' },
   { id: 'tray-mystic_obsidian', name: 'Mystic Obsidian' },
   { id: 'tray-neon_cyberpunk', name: 'Neon Cyberpunk' },
-  { id: 'tray-synthwave', name: 'Synthwave Grid' }
+  { id: 'tray-synthwave', name: 'Synthwave Grid' },
+  { id: 'tray-arcane_sanctum', name: 'Arcane Sanctum' },
+  { id: 'tray-celestial_void', name: 'Celestial Void' },
+  { id: 'tray-lava_pit', name: 'Lava Pit' },
+  { id: 'tray-royal_gold', name: 'Royal Gold' }
 ];
 
 const DIE_SKINS = [
@@ -29,7 +33,11 @@ const DIE_SKINS = [
   { id: 'skin-marble_white', name: 'Marble White' },
   { id: 'skin-obsidian_crackle', name: 'Obsidian' },
   { id: 'skin-gold_leaf', name: 'Gold Leaf' },
-  { id: 'skin-neon_cyan', name: 'Neon Cyan' }
+  { id: 'skin-neon_cyan', name: 'Neon Cyan' },
+  { id: 'skin-cosmic_nebula', name: 'Cosmic Nebula' },
+  { id: 'skin-dragon_scale', name: 'Dragon Scale' },
+  { id: 'skin-frostbite', name: 'Frostbite' },
+  { id: 'skin-blood_moon', name: 'Blood Moon' }
 ];
 
 function playDiceSound() {
@@ -218,7 +226,6 @@ function updateTrayPreview(isRolling = false) {
     dieDiv.setAttribute('tabindex', '0');
     dieDiv.setAttribute('aria-label', `Remove ${die.type.toUpperCase()} from tray`);
 
-    // Inject randomized CSS Variables for motion trajectory on roll
     if (isRolling) {
       const startX = (Math.random() * 160 - 80) + 'px';
       const startY = (Math.random() * -120 - 40) + 'px';

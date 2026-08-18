@@ -76,7 +76,7 @@ body {
 .btn.danger { background: #dc2626; color: #fff; flex: 1; }
 .btn.full-width { width: 100%; margin-top: 1rem; }
 
-/* Top Control Panel Layout */
+/* Control Panel */
 .controls-panel {
   background: #1e1e1e;
   padding: 0.85rem;
@@ -143,12 +143,12 @@ body {
 
 .action-buttons { display: flex; gap: 0.75rem; margin-top: 0.25rem; }
 
-/* Tray Area */
+/* Tray Container */
 .tray-container { flex: 1; display: flex; flex-direction: column; gap: 0.75rem; }
 
 .dice-tray {
   flex: 1;
-  min-height: 200px;
+  min-height: 220px;
   border-radius: 14px;
   padding: 1rem;
   display: flex;
@@ -159,7 +159,7 @@ body {
   gap: 1rem;
   box-shadow: inset 0 0 20px rgba(0,0,0,0.85);
   border: 6px solid #111;
-  transition: all 0.3s ease;
+  transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
   position: relative;
   overflow: hidden;
 }
@@ -186,7 +186,7 @@ body {
 .breakdown-text { font-size: 0.85rem; color: #d1d5db; font-weight: normal; margin-top: 2px; }
 .total-number { font-size: 2.2rem; font-weight: 800; color: #10b981; }
 
-/* Rendered Dice Shapes & Physics Animations */
+/* Rendered Dice Styles */
 .rendered-die {
   width: 62px;
   height: 62px;
@@ -198,7 +198,7 @@ body {
   position: relative;
   user-select: none;
   filter: drop-shadow(0px 4px 6px rgba(0, 0, 0, 0.6));
-  transition: transform 0.15s ease;
+  transition: transform 0.15s ease, background 0.3s ease, color 0.3s ease;
   cursor: pointer;
   will-change: transform;
 }
@@ -212,7 +212,7 @@ body {
   transform: scale(0.85);
 }
 
-/* Dynamic TTRPG Physics Motion Keyframes */
+/* Physics Animation Keyframe */
 .rendered-die.rolling {
   animation: dicePhysics 0.65s cubic-bezier(0.25, 1, 0.5, 1) forwards;
 }
@@ -238,6 +238,7 @@ body {
   }
 }
 
+/* Die Shapes */
 .rendered-die.shape-d4 { clip-path: polygon(50% 0%, 100% 100%, 0% 100%); }
 .rendered-die.shape-d4 .die-value { margin-top: 10px; }
 .rendered-die.shape-d6 { border-radius: 8px; }
@@ -247,44 +248,40 @@ body {
 .rendered-die.shape-d20 { clip-path: polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%); }
 .rendered-die.shape-d100 { clip-path: polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%); }
 
-/* Skins */
-body.skin-ruby_red .rendered-die { background: linear-gradient(145deg, #e63946, #9b111e); color: #fff; }
-body.skin-sapphire_blue .rendered-die { background: linear-gradient(145deg, #0284c7, #03045e); color: #fff; }
-body.skin-emerald_green .rendered-die { background: linear-gradient(145deg, #10b981, #064e3b); color: #fff; }
-body.skin-amethyst_purple .rendered-die { background: linear-gradient(145deg, #a855f7, #4c1d95); color: #fff; }
+/* === DICE SKINS (Expanded) === */
+body.skin-ruby_red .rendered-die { background: linear-gradient(145deg, #e63946, #9b111e); color: #ffffff; }
+body.skin-sapphire_blue .rendered-die { background: linear-gradient(145deg, #0284c7, #03045e); color: #ffffff; }
+body.skin-emerald_green .rendered-die { background: linear-gradient(145deg, #10b981, #064e3b); color: #ffffff; }
+body.skin-amethyst_purple .rendered-die { background: linear-gradient(145deg, #a855f7, #4c1d95); color: #ffffff; }
 body.skin-marble_white .rendered-die { background: linear-gradient(145deg, #ffffff, #d1d5db); color: #111827; }
 body.skin-obsidian_crackle .rendered-die { background: linear-gradient(145deg, #27272a, #09090b); color: #ef4444; border: 1px solid #ef4444; }
 body.skin-gold_leaf .rendered-die { background: linear-gradient(145deg, #fef08a, #eab308); color: #1c1917; }
-body.skin-neon_cyan .rendered-die { background: #06b6d4; color: #000; box-shadow: 0 0 10px #06b6d4; }
+body.skin-neon_cyan .rendered-die { background: #06b6d4; color: #000000; box-shadow: 0 0 12px #06b6d4; }
+/* New Skins */
+body.skin-cosmic_nebula .rendered-die { background: radial-gradient(circle at 30% 30%, #ff007f, #3a0ca3, #03071e); color: #70e000; text-shadow: 0 0 4px #70e000; }
+body.skin-dragon_scale .rendered-die { background: linear-gradient(135deg, #d97706 0%, #78350f 50%, #292524 100%); color: #fef08a; }
+body.skin-frostbite .rendered-die { background: linear-gradient(180deg, #e0f2fe, #38bdf8, #0284c7); color: #0f172a; }
+body.skin-blood_moon .rendered-die { background: radial-gradient(circle, #991b1b 0%, #450a0a 70%, #000000 100%); color: #fca5a5; }
 
-/* Trays */
+/* === TRAY THEMES (Expanded) === */
 body.tray-green_felt .dice-tray { background: radial-gradient(circle, #2d6a4f 0%, #081c15 100%); border-color: #1b4332; }
 body.tray-red_velvet .dice-tray { background: radial-gradient(circle, #9d0208 0%, #370000 100%); border-color: #5c0002; }
 body.tray-midnight_leather .dice-tray { background: radial-gradient(circle, #2b2d42 0%, #11121a 100%); border-color: #1a1c29; }
 body.tray-dark_mahogany .dice-tray { background: repeating-linear-gradient(45deg, #3d1e06, #3d1e06 10px, #2b1403 10px, #2b1403 20px); border-color: #1f0c02; }
 body.tray-dungeon_stone .dice-tray { background: radial-gradient(circle, #4a4e69 0%, #161a1d 100%); border-color: #2b2d42; }
 body.tray-mystic_obsidian .dice-tray { background: radial-gradient(circle, #3c096c 0%, #0d001a 100%); border-color: #240046; }
-body.tray-neon_cyberpunk .dice-tray { background: linear-gradient(135deg, #0d0221 0%, #002b36 100%); border-color: #00f0ff; box-shadow: 0 0 15px #00f0ff; }
-body.tray-synthwave .dice-tray { background: linear-gradient(180deg, #18002e 0%, #4c1d95 100%); border-color: #ff007f; box-shadow: 0 0 15px #ff007f; }
+body.tray-neon_cyberpunk .dice-tray { background: linear-gradient(135deg, #0d0221 0%, #002b36 100%); border-color: #00f0ff; box-shadow: inset 0 0 20px rgba(0, 240, 255, 0.2), 0 0 15px #00f0ff; }
+body.tray-synthwave .dice-tray { background: linear-gradient(180deg, #18002e 0%, #4c1d95 100%); border-color: #ff007f; box-shadow: inset 0 0 20px rgba(255, 0, 127, 0.2), 0 0 15px #ff007f; }
+/* New Trays */
+body.tray-arcane_sanctum .dice-tray { background: radial-gradient(circle at center, #311042 0%, #12041d 80%, #05000a 100%); border-color: #a855f7; box-shadow: inset 0 0 25px rgba(168, 85, 247, 0.3); }
+body.tray-celestial_void .dice-tray { background: radial-gradient(ellipse at bottom, #1e1b4b 0%, #0f172a 60%, #020617 100%); border-color: #38bdf8; box-shadow: inset 0 0 20px rgba(56, 189, 248, 0.25); }
+body.tray-lava_pit .dice-tray { background: radial-gradient(circle, #7f1d1d 0%, #450a0a 60%, #180202 100%); border-color: #f97316; box-shadow: inset 0 0 25px rgba(249, 115, 22, 0.4); }
+body.tray-royal_gold .dice-tray { background: radial-gradient(circle, #451a03 0%, #1c1917 80%, #0c0a09 100%); border-color: #eab308; box-shadow: inset 0 0 20px rgba(234, 179, 8, 0.3); }
 
-/* Footer & Support Button */
-.app-footer {
-  background: #18181b;
-  border-top: 1px solid #27272a;
-  padding: 1.5rem 1rem;
-  margin-top: 2rem;
-}
-
-.footer-content {
-  max-width: 800px;
-  margin: 0 auto;
-}
-
-.support-section {
-  text-align: center;
-  font-size: 0.85rem;
-  color: #d1d5db;
-}
+/* Footer & Drawers */
+.app-footer { background: #18181b; border-top: 1px solid #27272a; padding: 1.5rem 1rem; margin-top: 2rem; }
+.footer-content { max-width: 800px; margin: 0 auto; }
+.support-section { text-align: center; font-size: 0.85rem; color: #d1d5db; }
 
 .coffee-btn {
   display: inline-flex;
@@ -299,10 +296,8 @@ body.tray-synthwave .dice-tray { background: linear-gradient(180deg, #18002e 0%,
   text-decoration: none;
   transition: transform 0.1s ease;
 }
-
 .coffee-btn:active { transform: scale(0.95); }
 
-/* Drawers & Bottom Sheets */
 .drawer { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 100; display: flex; justify-content: flex-end; }
 .drawer.hidden { display: none; }
 .drawer-backdrop { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); }
