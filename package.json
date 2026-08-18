@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "@netlify/blobs": "^11.0.1",
+    "obscenity": "^0.4.6"
+  }
+}
