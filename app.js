@@ -94,28 +94,32 @@ function initStylePicker() {
 
   if (!trayGrid || !skinGrid) return;
 
-  trayGrid.innerHTML = TRAY_THEMES.map(theme => 
-    '<button class="swatch-btn ' + (state.trayTheme === theme.id ? 'active' : '') + '" data-theme="' + theme.id + '">' + theme.name + '</button>'
-  ).join('');
-
-  skinGrid.innerHTML = DIE_SKINS.map(skin => 
-    '<button class="swatch-btn ' + (state.dieSkin === skin.id ? 'active' : '') + '" data-skin="' + skin.id + '">' + skin.name + '</button>'
-  ).join('');
-
-  trayGrid.querySelectorAll('.swatch-btn').forEach(btn => {
+  trayGrid.replaceChildren();
+  TRAY_THEMES.forEach(theme => {
+    const btn = document.createElement('button');
+    btn.className = 'swatch-btn ' + (state.trayTheme === theme.id ? 'active' : '');
+    btn.dataset.theme = theme.id;
+    btn.textContent = theme.name;
     btn.onclick = (e) => {
       state.trayTheme = e.target.dataset.theme;
       savePreferences();
       initStylePicker();
     };
+    trayGrid.appendChild(btn);
   });
 
-  skinGrid.querySelectorAll('.swatch-btn').forEach(btn => {
+  skinGrid.replaceChildren();
+  DIE_SKINS.forEach(skin => {
+    const btn = document.createElement('button');
+    btn.className = 'swatch-btn ' + (state.dieSkin === skin.id ? 'active' : '');
+    btn.dataset.skin = skin.id;
+    btn.textContent = skin.name;
     btn.onclick = (e) => {
       state.dieSkin = e.target.dataset.skin;
       savePreferences();
       initStylePicker();
     };
+    skinGrid.appendChild(btn);
   });
 }
 
@@ -123,19 +127,43 @@ function renderHistory() {
   const historyList = document.getElementById('history-list');
   if (!historyList) return;
 
+  historyList.replaceChildren();
+
   if (state.history.length === 0) {
-    historyList.innerHTML = '<p style="color:#aaa; text-align:center; padding: 1rem 0;">No rolls logged yet.</p>';
+    const emptyMsg = document.createElement('p');
+    emptyMsg.style.cssText = 'color:#d1d5db; text-align:center; padding: 1rem 0;';
+    emptyMsg.textContent = 'No rolls logged yet.';
+    historyList.appendChild(emptyMsg);
     return;
   }
 
-  historyList.innerHTML = state.history.map(item => 
-    '<div class="history-item">' +
-      '<div class="history-time">' + item.timestamp + '</div>' +
-      '<div class="history-formula">' + item.formula + '</div>' +
-      '<div class="history-breakdown">' + item.breakdown + '</div>' +
-      '<div class="history-total">' + item.total + '</div>' +
-    '</div>'
-  ).join('');
+  state.history.forEach(item => {
+    const itemDiv = document.createElement('div');
+    itemDiv.className = 'history-item';
+
+    const timeDiv = document.createElement('div');
+    timeDiv.className = 'history-time';
+    timeDiv.textContent = item.timestamp;
+
+    const formulaDiv = document.createElement('div');
+    formulaDiv.className = 'history-formula';
+    formulaDiv.textContent = item.formula;
+
+    const breakdownDiv = document.createElement('div');
+    breakdownDiv.className = 'history-breakdown';
+    breakdownDiv.textContent = item.breakdown;
+
+    const totalDiv = document.createElement('div');
+    totalDiv.className = 'history-total';
+    totalDiv.textContent = item.total;
+
+    itemDiv.appendChild(timeDiv);
+    itemDiv.appendChild(formulaDiv);
+    itemDiv.appendChild(breakdownDiv);
+    itemDiv.appendChild(totalDiv);
+
+    historyList.appendChild(itemDiv);
+  });
 }
 
 function calculateTotal() {
@@ -171,26 +199,54 @@ function updateTrayPreview(isRolling = false) {
   if (!diceTray) return;
 
   if (state.selectedDice.length === 0) {
-    diceTray.innerHTML = '<div class="tray-placeholder">Tap dice above to build your roll!</div>';
+    diceTray.replaceChildren();
+    const placeholder = document.createElement('div');
+    placeholder.className = 'tray-placeholder';
+    placeholder.textContent = 'Tap dice above to build your roll!';
+    diceTray.appendChild(placeholder);
     calculateTotal();
     return;
   }
 
-  diceTray.innerHTML = '';
+  diceTray.replaceChildren();
   state.selectedDice.forEach((die, index) => {
     const dieDiv = document.createElement('div');
     const shapeClass = 'shape-' + die.type.toLowerCase();
-    
+
     dieDiv.className = 'rendered-die ' + shapeClass + ' ' + (die.isDropped ? 'dropped' : '') + (isRolling ? ' rolling' : '');
+    dieDiv.setAttribute('role', 'button');
+    dieDiv.setAttribute('tabindex', '0');
+    dieDiv.setAttribute('aria-label', `Remove ${die.type.toUpperCase()} from tray`);
+
     if (!die.rolled) dieDiv.style.opacity = '0.7';
 
     const displayVal = die.rolled ? die.value : '?';
-    dieDiv.innerHTML = '<span class="die-label">' + die.type.toUpperCase() + '</span><span class="die-value">' + displayVal + '</span>';
+
+    const labelSpan = document.createElement('span');
+    labelSpan.className = 'die-label';
+    labelSpan.textContent = die.type.toUpperCase();
+
+    const valSpan = document.createElement('span');
+    valSpan.className = 'die-value';
+    valSpan.textContent = displayVal;
+
+    dieDiv.appendChild(labelSpan);
+    dieDiv.appendChild(valSpan);
     dieDiv.title = 'Tap to remove';
-    dieDiv.onclick = () => {
+
+    const removeDie = () => {
       state.selectedDice.splice(index, 1);
       updateTrayPreview();
     };
+
+    dieDiv.onclick = removeDie;
+    dieDiv.onkeydown = (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        removeDie();
+      }
+    };
+
     diceTray.appendChild(dieDiv);
   });
 
@@ -199,8 +255,7 @@ function updateTrayPreview(isRolling = false) {
 
 function performRoll() {
   const diceTray = document.getElementById('dice-tray');
-  
-  // If tray is empty in Adv/Disadv mode, auto-add a single base d20
+
   if (state.selectedDice.length === 0 && state.d20Mode !== 'normal') {
     state.selectedDice.push({ type: 'd20', value: 0, rolled: false, isDropped: false });
   }
@@ -209,16 +264,13 @@ function performRoll() {
 
   playDiceSound();
 
-  // Remove old dropped dice from previous rolls
   let baseDice = state.selectedDice.filter(d => !d.isDropped);
-
   let newDiceList = [];
   const isAdvantageMode = state.d20Mode !== 'normal';
 
   baseDice.forEach((die) => {
     const sides = getDieSides(die.type);
 
-    // Apply Advantage/Disadvantage exclusively to d20 dice
     if (die.type === 'd20' && isAdvantageMode) {
       const val1 = rollDie(20);
       const val2 = rollDie(20);
@@ -237,7 +289,6 @@ function performRoll() {
       return;
     }
 
-    // Standard roll for non-d20s or normal d20 mode
     const val = rollDie(sides);
     newDiceList.push({ type: die.type, value: val, rolled: true, isDropped: false });
   });

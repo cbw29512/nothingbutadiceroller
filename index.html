@@ -2,60 +2,114 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Nothing But A TTRPG Dice Roller</title>
-  <meta name="description" content="A clean, fast, and bloat-free tabletop RPG dice roller for D&D, Pathfinder, and TTRPG sessions.">
+  <meta name="description" content="A fast, clean, custom-themed TTRPG dice roller for D&D, Pathfinder, and tabletop RPG games. Features roll history, sound, and custom tray skins.">
+  <meta name="theme-color" content="#121212">
+
+  <!-- Open Graph / Social Media -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Nothing But A TTRPG Dice Roller">
+  <meta property="og:description" content="Fast, clean dice rolls with custom skins and sound for tabletop sessions.">
+  <meta property="og:url" content="https://nothingbutadiceroller.netlify.app">
+
+  <!-- Stylesheet -->
   <link rel="stylesheet" href="styles.css">
 </head>
-<body>
-  <div class="container">
-    <header>
-      <h1>Nothing But A TTRPG Dice Roller</h1>
-      <p class="subtitle">Fast, clean dice rolls for your tabletop sessions.</p>
-    </header>
+<body class="tray-green_felt skin-ruby_red">
+  <header class="app-header">
+    <div class="logo">
+      <h1>🎲 Nothing But A TTRPG Dice Roller</h1>
+    </div>
+    <div class="header-controls">
+      <button id="sound-toggle-btn" class="btn secondary" aria-label="Toggle Roll Sound">🔊 ON</button>
+      <button id="open-styles-btn" class="btn secondary" aria-label="Open Tray Customization">🎨 Themes</button>
+      <button id="open-history-btn" class="btn secondary" aria-label="Open Roll History">📜 History</button>
+    </div>
+  </header>
 
-    <main>
-      <section class="dice-grid" aria-label="Dice Selection">
-        <button class="dice-btn" data-dice="4">d4</button>
-        <button class="dice-btn" data-dice="6">d6</button>
-        <button class="dice-btn" data-dice="8">d8</button>
-        <button class="dice-btn" data-dice="10">d10</button>
-        <button class="dice-btn" data-dice="12">d12</button>
-        <button class="dice-btn" data-dice="20">d20</button>
-        <button class="dice-btn" data-dice="100">d100</button>
-      </section>
+  <main class="app-container">
+    <section class="controls-panel" aria-label="Dice Selection and Modifiers">
+      <div class="section-label">Select Dice</div>
+      <div class="dice-selector">
+        <button class="die-btn" data-type="d4" aria-label="Add 4-sided die">d4</button>
+        <button class="die-btn" data-type="d6" aria-label="Add 6-sided die">d6</button>
+        <button class="die-btn" data-type="d8" aria-label="Add 8-sided die">d8</button>
+        <button class="die-btn" data-type="d10" aria-label="Add 10-sided die">d10</button>
+        <button class="die-btn" data-type="d12" aria-label="Add 12-sided die">d12</button>
+        <button class="die-btn" data-type="d20" aria-label="Add 20-sided die">d20</button>
+        <button class="die-btn" data-type="d100" aria-label="Add 100-sided die">d100</button>
+      </div>
 
-      <section class="modifier-section">
-        <label for="modifier">Modifier:</label>
-        <input type="number" id="modifier" value="0" step="1">
-        <label for="quantity">Quantity:</label>
-        <input type="number" id="quantity" value="1" min="1" max="100" step="1">
-      </section>
+      <div class="advantage-toggle">
+        <div class="section-label">d20 Mode</div>
+        <div class="adv-btn-group">
+          <button class="adv-btn active" data-adv="normal">Normal</button>
+          <button class="adv-btn" data-adv="advantage">Advantage</button>
+          <button class="adv-btn" data-adv="disadvantage">Disadvantage</button>
+          <button id="keep-btn" class="adv-btn">Keep Pool</button>
+        </div>
+      </div>
 
-      <section class="display-section" aria-live="polite">
-        <div id="roll-result" class="result-display">Ready to roll</div>
-        <div id="roll-breakdown" class="breakdown-display"></div>
-      </section>
+      <div class="action-buttons">
+        <button id="roll-btn" class="btn primary">ROLL DICE</button>
+        <button id="clear-btn" class="btn danger">Clear</button>
+      </div>
+    </section>
 
-      <section class="controls">
-        <button id="clear-btn" class="secondary-btn">Clear History</button>
-      </section>
+    <section class="tray-container" aria-label="Dice Tray Results">
+      <div id="dice-tray" class="dice-tray" aria-live="polite">
+        <div class="tray-placeholder">Tap dice above to build your roll!</div>
+      </div>
 
-      <section class="history-section">
+      <div class="results-bar">
+        <div class="results-label">
+          <span>Total</span>
+          <span id="breakdown-text" class="breakdown-text"></span>
+        </div>
+        <div id="total-result" class="total-number">0</div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Customization Drawer -->
+  <div id="styles-drawer" class="drawer hidden" role="dialog" aria-modal="true" aria-label="Style Customization">
+    <div class="drawer-backdrop"></div>
+    <div class="drawer-content">
+      <div class="drawer-header">
+        <h2>Customization</h2>
+        <button id="close-styles-btn" class="close-btn" aria-label="Close Customization">&times;</button>
+      </div>
+      <div class="section-label">Tray Mats</div>
+      <div id="tray-themes-grid" class="picker-grid"></div>
+      <div class="section-label">Die Skins</div>
+      <div id="die-skins-grid" class="picker-grid"></div>
+    </div>
+  </div>
+
+  <!-- History Drawer -->
+  <div id="history-drawer" class="drawer hidden" role="dialog" aria-modal="true" aria-label="Roll History">
+    <div class="drawer-backdrop"></div>
+    <div class="drawer-content">
+      <div class="drawer-header">
         <h2>Roll History</h2>
-        <ul id="history-list" class="history-list"></ul>
-      </section>
-    </main>
+        <button id="close-history-btn" class="close-btn" aria-label="Close History">&times;</button>
+      </div>
+      <div id="history-list" class="history-list"></div>
+      <button id="clear-history-btn" class="btn secondary full-width">Clear History Logs</button>
+    </div>
+  </div>
 
-    <footer>
+  <footer class="app-footer">
+    <div class="footer-content">
       <div class="support-section">
         <p>No ads, no bloat—just a clean dice roller for your tabletop games.</p>
         <a href="https://ko-fi.com/divclass01" target="_blank" rel="noopener noreferrer" class="coffee-btn">
           ☕ Support My Apps on Ko-fi
         </a>
       </div>
-    </footer>
-  </div>
+    </div>
+  </footer>
 
   <script src="app.js"></script>
 </body>
