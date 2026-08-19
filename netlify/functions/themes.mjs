@@ -2,6 +2,7 @@ import { getStore } from '@netlify/blobs';
 import { getUser } from '@netlify/identity';
 
 const STORE_NAME = 'dice-trays-store';
+const COMMUNITY_INDEX = 'community/themes/index.json';
 
 function json(body, status = 200) {
   return Response.json(body, {
@@ -23,19 +24,38 @@ async function readIndex(store, userId) {
   return Array.isArray(index) ? index : [];
 }
 
+async function readCommunity(store) {
+  const index = await store.get(COMMUNITY_INDEX, { type: 'json' });
+  return Array.isArray(index) ? index : [];
+}
+
 export default async (request) => {
   try {
-    const user = await getUser();
-    if (!user) return json({ error: 'Authentication required.' }, 401);
-
     const store = getStore(STORE_NAME);
     const url = new URL(request.url);
+    const scope = url.searchParams.get('scope') || 'mine';
+    const user = await getUser();
+
+    if (request.method === 'GET' && scope === 'community') {
+      const index = await readCommunity(store);
+      const themes = (await Promise.all(
+        index.map((item) => store.get(themeKey(item.ownerId, item.themeId), { type: 'json' }))
+      )).filter((theme) => theme?.isPublic);
+      return json({ themes });
+    }
+
+    if (!user) return json({ error: 'Authentication required.' }, 401);
 
     if (request.method === 'GET') {
       const requestedId = url.searchParams.get('id');
+      const ownerId = url.searchParams.get('owner') || user.id;
+
       if (requestedId) {
-        const theme = await store.get(themeKey(user.id, requestedId), { type: 'json' });
+        const theme = await store.get(themeKey(ownerId, requestedId), { type: 'json' });
         if (!theme) return json({ error: 'Theme not found.' }, 404);
+        if (ownerId !== user.id && !theme.isPublic) {
+          return json({ error: 'Theme is private.' }, 403);
+        }
         return json({ theme });
       }
 
@@ -57,6 +77,14 @@ export default async (request) => {
       const index = await readIndex(store, user.id);
       const next = index.filter((item) => item.themeId !== themeId);
       await store.setJSON(indexKey(user.id), next);
+
+      if (existing.isPublic) {
+        const community = await readCommunity(store);
+        await store.setJSON(
+          COMMUNITY_INDEX,
+          community.filter((item) => !(item.ownerId === user.id && item.themeId === themeId))
+        );
+      }
 
       return json({ success: true });
     }
