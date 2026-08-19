@@ -34,6 +34,23 @@ function sanitizeDice(selectedDice) {
     .map((die) => ({ type: die.type }));
 }
 
+function sanitizeAppearance(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const hex = (value, fallback) => /^#[0-9a-f]{6}$/i.test(String(value || '')) ? String(value) : fallback;
+  return {
+    themeId: String(raw.themeId || '').slice(0, 120),
+    ownerId: String(raw.ownerId || '').slice(0, 120),
+    name: String(raw.name || 'Custom Theme').slice(0, 80),
+    trayName: String(raw.trayName || 'Custom Tray').slice(0, 80),
+    trayColor: hex(raw.trayColor, '#0f172a'),
+    diceColor: hex(raw.diceColor, '#b91c1c'),
+    imageUrl: String(raw.imageUrl || '').startsWith('/.netlify/blobs/') ? String(raw.imageUrl) : null,
+    enableGlow: Boolean(raw.enableGlow),
+    glowColor: hex(raw.glowColor, '#00ff66'),
+    isPublic: Boolean(raw.isPublic),
+  };
+}
+
 function normalizeIncoming(body) {
   const name = String(body?.name || '').trim().slice(0, 60);
   if (!name) throw new Error('Configuration name is required.');
@@ -43,6 +60,7 @@ function normalizeIncoming(body) {
     selectedDice: sanitizeDice(body?.selectedDice),
     trayTheme: String(body?.trayTheme || 'tray-green_felt').slice(0, 80),
     dieSkin: String(body?.dieSkin || 'skin-ruby_red').slice(0, 80),
+    customAppearance: sanitizeAppearance(body?.customAppearance),
     keepDice: Boolean(body?.keepDice),
     isDefault: Boolean(body?.isDefault),
   };
