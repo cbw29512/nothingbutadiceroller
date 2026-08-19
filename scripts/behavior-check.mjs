@@ -3,6 +3,7 @@ import { buildPhysicsNotation } from '../js/utils.js';
 import { getCriticalOutcome, parseRollResults } from '../js/roll-results.js';
 import { normalizeCustomSides, secureCustomRoll } from '../js/custom-roll.js';
 import { canRollFromTray } from '../js/tray-controls.js';
+import { formatRollButtonLabel } from '../js/ui.js';
 
 function group(values, sides = 20, id = 0) {
   return [{
@@ -99,6 +100,18 @@ assert.equal(canRollFromTray({
   selectedDice: [{ type: 'd20' }],
 }), false);
 
+assert.equal(formatRollButtonLabel([]), 'Roll Dice');
+assert.equal(formatRollButtonLabel([
+  { type: 'd4' },
+  { type: 'd4' },
+  { type: 'd4' },
+]), 'Roll 3d4');
+assert.equal(formatRollButtonLabel([
+  { type: 'd20' },
+  { type: 'd6' },
+  { type: 'd20' },
+]), 'Roll 2d20 + d6');
+
 console.log(
-  'Behavior checks passed: ADV/DIS, kept-d20 criticals, mixed pools, multi-d20 gating, custom dN ranges, and tray roll eligibility.',
+  'Behavior checks passed: ADV/DIS, kept-d20 criticals, mixed pools, multi-d20 gating, custom dN ranges, tray roll eligibility, and dynamic roll labels.',
 );
