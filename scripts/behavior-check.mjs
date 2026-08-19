@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { buildPhysicsNotation } from '../js/utils.js';
 import { getCriticalOutcome, parseRollResults } from '../js/roll-results.js';
 import { normalizeCustomSides, secureCustomRoll } from '../js/custom-roll.js';
+import { canRollFromTray } from '../js/tray-controls.js';
 
 function group(values, sides = 20, id = 0) {
   return [{
@@ -81,6 +82,23 @@ for (const sides of [3, 37, 1_000_000]) {
   }
 }
 
+assert.equal(canRollFromTray({
+  physicsReady: true,
+  rolling: false,
+  selectedDice: [{ type: 'd20' }],
+}), true);
+assert.equal(canRollFromTray({ physicsReady: true, rolling: false, selectedDice: [] }), false);
+assert.equal(canRollFromTray({
+  physicsReady: false,
+  rolling: false,
+  selectedDice: [{ type: 'd20' }],
+}), false);
+assert.equal(canRollFromTray({
+  physicsReady: true,
+  rolling: true,
+  selectedDice: [{ type: 'd20' }],
+}), false);
+
 console.log(
-  'Behavior checks passed: ADV/DIS, kept-d20 criticals, mixed pools, multi-d20 gating, and custom dN ranges.',
+  'Behavior checks passed: ADV/DIS, kept-d20 criticals, mixed pools, multi-d20 gating, custom dN ranges, and tray roll eligibility.',
 );
