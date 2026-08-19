@@ -6,7 +6,15 @@ const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, '..');
 const dist = resolve(root, 'dist');
 
-const files = ['index.html', 'styles.css', 'themes.css', 'account.css', 'community.css', 'mobile.css'];
+const files = [
+  'index.html',
+  'styles.css',
+  'themes.css',
+  'account.css',
+  'community.css',
+  'mobile.css',
+  'custom.css',
+];
 const directories = ['js'];
 
 async function copySite() {
@@ -19,9 +27,7 @@ async function copySite() {
     }
 
     for (const directory of directories) {
-      await cp(resolve(root, directory), resolve(dist, directory), {
-        recursive: true,
-      });
+      await cp(resolve(root, directory), resolve(dist, directory), { recursive: true });
     }
   } catch (error) {
     console.error('Static site copy failed:', error);
@@ -32,22 +38,20 @@ async function copySite() {
 async function validateBuild() {
   try {
     const required = [
-      'index.html',
-      'styles.css',
-      'themes.css',
-      'account.css',
-      'community.css',
-      'mobile.css',
+      ...files,
       'js/app.js',
       'js/account.js',
       'js/account-api.js',
       'js/account-ui.js',
-      'js/style-picker.js',
-      'js/theme-community.js',
+      'js/custom-controls.js',
       'js/custom-roll.js',
       'js/deployment.js',
+      'js/drawer-controls.js',
       'js/physics.js',
+      'js/roll-results.js',
       'js/roller.js',
+      'js/style-picker.js',
+      'js/theme-community.js',
     ];
 
     await Promise.all(required.map(path => access(resolve(dist, path))));
