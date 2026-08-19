@@ -9,6 +9,8 @@
   <link rel="stylesheet" href="/themes.css">
   <link rel="stylesheet" href="/account.css">
   <link rel="stylesheet" href="/mobile.css">
+  <link id="community-styles" rel="stylesheet" href="/community.css">
+  <link id="custom-controls-styles" rel="stylesheet" href="/custom.css">
 </head>
 <body class="tray-green_felt skin-ruby_red">
   <div id="app">
@@ -40,6 +42,16 @@
             <button class="die-btn" data-type="d12" type="button">d12</button>
             <button class="die-btn featured" data-type="d20" type="button">d20</button>
             <button class="die-btn" data-type="d100" type="button">d100</button>
+            <button id="desktop-custom-die-btn" class="die-btn custom-die-launch" type="button" aria-expanded="false" aria-controls="desktop-custom-die-popover">CUSTOM</button>
+          </div>
+          <div id="desktop-custom-die-popover" class="desktop-custom-die-popover hidden" aria-hidden="true">
+            <label for="desktop-custom-die-sides">CUSTOM DIE</label>
+            <div class="custom-die-entry">
+              <span id="desktop-custom-die-preview">dX</span>
+              <input id="desktop-custom-die-sides" type="text" inputmode="text" maxlength="8" autocomplete="off" autocapitalize="none" spellcheck="false" pattern="[dD]?[0-9]{1,7}" placeholder="d37 or 37" aria-label="Custom die, enter a number such as 37 or d37">
+              <button id="desktop-custom-die-roll-btn" class="btn primary" type="button">ROLL dX</button>
+            </div>
+            <span class="custom-die-note">Enter 3 or d3. Secure random range 1–N, up to d1,000,000.</span>
           </div>
           <div id="pool-chips" class="pool-chips" aria-live="polite"></div>
         </div>
@@ -102,7 +114,7 @@
         <button class="mobile-die-btn" data-type="d12" type="button">d12</button>
         <button class="mobile-die-btn featured" data-type="d20" type="button">d20</button>
         <button class="mobile-die-btn" data-type="d100" type="button">d100</button>
-        <button id="mobile-custom-die-btn" class="mobile-die-btn custom-die-btn" type="button" aria-expanded="false">dX</button>
+        <button id="mobile-custom-die-btn" class="mobile-die-btn custom-die-btn" type="button" aria-expanded="false">CUSTOM</button>
       </div>
       <div class="mobile-mode-row" aria-label="D20 quick rolls">
         <button class="mobile-mode-btn" data-quick-roll="advantage" type="button" aria-label="Roll with advantage">ADV</button>
