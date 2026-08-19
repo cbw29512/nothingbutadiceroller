@@ -15,12 +15,13 @@ function ensureDesktopMarkup() {
   button.textContent = 'CUSTOM';
   button.setAttribute('aria-expanded', 'false');
   button.setAttribute('aria-controls', 'desktop-custom-die-popover');
+  button.setAttribute('popovertarget', 'desktop-custom-die-popover');
   selector.appendChild(button);
 
   const popover = document.createElement('div');
   popover.id = 'desktop-custom-die-popover';
-  popover.className = 'desktop-custom-die-popover hidden';
-  popover.setAttribute('aria-hidden', 'true');
+  popover.className = 'desktop-custom-die-popover';
+  popover.setAttribute('popover', 'auto');
   popover.innerHTML = `
     <label for="desktop-custom-die-sides">CUSTOM DIE</label>
     <div class="custom-die-entry">
@@ -51,12 +52,38 @@ function controls() {
   ].filter(control => control.toggle && control.popover && control.input && control.roll);
 }
 
-function setOpen(control, open) {
-  control.popover.classList.toggle('hidden', !open);
-  control.popover.setAttribute('aria-hidden', String(!open));
+function supportsNativePopover(control) {
+  return control.popover.hasAttribute('popover')
+    && typeof control.popover.showPopover === 'function'
+    && typeof control.popover.hidePopover === 'function';
+}
+
+function nativePopoverIsOpen(control) {
+  return supportsNativePopover(control) && control.popover.matches(':popover-open');
+}
+
+function syncControlState(control, open) {
   control.toggle.setAttribute('aria-expanded', String(open));
   control.toggle.classList.toggle('active', open);
-  if (open) control.input.focus();
+  control.popover.setAttribute('aria-hidden', String(!open));
+  if (open) queueMicrotask(() => control.input.focus());
+}
+
+function setOpen(control, open) {
+  if (supportsNativePopover(control)) {
+    const currentlyOpen = nativePopoverIsOpen(control);
+    try {
+      if (open && !currentlyOpen) control.popover.showPopover();
+      if (!open && currentlyOpen) control.popover.hidePopover();
+    } catch (error) {
+      console.warn('Native custom-die popover toggle failed; using fallback state.', error);
+    }
+    syncControlState(control, open);
+    return;
+  }
+
+  control.popover.classList.toggle('hidden', !open);
+  syncControlState(control, open);
 }
 
 function updateLabel(control) {
@@ -81,22 +108,39 @@ function syncDisabled() {
 
 function bindControl(control) {
   control.toggle.textContent = 'CUSTOM';
-  control.toggle.addEventListener('click', () => {
-    const open = control.toggle.getAttribute('aria-expanded') !== 'true';
-    controls().forEach(item => setOpen(item, item === control && open));
-  });
+
+  if (supportsNativePopover(control)) {
+    control.popover.classList.remove('hidden');
+    control.popover.addEventListener('toggle', event => {
+      const open = event.newState === 'open';
+      syncControlState(control, open);
+    });
+    syncControlState(control, nativePopoverIsOpen(control));
+  } else {
+    control.popover.classList.add('hidden');
+    syncControlState(control, false);
+    control.toggle.addEventListener('click', () => {
+      const open = control.toggle.getAttribute('aria-expanded') !== 'true';
+      controls().forEach(item => setOpen(item, item === control && open));
+    });
+  }
+
   control.input.addEventListener('input', () => {
     control.input.setCustomValidity('');
     updateLabel(control);
   });
+
   const roll = () => {
     activeControl = control;
     control.input.setCustomValidity('');
     performCustomRoll(control.input.value);
   };
+
   control.roll.addEventListener('click', roll);
   control.input.addEventListener('keydown', event => {
-    if (event.key === 'Enter') roll();
+    if (event.key !== 'Enter') return;
+    event.preventDefault();
+    roll();
   });
   updateLabel(control);
 }

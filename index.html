@@ -42,9 +42,9 @@
             <button class="die-btn" data-type="d12" type="button">d12</button>
             <button class="die-btn featured" data-type="d20" type="button">d20</button>
             <button class="die-btn" data-type="d100" type="button">d100</button>
-            <button id="desktop-custom-die-btn" class="die-btn custom-die-launch" type="button" aria-expanded="false" aria-controls="desktop-custom-die-popover">CUSTOM</button>
+            <button id="desktop-custom-die-btn" class="die-btn custom-die-launch" type="button" aria-expanded="false" aria-controls="desktop-custom-die-popover" popovertarget="desktop-custom-die-popover" popovertargetaction="toggle">CUSTOM</button>
           </div>
-          <div id="desktop-custom-die-popover" class="desktop-custom-die-popover hidden" aria-hidden="true">
+          <div id="desktop-custom-die-popover" class="desktop-custom-die-popover" popover="auto">
             <label for="desktop-custom-die-sides">CUSTOM DIE</label>
             <div class="custom-die-entry">
               <span id="desktop-custom-die-preview">dX</span>
@@ -96,7 +96,7 @@
     </main>
 
     <nav class="mobile-play-dock" aria-label="Mobile dice controls">
-      <div id="custom-die-popover" class="custom-die-popover hidden" aria-hidden="true">
+      <div id="custom-die-popover" class="custom-die-popover" popover="auto">
         <label for="custom-die-sides">CUSTOM DIE</label>
         <div class="custom-die-entry">
           <span>dX</span>
@@ -114,7 +114,7 @@
         <button class="mobile-die-btn" data-type="d12" type="button">d12</button>
         <button class="mobile-die-btn featured" data-type="d20" type="button">d20</button>
         <button class="mobile-die-btn" data-type="d100" type="button">d100</button>
-        <button id="mobile-custom-die-btn" class="mobile-die-btn custom-die-btn" type="button" aria-expanded="false">CUSTOM</button>
+        <button id="mobile-custom-die-btn" class="mobile-die-btn custom-die-btn" type="button" aria-expanded="false" aria-controls="custom-die-popover" popovertarget="custom-die-popover" popovertargetaction="toggle">CUSTOM</button>
       </div>
       <div class="mobile-mode-row" aria-label="D20 quick rolls">
         <button class="mobile-mode-btn" data-quick-roll="advantage" type="button" aria-label="Roll with advantage">ADV</button>
