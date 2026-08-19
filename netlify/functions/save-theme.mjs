@@ -21,6 +21,11 @@ function clampHex(value, fallback) {
   return /^#[0-9a-f]{6}$/i.test(String(value || '')) ? String(value) : fallback;
 }
 
+function imageMime(input) {
+  const match = String(input || '').match(/^data:(image\/(?:png|jpeg|webp));base64,/i);
+  return match?.[1]?.toLowerCase() || 'image/png';
+}
+
 export default async (req) => {
   if (req.method !== 'POST') return json({ error: 'Method Not Allowed' }, 405);
 
@@ -41,9 +46,11 @@ export default async (req) => {
 
     const store = getStore(STORE_NAME);
     const themeId = `theme_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    let imageKey = null;
     let imageUrl = null;
 
     if (trayImageBase64) {
+      const mime = imageMime(trayImageBase64);
       const base64Data = trayImageBase64.includes(',')
         ? trayImageBase64.split(',')[1]
         : trayImageBase64;
@@ -52,9 +59,9 @@ export default async (req) => {
         return json({ error: 'Tray image must be 4 MB or smaller.' }, 400);
       }
 
-      const imageKey = `users/${user.id}/themes/${themeId}_tray.png`;
-      await store.set(imageKey, buffer, { metadata: { contentType: 'image/png' } });
-      imageUrl = `/.netlify/blobs/${STORE_NAME}/${imageKey}`;
+      imageKey = `users/${user.id}/themes/${themeId}_tray`;
+      await store.set(imageKey, buffer, { metadata: { contentType: mime } });
+      imageUrl = `/api/theme-image?owner=${encodeURIComponent(user.id)}&theme=${encodeURIComponent(themeId)}`;
     }
 
     const themeData = {
@@ -74,6 +81,7 @@ export default async (req) => {
           ? customStyles.customFaces
           : {},
       },
+      imageKey,
       imageUrl,
       isPublic: Boolean(isPublic),
       createdAt: new Date().toISOString(),
