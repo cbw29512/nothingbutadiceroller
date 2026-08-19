@@ -5,6 +5,7 @@ import { addDie, clearPool, performRoll } from './roller.js';
 import { performCustomRoll } from './custom-roll.js';
 import { renderHistory, renderPool, setStatus } from './ui.js';
 import { initStylePicker } from './style-picker.js';
+import { initThemeCommunity } from './theme-community.js';
 import { assertStylesLoaded } from './deployment.js';
 import { initAccount } from './account.js';
 
@@ -189,9 +190,10 @@ async function boot() {
     bindEvents();
     initStylePicker();
     initAccount();
+    initThemeCommunity();
 
     setStatus('Loading 3D physics…');
-    await initDicePhysics(getSkinColor(state.dieSkin));
+    await initDicePhysics(getSkinColor(state.dieSkin, state.customAppearance?.diceColor));
     state.physicsReady = true;
     setStatus('3D physics ready.', 'ready');
   } catch (err) {
