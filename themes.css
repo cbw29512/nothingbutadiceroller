@@ -1,1 +1,130 @@
-body.tray-green_felt{--tray-bg:radial-gradient(circle at 50% 35%,#1f6b3a,#0d2818 72%)}body.tray-red_velvet{--tray-bg:radial-gradient(circle at 50% 35%,#6b1f2a,#24070d 72%)}body.tray-midnight_leather{--tray-bg:linear-gradient(135deg,#23272f,#0a0d12)}body.tray-dark_mahogany{--tray-bg:linear-gradient(135deg,#5a2f1c,#1d0d08)}body.tray-dungeon_stone{--tray-bg:radial-gradient(circle,#555b63,#23272e 70%)}body.tray-mystic_obsidian{--tray-bg:radial-gradient(circle at 50% 35%,#2e2650,#090710 72%)}body.tray-neon_cyberpunk{--tray-bg:linear-gradient(145deg,#07182c,#2a0b3f)}body.tray-synthwave{--tray-bg:linear-gradient(180deg,#1b0b3b,#09051a 55%,#0f253b)}body.tray-arcane_sanctum{--tray-bg:radial-gradient(circle,#26355e,#0c1325 70%)}body.tray-celestial_void{--tray-bg:radial-gradient(circle at 65% 30%,#243b72,#050812 68%)}body.tray-lava_pit{--tray-bg:radial-gradient(circle,#8b2f0b,#2a0804 68%)}body.tray-royal_gold{--tray-bg:radial-gradient(circle,#7a5a16,#241b07 70%)}
+.tray-green_felt {
+  --tray-bg:
+    radial-gradient(circle at 30% 25%, rgba(255,255,255,.05) 0 1px, transparent 2px),
+    radial-gradient(circle at 70% 70%, rgba(0,0,0,.14) 0 1px, transparent 2px),
+    radial-gradient(circle at 50% 35%, #237744, #0c2b1a 72%);
+}
+
+.tray-red_velvet {
+  --tray-bg:
+    linear-gradient(115deg, transparent 0 46%, rgba(255,255,255,.035) 47% 49%, transparent 50% 100%),
+    radial-gradient(circle at 48% 32%, #8a2637, #2b080f 74%);
+}
+
+.tray-midnight_leather {
+  --tray-bg:
+    repeating-linear-gradient(35deg, rgba(255,255,255,.018) 0 2px, transparent 2px 7px),
+    radial-gradient(circle at 40% 30%, #303744, #080b10 76%);
+}
+
+.tray-dark_mahogany {
+  --tray-bg:
+    repeating-linear-gradient(88deg, rgba(29,12,5,.4) 0 3px, rgba(127,70,38,.12) 4px 10px, transparent 11px 18px),
+    linear-gradient(135deg, #6d3a21, #251008 74%);
+}
+
+.tray-dungeon_stone {
+  --tray-bg:
+    linear-gradient(90deg, transparent 48%, rgba(16,20,25,.38) 49% 51%, transparent 52%),
+    linear-gradient(0deg, transparent 48%, rgba(16,20,25,.35) 49% 51%, transparent 52%),
+    radial-gradient(circle at 35% 28%, #646b73, #282d34 75%);
+}
+
+.tray-mystic_obsidian {
+  --tray-bg:
+    radial-gradient(circle at 25% 25%, rgba(167,139,250,.16), transparent 24%),
+    radial-gradient(circle at 75% 65%, rgba(59,130,246,.11), transparent 25%),
+    radial-gradient(circle at 50% 35%, #31275d, #08070e 74%);
+}
+
+.tray-neon_cyberpunk {
+  --tray-bg:
+    linear-gradient(rgba(6,182,212,.10) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(236,72,153,.10) 1px, transparent 1px),
+    radial-gradient(circle at 60% 35%, #371357, #06192b 70%);
+}
+
+.tray-synthwave {
+  --tray-bg:
+    linear-gradient(rgba(244,63,94,.15) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(34,211,238,.14) 1px, transparent 1px),
+    linear-gradient(180deg, #31115b, #120825 48%, #071d31 100%);
+}
+
+.tray-arcane_sanctum {
+  --tray-bg:
+    radial-gradient(circle at 50% 50%, transparent 0 18%, rgba(96,165,250,.08) 19% 20%, transparent 21% 31%, rgba(167,139,250,.08) 32% 33%, transparent 34%),
+    conic-gradient(from 45deg at 50% 50%, #18284e, #111a34, #283766, #111a34, #18284e);
+}
+
+.tray-celestial_void {
+  --tray-bg:
+    radial-gradient(circle at 17% 24%, #fff 0 1px, transparent 1.5px),
+    radial-gradient(circle at 72% 18%, #bfdbfe 0 1px, transparent 1.6px),
+    radial-gradient(circle at 64% 72%, #fff 0 1.2px, transparent 1.8px),
+    radial-gradient(circle at 35% 62%, #c4b5fd 0 1px, transparent 1.6px),
+    radial-gradient(circle at 58% 35%, #263f82, #040711 72%);
+}
+
+.tray-lava_pit {
+  --tray-bg:
+    repeating-linear-gradient(128deg, transparent 0 34px, rgba(251,146,60,.48) 35px 38px, rgba(239,68,68,.22) 39px 42px, transparent 43px 76px),
+    radial-gradient(circle at 52% 38%, #7f2d0b, #250704 72%);
+}
+
+.tray-royal_gold {
+  --tray-bg:
+    radial-gradient(circle at 50% 50%, transparent 0 24%, rgba(250,204,21,.12) 25% 27%, transparent 28% 42%, rgba(250,204,21,.08) 43% 45%, transparent 46%),
+    linear-gradient(135deg, #8b6a1c, #2d2107 72%);
+}
+
+.theme-choice {
+  min-height: 74px;
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr);
+  align-items: center;
+  gap: .7rem;
+  padding: .55rem;
+}
+
+.theme-preview,
+.skin-preview {
+  width: 54px;
+  height: 54px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,.24);
+  box-shadow: inset 0 0 14px rgba(0,0,0,.28);
+}
+
+.theme-preview {
+  background: var(--tray-bg);
+  background-size: 18px 18px, 18px 18px, cover;
+}
+
+.tray-green_felt .theme-preview,
+.tray-red_velvet .theme-preview,
+.tray-midnight_leather .theme-preview,
+.tray-dark_mahogany .theme-preview,
+.tray-dungeon_stone .theme-preview,
+.tray-mystic_obsidian .theme-preview,
+.tray-neon_cyberpunk .theme-preview,
+.tray-synthwave .theme-preview,
+.tray-arcane_sanctum .theme-preview,
+.tray-celestial_void .theme-preview,
+.tray-lava_pit .theme-preview,
+.tray-royal_gold .theme-preview {
+  background: var(--tray-bg);
+}
+
+.theme-choice-label {
+  min-width: 0;
+  color: #f8fafc;
+  font-weight: 850;
+  text-align: left;
+}
+
+@media (max-width: 430px) {
+  .picker-grid {
+    grid-template-columns: 1fr;
+  }
+}
