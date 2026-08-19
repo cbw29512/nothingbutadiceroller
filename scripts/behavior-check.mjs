@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { buildPhysicsNotation } from '../js/utils.js';
 import { getCriticalOutcome, parseRollResults } from '../js/roll-results.js';
+import { normalizeCustomSides, secureCustomRoll } from '../js/custom-roll.js';
 
 function group(values, sides = 20, id = 0) {
   return [{
@@ -62,4 +63,24 @@ assert.equal(getCriticalOutcome(
   multipleD20s.keptD20s,
 ), null);
 
-console.log('Behavior checks passed: ADV/DIS, kept-d20 criticals, mixed pools, and multi-d20 gating.');
+assert.equal(normalizeCustomSides(3), 3);
+assert.equal(normalizeCustomSides('3'), 3);
+assert.equal(normalizeCustomSides('d3'), 3);
+assert.equal(normalizeCustomSides('D37'), 37);
+assert.equal(normalizeCustomSides(' d1000000 '), 1_000_000);
+assert.throws(() => normalizeCustomSides('d1'));
+assert.throws(() => normalizeCustomSides('d1000001'));
+assert.throws(() => normalizeCustomSides('d3.5'));
+assert.throws(() => normalizeCustomSides('three'));
+
+for (const sides of [3, 37, 1_000_000]) {
+  for (let index = 0; index < 64; index += 1) {
+    const value = secureCustomRoll(sides);
+    assert.ok(Number.isInteger(value));
+    assert.ok(value >= 1 && value <= sides);
+  }
+}
+
+console.log(
+  'Behavior checks passed: ADV/DIS, kept-d20 criticals, mixed pools, multi-d20 gating, and custom dN ranges.',
+);
