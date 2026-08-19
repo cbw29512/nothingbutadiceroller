@@ -9,6 +9,11 @@ function emitRollState() {
   document.dispatchEvent(new Event('rollstatechange'));
 }
 
+function setPhysicsBadgeVisible(visible) {
+  const badge = document.querySelector('.roll-trust-badge');
+  if (badge) badge.hidden = !visible;
+}
+
 function formulaFor(pool, rollMode) {
   const formula = Object.entries(countDice(pool))
     .map(([type, count]) => `${count}${type}`)
@@ -44,6 +49,7 @@ export async function clearPool() {
     state.selectedDice = [];
     state.hasRolled = false;
     state.d20Mode = 'normal';
+    setPhysicsBadgeVisible(true);
     renderPool();
     renderResults();
     emitRollState();
@@ -80,6 +86,7 @@ export async function performRoll(requestedMode = 'normal', options = {}) {
       ? `Rolling d20 with ${rollMode}…`
       : rollMode === 'normal' ? 'Rolling…' : `Rolling ${rollMode}…`;
     setStatus(status);
+    setPhysicsBadgeVisible(true);
     document.getElementById('tray-empty-state')?.classList.add('hidden');
     playDiceSound();
 

@@ -25,10 +25,10 @@ function ensureDesktopMarkup() {
     <label for="desktop-custom-die-sides">CUSTOM DIE</label>
     <div class="custom-die-entry">
       <span id="desktop-custom-die-preview">dX</span>
-      <input id="desktop-custom-die-sides" type="number" inputmode="numeric" min="2" max="1000000" step="1" placeholder="37" aria-label="Number of sides for custom die">
+      <input id="desktop-custom-die-sides" type="text" inputmode="text" maxlength="8" autocomplete="off" autocapitalize="none" spellcheck="false" pattern="[dD]?[0-9]{1,7}" placeholder="d37 or 37" aria-label="Custom die, enter a number such as 37 or d37">
       <button id="desktop-custom-die-roll-btn" class="btn primary" type="button">ROLL dX</button>
     </div>
-    <span class="custom-die-note">Nonstandard dice use Web Crypto CSPRNG.</span>`;
+    <span class="custom-die-note">Enter 3 or d3. Secure random range 1–N, up to d1,000,000.</span>`;
   selector.insertAdjacentElement('afterend', popover);
 }
 
