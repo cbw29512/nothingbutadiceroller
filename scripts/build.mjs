@@ -6,7 +6,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, '..');
 const dist = resolve(root, 'dist');
 
-const files = ['index.html', 'styles.css', 'themes.css', 'account.css', 'mobile.css'];
+const files = ['index.html', 'styles.css', 'themes.css', 'account.css', 'community.css', 'mobile.css'];
 const directories = ['js'];
 
 async function copySite() {
@@ -36,12 +36,14 @@ async function validateBuild() {
       'styles.css',
       'themes.css',
       'account.css',
+      'community.css',
       'mobile.css',
       'js/app.js',
       'js/account.js',
       'js/account-api.js',
       'js/account-ui.js',
       'js/style-picker.js',
+      'js/theme-community.js',
       'js/custom-roll.js',
       'js/deployment.js',
       'js/physics.js',
