@@ -49,6 +49,7 @@ async function validateBuild() {
       'js/roller.js',
       'js/style-picker.js',
       'js/theme-community.js',
+      'js/tray-controls.js',
     ];
 
     await Promise.all(required.map(path => access(resolve(dist, path))));
@@ -59,6 +60,7 @@ async function validateBuild() {
       'href="/account.css"',
       'href="/mobile.css"',
       'src="/js/app.js"',
+      'id="tray-roll-hint"',
     ];
     for (const reference of expectedReferences) {
       if (!html.includes(reference)) throw new Error(`Missing build reference: ${reference}`);
