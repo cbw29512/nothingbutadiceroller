@@ -4,6 +4,7 @@ import { initDicePhysics } from './physics.js';
 import { addDie, clearPool, performRoll } from './roller.js';
 import { initStylePicker, renderHistory, renderPool, setStatus } from './ui.js';
 import { assertStylesLoaded } from './deployment.js';
+import { initAccount } from './account.js';
 
 function setDrawer(drawer, open) {
   try {
@@ -64,6 +65,10 @@ function bindEvents() {
     bindDiceButtons('.mobile-die-btn');
     bindQuickRollButtons();
     document.addEventListener('rollstatechange', syncControls);
+    document.addEventListener('configurationloaded', () => {
+      syncControls();
+      initStylePicker();
+    });
 
     document.getElementById('keep-btn')?.addEventListener('click', () => {
       state.keepDice = !state.keepDice;
@@ -84,15 +89,19 @@ function bindEvents() {
 
     const stylesDrawer = document.getElementById('styles-drawer');
     const historyDrawer = document.getElementById('history-drawer');
+    const accountDrawer = document.getElementById('account-drawer');
     document.getElementById('open-styles-btn')?.addEventListener('click', () => setDrawer(stylesDrawer, true));
     document.getElementById('close-styles-btn')?.addEventListener('click', () => setDrawer(stylesDrawer, false));
     document.getElementById('open-history-btn')?.addEventListener('click', () => setDrawer(historyDrawer, true));
     document.getElementById('close-history-btn')?.addEventListener('click', () => setDrawer(historyDrawer, false));
+    document.getElementById('open-account-btn')?.addEventListener('click', () => setDrawer(accountDrawer, true));
+    document.getElementById('close-account-btn')?.addEventListener('click', () => setDrawer(accountDrawer, false));
 
     document.querySelectorAll('.drawer-backdrop').forEach(backdrop => {
       backdrop.addEventListener('click', () => {
         setDrawer(stylesDrawer, false);
         setDrawer(historyDrawer, false);
+        setDrawer(accountDrawer, false);
       });
     });
 
@@ -106,6 +115,7 @@ function bindEvents() {
       if (event.key === 'Escape') {
         setDrawer(stylesDrawer, false);
         setDrawer(historyDrawer, false);
+        setDrawer(accountDrawer, false);
       }
       if (event.key === 'Enter' && event.ctrlKey) performRoll('normal');
     });
@@ -123,6 +133,7 @@ async function boot() {
     renderHistory();
     bindEvents();
     initStylePicker();
+    initAccount();
 
     setStatus('Loading 3D physics…');
     await initDicePhysics(getSkinColor(state.dieSkin));
