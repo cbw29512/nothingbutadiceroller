@@ -85,6 +85,16 @@
     </main>
 
     <nav class="mobile-play-dock" aria-label="Mobile dice controls">
+      <div id="custom-die-popover" class="custom-die-popover hidden" aria-hidden="true">
+        <label for="custom-die-sides">CUSTOM DIE</label>
+        <div class="custom-die-entry">
+          <span>d</span>
+          <input id="custom-die-sides" type="number" inputmode="numeric" min="2" max="1000000" step="1" placeholder="37" aria-label="Number of sides for custom die">
+          <button id="custom-die-roll-btn" class="btn primary" type="button">ROLL dX</button>
+        </div>
+        <span class="custom-die-note">Nonstandard dice use Web Crypto CSPRNG.</span>
+      </div>
+
       <div class="mobile-dice-row">
         <button class="mobile-die-btn" data-type="d4" type="button">d4</button>
         <button class="mobile-die-btn" data-type="d6" type="button">d6</button>
@@ -93,6 +103,7 @@
         <button class="mobile-die-btn" data-type="d12" type="button">d12</button>
         <button class="mobile-die-btn featured" data-type="d20" type="button">d20</button>
         <button class="mobile-die-btn" data-type="d100" type="button">d100</button>
+        <button id="mobile-custom-die-btn" class="mobile-die-btn custom-die-btn" type="button" aria-expanded="false">dX</button>
       </div>
       <div class="mobile-mode-row" aria-label="D20 quick rolls">
         <button class="mobile-mode-btn" data-quick-roll="advantage" type="button" aria-label="Roll with advantage">ADV</button>
