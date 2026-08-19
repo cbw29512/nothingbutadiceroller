@@ -21,11 +21,7 @@ async function copySite() {
   try {
     await rm(dist, { recursive: true, force: true });
     await mkdir(dist, { recursive: true });
-
-    for (const file of files) {
-      await copyFile(resolve(root, file), resolve(dist, file));
-    }
-
+    for (const file of files) await copyFile(resolve(root, file), resolve(dist, file));
     for (const directory of directories) {
       await cp(resolve(root, directory), resolve(dist, directory), { recursive: true });
     }
@@ -43,6 +39,7 @@ async function validateBuild() {
       'js/account.js',
       'js/account-api.js',
       'js/account-ui.js',
+      'js/auth-ui.js',
       'js/custom-controls.js',
       'js/custom-roll.js',
       'js/deployment.js',
@@ -55,7 +52,6 @@ async function validateBuild() {
     ];
 
     await Promise.all(required.map(path => access(resolve(dist, path))));
-
     const html = await readFile(resolve(dist, 'index.html'), 'utf8');
     const expectedReferences = [
       'href="/styles.css"',
@@ -64,11 +60,11 @@ async function validateBuild() {
       'href="/mobile.css"',
       'src="/js/app.js"',
     ];
-
     for (const reference of expectedReferences) {
-      if (!html.includes(reference)) {
-        throw new Error(`Missing build reference: ${reference}`);
-      }
+      if (!html.includes(reference)) throw new Error(`Missing build reference: ${reference}`);
+    }
+    if (html.includes('netlify-identity-widget')) {
+      throw new Error('Legacy Netlify Identity widget must not ship in production.');
     }
 
     console.log('Build validation passed:', required.join(', '));
