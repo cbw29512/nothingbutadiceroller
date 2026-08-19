@@ -2,6 +2,9 @@
   "scripts": {
     "build": "node scripts/build.mjs"
   },
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "dependencies": {
     "@netlify/blobs": "^11.0.1",
     "@netlify/identity": "^1.2.0",
