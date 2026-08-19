@@ -48,15 +48,12 @@
           <span class="section-label">D20 quick rolls</span>
           <p class="control-help">Press once to roll immediately. ADV/DIS reset after the roll.</p>
           <div class="adv-btn-group quick-roll-group" aria-label="D20 quick rolls">
-            <button class="adv-btn" data-quick-roll="advantage" type="button" title="Roll the current pool with d20 advantage">ROLL ADV</button>
-            <button class="adv-btn" data-quick-roll="disadvantage" type="button" title="Roll the current pool with d20 disadvantage">ROLL DIS</button>
+            <button class="adv-btn" data-quick-roll="advantage" type="button" title="Roll d20 with advantage">ROLL ADV</button>
+            <button class="adv-btn" data-quick-roll="disadvantage" type="button" title="Roll d20 with disadvantage">ROLL DIS</button>
           </div>
         </div>
 
-        <button id="keep-btn" class="btn secondary toggle-btn" type="button" aria-pressed="false">
-          Keep pool after roll
-        </button>
-
+        <button id="keep-btn" class="btn secondary toggle-btn" type="button" aria-pressed="false">Keep pool after roll</button>
         <p id="physics-status" class="status-line" role="status">Loading 3D physics…</p>
       </section>
 
@@ -152,10 +149,6 @@
 
         <div id="account-signed-out" class="account-panel">
           <p>Sign in to save dice configurations permanently and load them on other devices.</p>
-          <div class="account-auth-actions">
-            <button id="account-login-btn" class="btn primary" type="button">Sign In</button>
-            <button id="account-signup-btn" class="btn secondary" type="button">Create Account</button>
-          </div>
         </div>
 
         <div id="account-signed-in" class="account-panel hidden">
@@ -188,7 +181,6 @@
     </aside>
   </div>
 
-  <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
   <script type="module" src="/js/app.js"></script>
 </body>
 </html>
