@@ -2,6 +2,7 @@ import { state, loadPreferences, savePreferences } from './state.js';
 import { getSkinColor } from './utils.js';
 import { initDicePhysics } from './physics.js';
 import { addDie, clearPool, performRoll } from './roller.js';
+import { performCustomRoll } from './custom-roll.js';
 import { renderHistory, renderPool, setStatus } from './ui.js';
 import { initStylePicker } from './style-picker.js';
 import { assertStylesLoaded } from './deployment.js';
@@ -17,6 +18,21 @@ function setDrawer(drawer, open) {
   }
 }
 
+function setCustomDiePopover(open) {
+  try {
+    const popover = document.getElementById('custom-die-popover');
+    const button = document.getElementById('mobile-custom-die-btn');
+    if (!popover || !button) return;
+    popover.classList.toggle('hidden', !open);
+    popover.setAttribute('aria-hidden', String(!open));
+    button.setAttribute('aria-expanded', String(open));
+    button.classList.toggle('active', open);
+    if (open) document.getElementById('custom-die-sides')?.focus();
+  } catch (err) {
+    console.error('Failed to update custom die popover:', err);
+  }
+}
+
 function syncControls() {
   try {
     document.querySelectorAll('[data-quick-roll]').forEach(button => {
@@ -29,10 +45,13 @@ function syncControls() {
       button.disabled = state.rolling;
     });
 
-    ['roll-btn', 'mobile-roll-btn', 'clear-btn', 'mobile-clear-btn', 'keep-btn'].forEach(id => {
+    ['roll-btn', 'mobile-roll-btn', 'clear-btn', 'mobile-clear-btn', 'keep-btn', 'custom-die-roll-btn'].forEach(id => {
       const button = document.getElementById(id);
       if (button) button.disabled = state.rolling;
     });
+
+    const customInput = document.getElementById('custom-die-sides');
+    if (customInput) customInput.disabled = state.rolling;
 
     const keepBtn = document.getElementById('keep-btn');
     keepBtn?.classList.toggle('active', state.keepDice);
@@ -60,11 +79,42 @@ function bindQuickRollButtons() {
   });
 }
 
+function bindCustomDie() {
+  const toggle = document.getElementById('mobile-custom-die-btn');
+  const input = document.getElementById('custom-die-sides');
+  const rollButton = document.getElementById('custom-die-roll-btn');
+
+  toggle?.addEventListener('click', () => {
+    const isOpen = toggle.getAttribute('aria-expanded') === 'true';
+    setCustomDiePopover(!isOpen);
+  });
+
+  const rollCustom = () => {
+    if (!input) return;
+    input.setCustomValidity('');
+    performCustomRoll(input.value);
+  };
+
+  rollButton?.addEventListener('click', rollCustom);
+  input?.addEventListener('input', () => input.setCustomValidity(''));
+  input?.addEventListener('keydown', event => {
+    if (event.key === 'Enter') rollCustom();
+  });
+
+  document.addEventListener('customrollcomplete', () => setCustomDiePopover(false));
+  document.addEventListener('customrollerror', event => {
+    if (!input) return;
+    input.setCustomValidity(event.detail?.message || 'Custom roll failed.');
+    input.reportValidity();
+  });
+}
+
 function bindEvents() {
   try {
     bindDiceButtons('.die-btn');
-    bindDiceButtons('.mobile-die-btn');
+    bindDiceButtons('.mobile-die-btn[data-type]');
     bindQuickRollButtons();
+    bindCustomDie();
     document.addEventListener('rollstatechange', syncControls);
     document.addEventListener('configurationloaded', () => {
       syncControls();
@@ -86,7 +136,10 @@ function bindEvents() {
     document.getElementById('roll-btn')?.addEventListener('click', () => performRoll('normal'));
     document.getElementById('mobile-roll-btn')?.addEventListener('click', () => performRoll('normal'));
     document.getElementById('clear-btn')?.addEventListener('click', clearPool);
-    document.getElementById('mobile-clear-btn')?.addEventListener('click', clearPool);
+    document.getElementById('mobile-clear-btn')?.addEventListener('click', () => {
+      setCustomDiePopover(false);
+      clearPool();
+    });
 
     const stylesDrawer = document.getElementById('styles-drawer');
     const historyDrawer = document.getElementById('history-drawer');
@@ -117,6 +170,7 @@ function bindEvents() {
         setDrawer(stylesDrawer, false);
         setDrawer(historyDrawer, false);
         setDrawer(accountDrawer, false);
+        setCustomDiePopover(false);
       }
       if (event.key === 'Enter' && event.ctrlKey) performRoll('normal');
     });
