@@ -53,9 +53,7 @@ export default async (request) => {
       if (requestedId) {
         const theme = await store.get(themeKey(ownerId, requestedId), { type: 'json' });
         if (!theme) return json({ error: 'Theme not found.' }, 404);
-        if (ownerId !== user.id && !theme.isPublic) {
-          return json({ error: 'Theme is private.' }, 403);
-        }
+        if (ownerId !== user.id && !theme.isPublic) return json({ error: 'Theme is private.' }, 403);
         return json({ theme });
       }
 
@@ -73,10 +71,11 @@ export default async (request) => {
       const existing = await store.get(themeKey(user.id, themeId), { type: 'json' });
       if (!existing) return json({ error: 'Theme not found.' }, 404);
 
+      if (existing.imageKey) await store.delete(existing.imageKey);
       await store.delete(themeKey(user.id, themeId));
+
       const index = await readIndex(store, user.id);
-      const next = index.filter((item) => item.themeId !== themeId);
-      await store.setJSON(indexKey(user.id), next);
+      await store.setJSON(indexKey(user.id), index.filter((item) => item.themeId !== themeId));
 
       if (existing.isPublic) {
         const community = await readCommunity(store);
