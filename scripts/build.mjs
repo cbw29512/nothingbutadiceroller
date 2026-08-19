@@ -40,6 +40,7 @@ async function validateBuild() {
       'js/account.js',
       'js/account-api.js',
       'js/account-ui.js',
+      'js/style-picker.js',
       'js/deployment.js',
       'js/physics.js',
       'js/roller.js',
