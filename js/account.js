@@ -1,8 +1,9 @@
 import { state, savePreferences } from './state.js';
 import { clearPhysics } from './physics.js';
 import { renderPool, renderResults } from './ui.js';
-import { accountFetch, getIdentity } from './account-api.js';
+import { accountFetch } from './account-api.js';
 import { renderAccountView, setAccountMessage } from './account-ui.js';
+import { initAuthUI, signOutAccount } from './auth-ui.js';
 
 let savedConfigurations = [];
 let accountUser = null;
@@ -52,18 +53,16 @@ async function loadConfigurations() {
     renderAccount();
 
     const defaultConfig = savedConfigurations.find((item) => item.isDefault);
-    const shouldRestoreDefault = defaultConfig
+    const shouldRestore = defaultConfig
       && defaultAppliedForUser !== accountUser.id
       && state.selectedDice.length === 0
       && !state.hasRolled;
-
-    if (shouldRestoreDefault) {
+    if (shouldRestore) {
       defaultAppliedForUser = accountUser.id;
       await applyConfiguration(defaultConfig, false);
       setAccountMessage(`Restored default “${defaultConfig.name}”.`, 'ready');
       return;
     }
-
     setAccountMessage(`${savedConfigurations.length} saved configuration${savedConfigurations.length === 1 ? '' : 's'}.`, 'ready');
   } catch (error) {
     console.error('Failed to load saved configurations:', error);
@@ -75,9 +74,7 @@ async function saveCurrentConfiguration() {
   try {
     const name = document.getElementById('config-name')?.value.trim();
     if (!name) throw new Error('Give this configuration a name.');
-
     const existing = savedConfigurations.find((item) => item.name.toLowerCase() === name.toLowerCase());
-    const isDefault = Boolean(document.getElementById('config-default')?.checked);
     const data = await accountFetch('/api/configurations', {
       method: 'POST',
       body: JSON.stringify({
@@ -88,10 +85,9 @@ async function saveCurrentConfiguration() {
         dieSkin: state.dieSkin,
         customAppearance: state.customAppearance,
         keepDice: state.keepDice,
-        isDefault,
+        isDefault: Boolean(document.getElementById('config-default')?.checked),
       }),
     });
-
     savedConfigurations = data.configurations || [];
     renderAccount();
     setAccountMessage(`Saved “${name}”.`, 'ready');
@@ -113,32 +109,22 @@ async function deleteConfiguration(id) {
   }
 }
 
-function handleIdentityUser(user) {
-  const nextId = user?.id || null;
-  if (accountUser?.id !== nextId) defaultAppliedForUser = null;
+function handleSession(user) {
+  if (accountUser?.id !== user?.id) defaultAppliedForUser = null;
   accountUser = user || null;
   renderAccount();
   loadConfigurations();
 }
 
 export function initAccount() {
-  const auth = getIdentity();
-  if (!auth) {
-    setAccountMessage('Account service failed to load. Guest mode is still available.', 'error');
-    return;
-  }
-
-  auth.on('init', handleIdentityUser);
-  auth.on('login', (user) => { auth.close(); handleIdentityUser(user); });
-  auth.on('logout', () => handleIdentityUser(null));
-  auth.on('error', (error) => {
-    console.error('Netlify Identity error:', error);
-    setAccountMessage('Account login is unavailable until Netlify Identity is enabled.', 'error');
+  renderAccount();
+  initAuthUI(handleSession).catch((error) => {
+    console.error('Account initialization failed:', error);
+    setAccountMessage('Account service is unavailable. Guest rolling still works.', 'error');
   });
-  auth.init();
-
-  document.getElementById('account-login-btn')?.addEventListener('click', () => auth.open('login'));
-  document.getElementById('account-signup-btn')?.addEventListener('click', () => auth.open('signup'));
-  document.getElementById('account-logout-btn')?.addEventListener('click', () => auth.logout());
+  document.getElementById('account-logout-btn')?.addEventListener('click', async () => {
+    try { await signOutAccount(handleSession); }
+    catch (error) { setAccountMessage(error.message, 'error'); }
+  });
   document.getElementById('save-config-btn')?.addEventListener('click', saveCurrentConfiguration);
 }
