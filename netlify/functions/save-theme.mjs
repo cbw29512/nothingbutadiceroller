@@ -1,86 +1,90 @@
-import { getStore } from "@netlify/blobs";
-import { RegExpMatcher, englishDataset, englishRecommendedTransformers } from "obscenity";
+import { getStore } from '@netlify/blobs';
+import { getUser } from '@netlify/identity';
+import { RegExpMatcher, englishDataset, englishRecommendedTransformers } from 'obscenity';
 
 const matcher = new RegExpMatcher({
   ...englishDataset.build(),
   ...englishRecommendedTransformers,
 });
 
+function json(body, status = 200) {
+  return Response.json(body, {
+    status,
+    headers: { 'Cache-Control': 'no-store' },
+  });
+}
+
 export default async (req) => {
-  if (req.method !== "POST") {
-    return new Response(JSON.stringify({ error: "Method Not Allowed" }), {
-      status: 405,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
+  if (req.method !== 'POST') return json({ error: 'Method Not Allowed' }, 405);
 
   try {
-    const body = await req.json();
-    const { themeName, trayName, creator, customStyles, trayImageBase64 } = body;
+    const user = await getUser();
+    if (!user) return json({ error: 'Authentication required.' }, 401);
 
-    // 1. Content Safety Check (Scans theme name, tray name, creator, and custom face symbols)
-    const customLabelsText = customStyles?.customFaces ? Object.values(customStyles.customFaces).join(" ") : "";
-    const textToScan = `${themeName || ""} ${trayName || ""} ${creator || ""} ${customLabelsText}`;
-    
+    const body = await req.json();
+    const { themeName, trayName, customStyles, trayImageBase64 } = body;
+    const customLabelsText = customStyles?.customFaces
+      ? Object.values(customStyles.customFaces).join(' ')
+      : '';
+    const textToScan = `${themeName || ''} ${trayName || ''} ${customLabelsText}`;
+
     if (matcher.hasMatch(textToScan)) {
-      return new Response(
-        JSON.stringify({
-          error: "Family-Friendly Filter triggered: Please remove inappropriate terms before sharing.",
-        }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
-      );
+      return json({ error: 'Please remove inappropriate terms before saving this theme.' }, 400);
     }
 
-    // 2. Access Netlify Blobs storage
-    const store = getStore("dice-trays-store");
+    const store = getStore('dice-trays-store');
     const themeId = `theme_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-
     let imageUrl = null;
 
-    // 3. Process Custom Tray Background Image if Uploaded
     if (trayImageBase64) {
-      const base64Data = trayImageBase64.includes(",") 
-        ? trayImageBase64.split(",")[1] 
+      const base64Data = trayImageBase64.includes(',')
+        ? trayImageBase64.split(',')[1]
         : trayImageBase64;
-      const buffer = Buffer.from(base64Data, "base64");
-      const imageKey = `${themeId}_tray.png`;
-      
-      await store.set(imageKey, buffer, { metadata: { contentType: "image/png" } });
+      const buffer = Buffer.from(base64Data, 'base64');
+      if (buffer.byteLength > 4 * 1024 * 1024) {
+        return json({ error: 'Tray image must be 4 MB or smaller.' }, 400);
+      }
+
+      const imageKey = `users/${user.id}/themes/${themeId}_tray.png`;
+      await store.set(imageKey, buffer, { metadata: { contentType: 'image/png' } });
       imageUrl = `/.netlify/blobs/dice-trays-store/${imageKey}`;
     }
 
-    // 4. Save Theme Configuration Record
     const themeData = {
       themeId,
-      themeName: themeName || "Custom Adventure Set",
-      trayName: trayName || "Custom Tray",
-      creator: creator || "Anonymous Adventurer",
+      ownerId: user.id,
+      themeName: String(themeName || 'Custom Adventure Set').slice(0, 80),
+      trayName: String(trayName || 'Custom Tray').slice(0, 80),
+      creator: user.userMetadata?.fullName || user.user_metadata?.full_name || user.email || 'Adventurer',
       customStyles: customStyles || {
-        baseColor: "#0f172a",
-        numberColor: "#38bdf8",
-        opacity: 1.0,
+        baseColor: '#0f172a',
+        numberColor: '#38bdf8',
+        opacity: 1,
         enableGlow: false,
-        glowColor: "#00ff66",
-        customFaces: {} // e.g., { "20": "CRIT", "1": "FAIL" }
+        glowColor: '#00ff66',
+        customFaces: {},
       },
       imageUrl,
       createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
 
-    await store.set(themeId, JSON.stringify(themeData));
+    const recordKey = `users/${user.id}/themes/${themeId}.json`;
+    await store.setJSON(recordKey, themeData);
 
-    return new Response(
-      JSON.stringify({ success: true, themeId, themeData }),
-      { status: 200, headers: { "Content-Type": "application/json" } }
-    );
+    const indexKey = `users/${user.id}/themes/index.json`;
+    const existing = await store.get(indexKey, { type: 'json' }).catch(() => []);
+    const index = Array.isArray(existing) ? existing : [];
+    index.unshift({ themeId, themeName: themeData.themeName, createdAt: themeData.createdAt });
+    await store.setJSON(indexKey, index.slice(0, 50));
+
+    return json({ success: true, themeId, themeData });
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    console.error('Save theme failed:', error);
+    return json({ error: error?.message || 'Unable to save theme.' }, 500);
   }
 };
 
 export const config = {
-  path: "/api/save-theme",
+  path: '/api/save-theme',
 };
