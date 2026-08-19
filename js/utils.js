@@ -28,8 +28,9 @@ export const DIE_SKINS = [
   ['skin-blood_moon', 'Blood Moon', '#7f1d1d']
 ].map(([id, name, color]) => ({ id, name, color }));
 
-export function getSkinColor(skinId) {
+export function getSkinColor(skinId, customColor = null) {
   try {
+    if (/^#[0-9a-f]{6}$/i.test(String(customColor || ''))) return String(customColor);
     return DIE_SKINS.find(skin => skin.id === skinId)?.color || '#b91c1c';
   } catch (err) {
     console.error('Failed to resolve dice skin color:', err);
@@ -54,7 +55,6 @@ export function buildPhysicsNotation(selectedDice, d20Mode = 'normal') {
     const pool = [...selectedDice];
     const hasD20 = pool.some(die => die.type === 'd20');
 
-    // Advantage/disadvantage are quick-roll actions. They always need a d20.
     if (d20Mode !== 'normal' && !hasD20) pool.push({ type: 'd20' });
 
     const counts = countDice(pool);
