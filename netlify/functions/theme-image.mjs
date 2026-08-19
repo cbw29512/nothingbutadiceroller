@@ -14,13 +14,15 @@ export default async (request) => {
     const url = new URL(request.url);
     const ownerId = String(url.searchParams.get('owner') || '');
     const themeId = String(url.searchParams.get('theme') || '');
+    const token = String(url.searchParams.get('token') || '');
     if (!ownerId || !themeId) return new Response('Missing theme', { status: 400 });
 
     const store = getStore(STORE_NAME);
     const theme = await store.get(themeKey(ownerId, themeId), { type: 'json' });
     if (!theme?.imageKey) return new Response('Image not found', { status: 404 });
 
-    if (!theme.isPublic) {
+    const hasCapability = Boolean(theme.imageAccessToken) && token === theme.imageAccessToken;
+    if (!hasCapability) {
       const user = await getUser();
       if (!user || user.id !== ownerId) return new Response('Unauthorized', { status: 401 });
     }
@@ -31,7 +33,8 @@ export default async (request) => {
     return new Response(entry.data, {
       headers: {
         'Content-Type': entry.metadata?.contentType || 'image/png',
-        'Cache-Control': theme.isPublic ? 'public, max-age=86400' : 'private, no-store',
+        'Cache-Control': theme.isPublic ? 'public, max-age=86400' : 'private, max-age=3600',
+        'X-Content-Type-Options': 'nosniff',
       },
     });
   } catch (error) {
