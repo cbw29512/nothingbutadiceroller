@@ -21,6 +21,11 @@ const KEYS = {
   keepDice: 'keepDice'
 };
 
+function safeImageUrl(value) {
+  const url = String(value || '');
+  return url.startsWith('/api/theme-image?') || url.startsWith('/.netlify/blobs/') ? url : null;
+}
+
 function safeAppearance(raw) {
   if (!raw || typeof raw !== 'object') return null;
   return {
@@ -30,7 +35,7 @@ function safeAppearance(raw) {
     trayName: String(raw.trayName || 'Custom Tray').slice(0, 80),
     trayColor: /^#[0-9a-f]{6}$/i.test(String(raw.trayColor || '')) ? raw.trayColor : '#0f172a',
     diceColor: /^#[0-9a-f]{6}$/i.test(String(raw.diceColor || '')) ? raw.diceColor : '#b91c1c',
-    imageUrl: String(raw.imageUrl || '').startsWith('/.netlify/blobs/') ? raw.imageUrl : null,
+    imageUrl: safeImageUrl(raw.imageUrl),
     enableGlow: Boolean(raw.enableGlow),
     glowColor: /^#[0-9a-f]{6}$/i.test(String(raw.glowColor || '')) ? raw.glowColor : '#00ff66',
     isPublic: Boolean(raw.isPublic),
