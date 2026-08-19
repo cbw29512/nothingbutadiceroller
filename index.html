@@ -58,13 +58,14 @@
       </section>
 
       <section class="tray-container" aria-label="Dice tray and results">
-        <div id="dice-tray" class="dice-tray" aria-label="3D physics dice tray">
+        <div id="dice-tray" class="dice-tray" role="button" tabindex="0" aria-disabled="true" aria-describedby="tray-roll-hint" aria-label="Dice tray. Click or tap to roll selected dice. Press Enter or Space when focused.">
           <div class="roll-trust-badge" title="Randomized launch conditions are resolved by a 3D rigid-body physics simulation; the settled face becomes the result.">
             <span class="roll-trust-title">STOCHASTIC RIGID-BODY ENTROPY ENGINE</span>
             <span class="roll-trust-copy">Randomized initial conditions. Physics-resolved outcomes.</span>
           </div>
           <div id="tray-empty-state" class="tray-empty-state">Choose dice, then roll.</div>
           <div id="tray-effects" class="tray-effects" aria-live="assertive"></div>
+          <div id="tray-roll-hint" class="tray-roll-hint">SELECT DICE • CLICK / TAP TRAY TO ROLL</div>
         </div>
 
         <div class="action-buttons tray-actions" aria-label="Roll actions">

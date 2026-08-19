@@ -25,6 +25,7 @@ export function renderPool() {
         const index = state.selectedDice.findLastIndex(die => die.type === type);
         if (index >= 0) state.selectedDice.splice(index, 1);
         renderPool();
+        document.dispatchEvent(new Event('rollstatechange'));
       };
       chips.appendChild(chip);
     });

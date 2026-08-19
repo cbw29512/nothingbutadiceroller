@@ -9,6 +9,7 @@ import { assertStylesLoaded } from './deployment.js';
 import { initAccount } from './account.js';
 import { closeCustomDieControls, initCustomDieControls } from './custom-controls.js';
 import { closeDrawers, initDrawerControls } from './drawer-controls.js';
+import { initTrayControls } from './tray-controls.js';
 
 function ensureStylesheet(id, href) {
   try {
@@ -75,6 +76,7 @@ function bindEvents() {
     bindQuickRollButtons();
     initCustomDieControls();
     initDrawerControls();
+    initTrayControls(performRoll);
     document.addEventListener('rollstatechange', syncControls);
     document.addEventListener('configurationloaded', () => {
       syncControls();
@@ -130,9 +132,11 @@ async function boot() {
     setStatus('Loading 3D physics…');
     await initDicePhysics(getSkinColor(state.dieSkin, state.customAppearance?.diceColor));
     state.physicsReady = true;
+    document.dispatchEvent(new Event('rollstatechange'));
     setStatus('3D physics ready.', 'ready');
   } catch (error) {
     state.physicsReady = false;
+    document.dispatchEvent(new Event('rollstatechange'));
     console.error('Application startup failed:', error);
     setStatus('3D physics failed to load. Refresh to retry.', 'error');
   }
