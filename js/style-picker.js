@@ -11,8 +11,8 @@ function createLabel(name) {
 function createTrayButton(theme, onSkinChange) {
   const button = document.createElement('button');
   button.type = 'button';
-  button.className = `swatch-btn theme-choice ${theme.id} ${state.trayTheme === theme.id ? 'active' : ''}`.trim();
-  button.setAttribute('aria-pressed', String(state.trayTheme === theme.id));
+  button.className = `swatch-btn theme-choice ${theme.id} ${!state.customAppearance && state.trayTheme === theme.id ? 'active' : ''}`.trim();
+  button.setAttribute('aria-pressed', String(!state.customAppearance && state.trayTheme === theme.id));
 
   const preview = document.createElement('span');
   preview.className = 'theme-preview';
@@ -20,6 +20,7 @@ function createTrayButton(theme, onSkinChange) {
   button.append(preview, createLabel(theme.name));
 
   button.addEventListener('click', () => {
+    state.customAppearance = null;
     state.trayTheme = theme.id;
     savePreferences();
     initStylePicker(onSkinChange);
@@ -30,8 +31,8 @@ function createTrayButton(theme, onSkinChange) {
 function createSkinButton(skin, onSkinChange) {
   const button = document.createElement('button');
   button.type = 'button';
-  button.className = `swatch-btn theme-choice ${state.dieSkin === skin.id ? 'active' : ''}`.trim();
-  button.setAttribute('aria-pressed', String(state.dieSkin === skin.id));
+  button.className = `swatch-btn theme-choice ${!state.customAppearance && state.dieSkin === skin.id ? 'active' : ''}`.trim();
+  button.setAttribute('aria-pressed', String(!state.customAppearance && state.dieSkin === skin.id));
 
   const preview = document.createElement('span');
   preview.className = 'skin-preview';
@@ -40,6 +41,7 @@ function createSkinButton(skin, onSkinChange) {
   button.append(preview, createLabel(skin.name));
 
   button.addEventListener('click', async () => {
+    state.customAppearance = null;
     state.dieSkin = skin.id;
     savePreferences();
     initStylePicker(onSkinChange);
