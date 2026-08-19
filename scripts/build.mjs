@@ -55,6 +55,7 @@ async function validateBuild() {
     await Promise.all(required.map(path => access(resolve(dist, path))));
 
     const html = await readFile(resolve(dist, 'index.html'), 'utf8');
+    const customControls = await readFile(resolve(dist, 'js/custom-controls.js'), 'utf8');
     const customRoll = await readFile(resolve(dist, 'js/custom-roll.js'), 'utf8');
     const trayControls = await readFile(resolve(dist, 'js/tray-controls.js'), 'utf8');
 
@@ -67,6 +68,9 @@ async function validateBuild() {
       'href="/custom.css"',
       'src="/js/app.js"',
       'id="desktop-custom-die-btn"',
+      'popovertarget="desktop-custom-die-popover"',
+      'id="desktop-custom-die-popover"',
+      'popover="auto"',
       '>CUSTOM</button>',
       'id="tray-roll-hint"',
       'CLICK / TAP TRAY TO ROLL',
@@ -76,6 +80,18 @@ async function validateBuild() {
     for (const reference of expectedHtml) {
       if (!html.includes(reference)) {
         throw new Error(`Missing completed UI reference: ${reference}`);
+      }
+    }
+
+    const expectedCustomControls = [
+      'supportsNativePopover',
+      'showPopover()',
+      'hidePopover()',
+      "addEventListener('toggle'",
+    ];
+    for (const reference of expectedCustomControls) {
+      if (!customControls.includes(reference)) {
+        throw new Error(`Missing resilient custom-control behavior: ${reference}`);
       }
     }
 
