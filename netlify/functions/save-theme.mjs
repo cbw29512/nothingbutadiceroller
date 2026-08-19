@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { getStore } from '@netlify/blobs';
 import { getUser } from '@netlify/identity';
 import { RegExpMatcher, englishDataset, englishRecommendedTransformers } from 'obscenity';
@@ -48,6 +49,7 @@ export default async (req) => {
     const themeId = `theme_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     let imageKey = null;
     let imageUrl = null;
+    let imageAccessToken = null;
 
     if (trayImageBase64) {
       const mime = imageMime(trayImageBase64);
@@ -60,8 +62,9 @@ export default async (req) => {
       }
 
       imageKey = `users/${user.id}/themes/${themeId}_tray`;
+      imageAccessToken = randomUUID().replaceAll('-', '');
       await store.set(imageKey, buffer, { metadata: { contentType: mime } });
-      imageUrl = `/api/theme-image?owner=${encodeURIComponent(user.id)}&theme=${encodeURIComponent(themeId)}`;
+      imageUrl = `/api/theme-image?owner=${encodeURIComponent(user.id)}&theme=${encodeURIComponent(themeId)}&token=${imageAccessToken}`;
     }
 
     const themeData = {
@@ -82,6 +85,7 @@ export default async (req) => {
           : {},
       },
       imageKey,
+      imageAccessToken,
       imageUrl,
       isPublic: Boolean(isPublic),
       createdAt: new Date().toISOString(),
