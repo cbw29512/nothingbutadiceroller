@@ -4,6 +4,7 @@ import { renderPool, renderResults } from './ui.js';
 
 let savedConfigurations = [];
 let accountUser = null;
+let defaultAppliedForUser = null;
 
 function identity() {
   return window.netlifyIdentity || null;
@@ -59,7 +60,8 @@ function renderConfigurations() {
     const name = document.createElement('strong');
     name.textContent = `${config.name}${config.isDefault ? ' ★' : ''}`;
     const meta = document.createElement('span');
-    meta.textContent = `${config.selectedDice?.length || 0} dice • ${config.trayTheme.replace('tray-', '').replaceAll('_', ' ')}`;
+    const tray = String(config.trayTheme || 'tray').replace('tray-', '').replaceAll('_', ' ');
+    meta.textContent = `${config.selectedDice?.length || 0} dice • ${tray}`;
     copy.append(name, meta);
 
     const actions = document.createElement('div');
@@ -93,17 +95,52 @@ function renderAccount() {
   renderConfigurations();
 }
 
+async function applyConfiguration(config, message = true) {
+  try {
+    state.selectedDice = (config.selectedDice || []).map((die) => ({ type: die.type }));
+    state.trayTheme = config.trayTheme || state.trayTheme;
+    state.dieSkin = config.dieSkin || state.dieSkin;
+    state.keepDice = Boolean(config.keepDice);
+    state.d20Mode = 'normal';
+    state.hasRolled = false;
+    savePreferences();
+    renderPool();
+    renderResults();
+    await clearPhysics();
+    document.dispatchEvent(new Event('configurationloaded'));
+    if (message) setMessage(`Loaded “${config.name}”.`, 'ready');
+  } catch (error) {
+    console.error('Failed to load configuration:', error);
+    setMessage(error.message, 'error');
+  }
+}
+
 async function loadConfigurations() {
   if (!accountUser) {
     savedConfigurations = [];
     renderAccount();
     return;
   }
+
   try {
     setMessage('Loading saved dice…');
     const data = await accountFetch('/api/configurations');
     savedConfigurations = data.configurations || [];
     renderAccount();
+
+    const defaultConfig = savedConfigurations.find((item) => item.isDefault);
+    const shouldRestoreDefault = defaultConfig
+      && defaultAppliedForUser !== accountUser.id
+      && state.selectedDice.length === 0
+      && !state.hasRolled;
+
+    if (shouldRestoreDefault) {
+      defaultAppliedForUser = accountUser.id;
+      await applyConfiguration(defaultConfig, false);
+      setMessage(`Restored default “${defaultConfig.name}”.`, 'ready');
+      return;
+    }
+
     setMessage(`${savedConfigurations.length} saved configuration${savedConfigurations.length === 1 ? '' : 's'}.`, 'ready');
   } catch (error) {
     console.error('Failed to load saved configurations:', error);
@@ -152,27 +189,9 @@ async function deleteConfiguration(id) {
   }
 }
 
-async function applyConfiguration(config) {
-  try {
-    state.selectedDice = (config.selectedDice || []).map((die) => ({ type: die.type }));
-    state.trayTheme = config.trayTheme || state.trayTheme;
-    state.dieSkin = config.dieSkin || state.dieSkin;
-    state.keepDice = Boolean(config.keepDice);
-    state.d20Mode = 'normal';
-    state.hasRolled = false;
-    savePreferences();
-    renderPool();
-    renderResults();
-    await clearPhysics();
-    document.dispatchEvent(new Event('configurationloaded'));
-    setMessage(`Loaded “${config.name}”.`, 'ready');
-  } catch (error) {
-    console.error('Failed to load configuration:', error);
-    setMessage(error.message, 'error');
-  }
-}
-
 function handleIdentityUser(user) {
+  const nextId = user?.id || null;
+  if (accountUser?.id !== nextId) defaultAppliedForUser = null;
   accountUser = user || null;
   renderAccount();
   loadConfigurations();
@@ -188,6 +207,10 @@ export function initAccount() {
   auth.on('init', handleIdentityUser);
   auth.on('login', (user) => { auth.close(); handleIdentityUser(user); });
   auth.on('logout', () => handleIdentityUser(null));
+  auth.on('error', (error) => {
+    console.error('Netlify Identity error:', error);
+    setMessage('Account login is unavailable until Netlify Identity is enabled.', 'error');
+  });
   auth.init();
 
   document.getElementById('account-login-btn')?.addEventListener('click', () => auth.open('login'));
