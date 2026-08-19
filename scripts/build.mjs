@@ -53,18 +53,55 @@ async function validateBuild() {
     ];
 
     await Promise.all(required.map(path => access(resolve(dist, path))));
+
     const html = await readFile(resolve(dist, 'index.html'), 'utf8');
-    const expectedReferences = [
+    const customRoll = await readFile(resolve(dist, 'js/custom-roll.js'), 'utf8');
+    const trayControls = await readFile(resolve(dist, 'js/tray-controls.js'), 'utf8');
+
+    const expectedHtml = [
       'href="/styles.css"',
       'href="/themes.css"',
       'href="/account.css"',
       'href="/mobile.css"',
+      'href="/community.css"',
+      'href="/custom.css"',
       'src="/js/app.js"',
+      'id="desktop-custom-die-btn"',
+      '>CUSTOM</button>',
       'id="tray-roll-hint"',
+      'CLICK / TAP TRAY TO ROLL',
+      'STOCHASTIC RIGID-BODY ENTROPY ENGINE',
     ];
-    for (const reference of expectedReferences) {
-      if (!html.includes(reference)) throw new Error(`Missing build reference: ${reference}`);
+
+    for (const reference of expectedHtml) {
+      if (!html.includes(reference)) {
+        throw new Error(`Missing completed UI reference: ${reference}`);
+      }
     }
+
+    const expectedCustomRoll = [
+      'crypto.getRandomValues',
+      'SECURE CUSTOM ROLL',
+      'Web Crypto CSPRNG',
+      'MAX_CUSTOM_SIDES = 1_000_000',
+    ];
+    for (const reference of expectedCustomRoll) {
+      if (!customRoll.includes(reference)) {
+        throw new Error(`Missing secure custom-roll feature: ${reference}`);
+      }
+    }
+
+    const expectedTrayControls = [
+      "tray.addEventListener('click'",
+      "['Enter', ' ']",
+      'canRollFromTray',
+    ];
+    for (const reference of expectedTrayControls) {
+      if (!trayControls.includes(reference)) {
+        throw new Error(`Missing tray-roll feature: ${reference}`);
+      }
+    }
+
     if (html.includes('netlify-identity-widget')) {
       throw new Error('Legacy Netlify Identity widget must not ship in production.');
     }
