@@ -29,6 +29,9 @@ export function renderPool() {
       chips.appendChild(chip);
     });
 
+    if (emptyState && state.selectedDice.length === 0 && !state.hasRolled) {
+      emptyState.textContent = 'Choose dice, then roll.';
+    }
     emptyState?.classList.toggle('hidden', state.selectedDice.length > 0 || state.hasRolled);
   } catch (err) {
     console.error('Failed to render dice pool:', err);
