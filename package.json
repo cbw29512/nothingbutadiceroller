@@ -4,6 +4,7 @@
   },
   "dependencies": {
     "@netlify/blobs": "^11.0.1",
+    "@netlify/identity": "^1.2.0",
     "obscenity": "^0.4.6"
   }
 }
