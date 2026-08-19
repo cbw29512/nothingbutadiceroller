@@ -1,101 +1,23 @@
 import { state, savePreferences } from './state.js';
 import { clearPhysics } from './physics.js';
 import { renderPool, renderResults } from './ui.js';
+import { accountFetch, getIdentity } from './account-api.js';
+import { renderAccountView, setAccountMessage } from './account-ui.js';
 
 let savedConfigurations = [];
 let accountUser = null;
 let defaultAppliedForUser = null;
 
-function identity() {
-  return window.netlifyIdentity || null;
-}
-
-async function accountFetch(url, options = {}) {
-  const user = identity()?.currentUser();
-  if (!user) throw new Error('Sign in to use saved dice.');
-
-  const token = await user.jwt();
-  const response = await fetch(url, {
-    ...options,
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-      ...(options.headers || {}),
-    },
-  });
-
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || 'Account request failed.');
-  return data;
-}
-
-function setMessage(message, kind = '') {
-  const el = document.getElementById('account-status');
-  if (!el) return;
-  el.textContent = message;
-  el.className = `status-line ${kind}`.trim();
-}
-
-function renderConfigurations() {
-  const list = document.getElementById('saved-config-list');
-  if (!list) return;
-  list.replaceChildren();
-
-  if (!accountUser) {
-    list.textContent = 'Sign in to access persistent saved dice.';
-    return;
-  }
-  if (!savedConfigurations.length) {
-    list.textContent = 'No saved configurations yet.';
-    return;
-  }
-
-  savedConfigurations.forEach((config) => {
-    const row = document.createElement('div');
-    row.className = 'saved-config-item';
-
-    const copy = document.createElement('div');
-    copy.className = 'saved-config-copy';
-    const name = document.createElement('strong');
-    name.textContent = `${config.name}${config.isDefault ? ' ★' : ''}`;
-    const meta = document.createElement('span');
-    const tray = String(config.trayTheme || 'tray').replace('tray-', '').replaceAll('_', ' ');
-    meta.textContent = `${config.selectedDice?.length || 0} dice • ${tray}`;
-    copy.append(name, meta);
-
-    const actions = document.createElement('div');
-    actions.className = 'saved-config-actions';
-    const load = document.createElement('button');
-    load.type = 'button';
-    load.className = 'btn secondary';
-    load.textContent = 'Load';
-    load.onclick = () => applyConfiguration(config);
-    const remove = document.createElement('button');
-    remove.type = 'button';
-    remove.className = 'btn danger';
-    remove.textContent = 'Delete';
-    remove.onclick = () => deleteConfiguration(config.id);
-    actions.append(load, remove);
-    row.append(copy, actions);
-    list.appendChild(row);
-  });
-}
-
 function renderAccount() {
-  const signedOut = document.getElementById('account-signed-out');
-  const signedIn = document.getElementById('account-signed-in');
-  const accountBtn = document.getElementById('open-account-btn');
-  signedOut?.classList.toggle('hidden', Boolean(accountUser));
-  signedIn?.classList.toggle('hidden', !accountUser);
-  if (accountBtn) accountBtn.textContent = accountUser ? 'My Dice' : 'Sign In';
-
-  const email = document.getElementById('account-email');
-  if (email) email.textContent = accountUser?.email || '';
-  renderConfigurations();
+  renderAccountView({
+    user: accountUser,
+    configurations: savedConfigurations,
+    onLoad: applyConfiguration,
+    onDelete: deleteConfiguration,
+  });
 }
 
-async function applyConfiguration(config, message = true) {
+async function applyConfiguration(config, showMessage = true) {
   try {
     state.selectedDice = (config.selectedDice || []).map((die) => ({ type: die.type }));
     state.trayTheme = config.trayTheme || state.trayTheme;
@@ -108,10 +30,10 @@ async function applyConfiguration(config, message = true) {
     renderResults();
     await clearPhysics();
     document.dispatchEvent(new Event('configurationloaded'));
-    if (message) setMessage(`Loaded “${config.name}”.`, 'ready');
+    if (showMessage) setAccountMessage(`Loaded “${config.name}”.`, 'ready');
   } catch (error) {
     console.error('Failed to load configuration:', error);
-    setMessage(error.message, 'error');
+    setAccountMessage(error.message, 'error');
   }
 }
 
@@ -123,7 +45,7 @@ async function loadConfigurations() {
   }
 
   try {
-    setMessage('Loading saved dice…');
+    setAccountMessage('Loading saved dice…');
     const data = await accountFetch('/api/configurations');
     savedConfigurations = data.configurations || [];
     renderAccount();
@@ -137,25 +59,24 @@ async function loadConfigurations() {
     if (shouldRestoreDefault) {
       defaultAppliedForUser = accountUser.id;
       await applyConfiguration(defaultConfig, false);
-      setMessage(`Restored default “${defaultConfig.name}”.`, 'ready');
+      setAccountMessage(`Restored default “${defaultConfig.name}”.`, 'ready');
       return;
     }
 
-    setMessage(`${savedConfigurations.length} saved configuration${savedConfigurations.length === 1 ? '' : 's'}.`, 'ready');
+    setAccountMessage(`${savedConfigurations.length} saved configuration${savedConfigurations.length === 1 ? '' : 's'}.`, 'ready');
   } catch (error) {
     console.error('Failed to load saved configurations:', error);
-    setMessage(error.message, 'error');
+    setAccountMessage(error.message, 'error');
   }
 }
 
 async function saveCurrentConfiguration() {
   try {
-    const nameInput = document.getElementById('config-name');
-    const name = nameInput?.value.trim();
+    const name = document.getElementById('config-name')?.value.trim();
     if (!name) throw new Error('Give this configuration a name.');
+
     const existing = savedConfigurations.find((item) => item.name.toLowerCase() === name.toLowerCase());
     const isDefault = Boolean(document.getElementById('config-default')?.checked);
-
     const data = await accountFetch('/api/configurations', {
       method: 'POST',
       body: JSON.stringify({
@@ -168,12 +89,13 @@ async function saveCurrentConfiguration() {
         isDefault,
       }),
     });
+
     savedConfigurations = data.configurations || [];
-    renderConfigurations();
-    setMessage(`Saved “${name}”.`, 'ready');
+    renderAccount();
+    setAccountMessage(`Saved “${name}”.`, 'ready');
   } catch (error) {
     console.error('Failed to save configuration:', error);
-    setMessage(error.message, 'error');
+    setAccountMessage(error.message, 'error');
   }
 }
 
@@ -181,11 +103,11 @@ async function deleteConfiguration(id) {
   try {
     const data = await accountFetch(`/api/configurations?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
     savedConfigurations = data.configurations || [];
-    renderConfigurations();
-    setMessage('Configuration deleted.', 'ready');
+    renderAccount();
+    setAccountMessage('Configuration deleted.', 'ready');
   } catch (error) {
     console.error('Failed to delete configuration:', error);
-    setMessage(error.message, 'error');
+    setAccountMessage(error.message, 'error');
   }
 }
 
@@ -198,9 +120,9 @@ function handleIdentityUser(user) {
 }
 
 export function initAccount() {
-  const auth = identity();
+  const auth = getIdentity();
   if (!auth) {
-    setMessage('Account service failed to load. Guest mode is still available.', 'error');
+    setAccountMessage('Account service failed to load. Guest mode is still available.', 'error');
     return;
   }
 
@@ -209,7 +131,7 @@ export function initAccount() {
   auth.on('logout', () => handleIdentityUser(null));
   auth.on('error', (error) => {
     console.error('Netlify Identity error:', error);
-    setMessage('Account login is unavailable until Netlify Identity is enabled.', 'error');
+    setAccountMessage('Account login is unavailable until Netlify Identity is enabled.', 'error');
   });
   auth.init();
 
