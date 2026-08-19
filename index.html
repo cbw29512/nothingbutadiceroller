@@ -19,6 +19,7 @@
         <button id="sound-toggle-btn" class="btn ghost" type="button" aria-pressed="true">🔊 ON</button>
         <button id="open-styles-btn" class="btn secondary" type="button">Themes</button>
         <button id="open-history-btn" class="btn secondary" type="button">History</button>
+        <button id="open-account-btn" class="btn secondary" type="button">Sign In</button>
       </div>
     </header>
 
@@ -44,7 +45,7 @@
         <div>
           <span class="section-label">D20 quick rolls</span>
           <p class="control-help">Press once to roll immediately. ADV/DIS reset after the roll.</p>
-          <div class="adv-btn-group quick-roll-group" style="grid-template-columns:repeat(2,minmax(0,1fr))" aria-label="D20 quick rolls">
+          <div class="adv-btn-group quick-roll-group" aria-label="D20 quick rolls">
             <button class="adv-btn" data-quick-roll="advantage" type="button" title="Roll the current pool with d20 advantage">ROLL ADV</button>
             <button class="adv-btn" data-quick-roll="disadvantage" type="button" title="Roll the current pool with d20 disadvantage">ROLL DIS</button>
           </div>
@@ -88,7 +89,7 @@
         <button class="mobile-die-btn featured" data-type="d20" type="button">d20</button>
         <button class="mobile-die-btn" data-type="d100" type="button">d100</button>
       </div>
-      <div class="mobile-mode-row" style="grid-template-columns:repeat(2,minmax(0,1fr))" aria-label="D20 quick rolls">
+      <div class="mobile-mode-row" aria-label="D20 quick rolls">
         <button class="mobile-mode-btn" data-quick-roll="advantage" type="button" aria-label="Roll with advantage">ADV</button>
         <button class="mobile-mode-btn" data-quick-roll="disadvantage" type="button" aria-label="Roll with disadvantage">DIS</button>
       </div>
@@ -123,8 +124,54 @@
         <div id="die-skins-grid" class="picker-grid"></div>
       </div>
     </aside>
+
+    <aside id="account-drawer" class="drawer hidden" aria-hidden="true">
+      <button class="drawer-backdrop" type="button" aria-label="Close account"></button>
+      <div class="drawer-content account-drawer-content" role="dialog" aria-modal="true" aria-labelledby="account-title">
+        <div class="drawer-header">
+          <h2 id="account-title">My Dice</h2>
+          <button id="close-account-btn" class="close-btn" type="button" aria-label="Close account">×</button>
+        </div>
+
+        <div id="account-signed-out" class="account-panel">
+          <p>Sign in to save dice configurations permanently and load them on other devices.</p>
+          <div class="account-auth-actions">
+            <button id="account-login-btn" class="btn primary" type="button">Sign In</button>
+            <button id="account-signup-btn" class="btn secondary" type="button">Create Account</button>
+          </div>
+        </div>
+
+        <div id="account-signed-in" class="account-panel hidden">
+          <div class="account-user-row">
+            <div>
+              <span class="section-label">Signed in as</span>
+              <strong id="account-email"></strong>
+            </div>
+            <button id="account-logout-btn" class="btn secondary" type="button">Sign Out</button>
+          </div>
+
+          <div class="save-config-form">
+            <label for="config-name" class="section-label">Save current dice</label>
+            <input id="config-name" class="text-input" type="text" maxlength="60" placeholder="Fireball, Greatsword, Skill Check…">
+            <label class="checkbox-row">
+              <input id="config-default" type="checkbox">
+              <span>Load as my default configuration</span>
+            </label>
+            <button id="save-config-btn" class="btn primary" type="button">Save Current Configuration</button>
+          </div>
+
+          <div>
+            <span class="section-label">Saved configurations</span>
+            <div id="saved-config-list" class="saved-config-list"></div>
+          </div>
+        </div>
+
+        <p id="account-status" class="status-line" role="status">Guest mode active.</p>
+      </div>
+    </aside>
   </div>
 
+  <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
   <script type="module" src="/js/app.js"></script>
 </body>
 </html>
