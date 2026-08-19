@@ -7,11 +7,18 @@ const matcher = new RegExpMatcher({
   ...englishRecommendedTransformers,
 });
 
+const STORE_NAME = 'dice-trays-store';
+const COMMUNITY_INDEX = 'community/themes/index.json';
+
 function json(body, status = 200) {
   return Response.json(body, {
     status,
     headers: { 'Cache-Control': 'no-store' },
   });
+}
+
+function clampHex(value, fallback) {
+  return /^#[0-9a-f]{6}$/i.test(String(value || '')) ? String(value) : fallback;
 }
 
 export default async (req) => {
@@ -22,7 +29,7 @@ export default async (req) => {
     if (!user) return json({ error: 'Authentication required.' }, 401);
 
     const body = await req.json();
-    const { themeName, trayName, customStyles, trayImageBase64 } = body;
+    const { themeName, trayName, customStyles = {}, trayImageBase64, isPublic = false } = body;
     const customLabelsText = customStyles?.customFaces
       ? Object.values(customStyles.customFaces).join(' ')
       : '';
@@ -32,7 +39,7 @@ export default async (req) => {
       return json({ error: 'Please remove inappropriate terms before saving this theme.' }, 400);
     }
 
-    const store = getStore('dice-trays-store');
+    const store = getStore(STORE_NAME);
     const themeId = `theme_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     let imageUrl = null;
 
@@ -47,7 +54,7 @@ export default async (req) => {
 
       const imageKey = `users/${user.id}/themes/${themeId}_tray.png`;
       await store.set(imageKey, buffer, { metadata: { contentType: 'image/png' } });
-      imageUrl = `/.netlify/blobs/dice-trays-store/${imageKey}`;
+      imageUrl = `/.netlify/blobs/${STORE_NAME}/${imageKey}`;
     }
 
     const themeData = {
@@ -56,15 +63,19 @@ export default async (req) => {
       themeName: String(themeName || 'Custom Adventure Set').slice(0, 80),
       trayName: String(trayName || 'Custom Tray').slice(0, 80),
       creator: user.userMetadata?.fullName || user.user_metadata?.full_name || user.email || 'Adventurer',
-      customStyles: customStyles || {
-        baseColor: '#0f172a',
-        numberColor: '#38bdf8',
-        opacity: 1,
-        enableGlow: false,
-        glowColor: '#00ff66',
-        customFaces: {},
+      customStyles: {
+        baseColor: clampHex(customStyles.baseColor, '#0f172a'),
+        numberColor: clampHex(customStyles.numberColor, '#f8fafc'),
+        diceColor: clampHex(customStyles.diceColor, '#b91c1c'),
+        glowColor: clampHex(customStyles.glowColor, '#00ff66'),
+        opacity: Math.max(0.25, Math.min(1, Number(customStyles.opacity) || 1)),
+        enableGlow: Boolean(customStyles.enableGlow),
+        customFaces: customStyles.customFaces && typeof customStyles.customFaces === 'object'
+          ? customStyles.customFaces
+          : {},
       },
       imageUrl,
+      isPublic: Boolean(isPublic),
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -75,8 +86,27 @@ export default async (req) => {
     const indexKey = `users/${user.id}/themes/index.json`;
     const existing = await store.get(indexKey, { type: 'json' }).catch(() => []);
     const index = Array.isArray(existing) ? existing : [];
-    index.unshift({ themeId, themeName: themeData.themeName, createdAt: themeData.createdAt });
+    index.unshift({
+      themeId,
+      themeName: themeData.themeName,
+      createdAt: themeData.createdAt,
+      isPublic: themeData.isPublic,
+    });
     await store.setJSON(indexKey, index.slice(0, 50));
+
+    if (themeData.isPublic) {
+      const existingCommunity = await store.get(COMMUNITY_INDEX, { type: 'json' }).catch(() => []);
+      const community = Array.isArray(existingCommunity) ? existingCommunity : [];
+      community.unshift({
+        ownerId: user.id,
+        themeId,
+        themeName: themeData.themeName,
+        trayName: themeData.trayName,
+        creator: themeData.creator,
+        createdAt: themeData.createdAt,
+      });
+      await store.setJSON(COMMUNITY_INDEX, community.slice(0, 250));
+    }
 
     return json({ success: true, themeId, themeData });
   } catch (error) {
