@@ -72,9 +72,11 @@ async function validateBuild() {
       'id="desktop-custom-die-popover"',
       'popover="auto"',
       '>CUSTOM</button>',
+      'Keep dice after roll',
       'id="tray-roll-hint"',
       'CLICK / TAP TRAY TO ROLL',
-      'STOCHASTIC RIGID-BODY ENTROPY ENGINE',
+      'SECURE RANDOMIZATION ENGINE',
+      'Physics-resolved dice • Cryptographic custom rolls',
     ];
 
     for (const reference of expectedHtml) {
