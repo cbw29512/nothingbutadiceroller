@@ -38,6 +38,8 @@ async function validateBuild() {
       'account.css',
       'js/app.js',
       'js/account.js',
+      'js/account-api.js',
+      'js/account-ui.js',
       'js/deployment.js',
       'js/physics.js',
       'js/roller.js',
