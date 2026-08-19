@@ -5,6 +5,15 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.support-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .28rem;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
 .account-panel {
   display: flex;
   flex-direction: column;
@@ -146,6 +155,10 @@
     min-width: 0;
     padding: .5rem .25rem;
     font-size: .7rem;
+  }
+
+  .support-link .support-label {
+    display: none;
   }
 
   .saved-config-item {
