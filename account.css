@@ -1,3 +1,5 @@
+@import url('/community.css');
+
 .quick-roll-group,
 .mobile-mode-row {
   grid-template-columns: repeat(2, minmax(0, 1fr));
