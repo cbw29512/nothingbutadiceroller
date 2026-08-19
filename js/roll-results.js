@@ -77,9 +77,7 @@ export function getCriticalOutcome(pool, rollMode, keptD20s) {
   try {
     if (!Array.isArray(pool) || !Array.isArray(keptD20s)) return null;
     const d20Count = pool.filter(die => die?.type === 'd20').length;
-    const singleNormalD20 = rollMode === 'normal'
-      && pool.length === 1
-      && d20Count === 1;
+    const singleNormalD20 = rollMode === 'normal' && d20Count === 1;
     const singleAdvDisD20 = ['advantage', 'disadvantage'].includes(rollMode)
       && d20Count === 1;
 
