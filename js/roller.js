@@ -126,7 +126,8 @@ export async function performRoll(requestedMode = 'normal') {
     document.getElementById('tray-empty-state')?.classList.add('hidden');
     playDiceSound();
 
-    const results = await rollPhysics(notation, getSkinColor(state.dieSkin));
+    const activeDiceColor = getSkinColor(state.dieSkin, state.customAppearance?.diceColor);
+    const results = await rollPhysics(notation, activeDiceColor);
     const parsed = parseRollResults(results, rollMode);
     state.hasRolled = true;
     renderResults(parsed.total, parsed.breakdown);
@@ -141,7 +142,6 @@ export async function performRoll(requestedMode = 'normal') {
     savePreferences();
     renderHistory();
 
-    // Keep Pool means exactly that: when off, the next pool starts empty.
     if (!state.keepDice) {
       state.selectedDice = [];
       renderPool();
