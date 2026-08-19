@@ -1,0 +1,46 @@
+PROPRIETARY SOURCE-AVAILABLE LICENSE
+
+Copyright (c) 2026 cbw29512. All rights reserved.
+
+This software and its source code (the "Software") are made publicly viewable for evaluation, review, testing, and personal reference only.
+
+Except for the limited rights expressly granted below, no license or permission is granted to use, copy, modify, merge, publish, distribute, sublicense, sell, lease, host as a competing service, monetize, or create derivative works from the Software, in whole or in part, without prior written permission from the copyright holder.
+
+1. PERMITTED USE
+
+You may:
+- View and inspect the source code.
+- Run the Software for personal, non-commercial evaluation or testing.
+- Use the limited functionality provided by GitHub to view or fork a public repository, solely to the extent required by GitHub's Terms of Service.
+
+2. PROHIBITED USE
+
+Without prior written permission from the copyright holder, you may not:
+- Use the Software, or any substantial portion of it, for any commercial purpose.
+- Sell, license, sublicense, rent, lease, monetize, or otherwise profit from the Software or a derivative work.
+- Redistribute the Software or substantial portions of it outside the limited functionality expressly provided by GitHub's service terms.
+- Publish or operate a competing or substantially similar product, service, hosted application, or derivative work based on the Software.
+- Remove or alter copyright, ownership, attribution, or license notices.
+- Represent the Software or any derivative work as your own original work.
+
+3. NO COMMERCIAL LICENSE
+
+No commercial rights are granted by this license. Any commercial use requires a separate written license from the copyright holder.
+
+4. GITHUB SERVICE RIGHTS
+
+Nothing in this license is intended to restrict the limited rights that must be granted to GitHub or other GitHub users solely for hosting, displaying, viewing, and forking public repository content through GitHub's service as required by GitHub's Terms of Service. Those service-specific rights do not grant permission for commercial exploitation, resale, redistribution outside the service, or operation of a competing product.
+
+5. THIRD-PARTY COMPONENTS
+
+Third-party libraries, dependencies, assets, and other components included with or referenced by the Software remain subject to their own respective licenses. This license applies only to code and other material for which the copyright holder owns the applicable rights.
+
+6. NO WARRANTY
+
+THE SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE, AND NON-INFRINGEMENT. IN NO EVENT SHALL THE COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY ARISING FROM OR RELATED TO THE SOFTWARE OR ITS USE.
+
+7. RESERVATION OF RIGHTS
+
+All rights not expressly granted in this license are reserved by the copyright holder.
+
+For commercial licensing or other permissions, contact the repository owner through the repository's GitHub account.
