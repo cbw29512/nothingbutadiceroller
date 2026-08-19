@@ -9,30 +9,37 @@ export function canRollFromTray(snapshot = state) {
   );
 }
 
+function moveTrayInfoOutOfRollingSurface() {
+  const tray = document.getElementById('dice-tray');
+  const badge = tray?.querySelector('.roll-trust-badge');
+  const stylesDrawer = document.querySelector('#styles-drawer .drawer-content');
+
+  if (badge && stylesDrawer) {
+    badge.classList.remove('roll-trust-badge');
+    badge.classList.add('results-copy');
+    badge.hidden = false;
+    stylesDrawer.appendChild(badge);
+  }
+
+  document.getElementById('tray-roll-hint')?.remove();
+  tray?.removeAttribute('aria-describedby');
+}
+
 function syncTrayState() {
   const tray = document.getElementById('dice-tray');
-  const hint = document.getElementById('tray-roll-hint');
-  if (!tray || !hint) return;
+  if (!tray) return;
 
   const ready = canRollFromTray();
   tray.classList.toggle('tray-roll-ready', ready);
   tray.setAttribute('aria-disabled', String(!ready));
-
-  if (state.rolling) {
-    hint.textContent = 'ROLLING…';
-  } else if (!state.selectedDice.length) {
-    hint.textContent = 'SELECT DICE • CLICK / TAP TRAY TO ROLL';
-  } else if (!state.physicsReady) {
-    hint.textContent = 'LOADING 3D PHYSICS…';
-  } else {
-    hint.textContent = 'CLICK / TAP TRAY TO ROLL • ENTER / SPACE';
-  }
 }
 
 export function initTrayControls(onRoll) {
   try {
     const tray = document.getElementById('dice-tray');
     if (!tray || typeof onRoll !== 'function') return;
+
+    moveTrayInfoOutOfRollingSurface();
 
     const activate = () => {
       if (!canRollFromTray()) return;
