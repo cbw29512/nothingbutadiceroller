@@ -11,6 +11,50 @@ function setMessage(message, kind = '') {
   el.className = `status-line ${kind}`.trim();
 }
 
+function ensureStudioMarkup() {
+  const drawer = document.querySelector('#styles-drawer .drawer-content');
+  if (!drawer || document.getElementById('theme-studio')) return;
+
+  const studio = document.createElement('section');
+  studio.id = 'theme-studio';
+  studio.className = 'theme-studio';
+  studio.innerHTML = `
+    <div class="theme-studio-divider"></div>
+    <div class="theme-studio-heading">
+      <div>
+        <span class="section-label">Theme Studio</span>
+        <p>Create a dice + tray look, keep it private, or publish it.</p>
+      </div>
+    </div>
+    <div class="theme-studio-form">
+      <label>Theme name<input id="custom-theme-name" class="text-input" maxlength="80" placeholder="Void Dragon"></label>
+      <label>Tray name<input id="custom-tray-name" class="text-input" maxlength="80" placeholder="Astral Arena"></label>
+      <div class="theme-color-row">
+        <label>Tray color<input id="custom-tray-color" type="color" value="#0f172a"></label>
+        <label>Dice color<input id="custom-dice-color" type="color" value="#b91c1c"></label>
+        <label>Glow color<input id="custom-glow-color" type="color" value="#00ff66"></label>
+      </div>
+      <label class="theme-upload-row">Tray image <span>optional, max 4 MB</span><input id="custom-tray-image" type="file" accept="image/png,image/jpeg,image/webp"></label>
+      <label class="checkbox-row"><input id="custom-theme-glow" type="checkbox"><span>Add tray glow</span></label>
+      <label class="checkbox-row"><input id="custom-theme-public" type="checkbox"><span>Share in Community Themes</span></label>
+      <button id="save-custom-theme-btn" class="btn primary" type="button">Save Theme</button>
+      <p id="theme-studio-status" class="status-line" role="status">Community themes can be browsed without signing in.</p>
+    </div>
+    <div class="theme-library-section">
+      <span class="section-label">My Themes</span>
+      <div id="my-themes-list" class="community-theme-list"></div>
+    </div>
+    <div class="theme-library-section">
+      <div class="theme-library-heading">
+        <span class="section-label">Community Themes</span>
+        <button id="refresh-community-themes-btn" class="btn ghost compact-btn" type="button">Refresh</button>
+      </div>
+      <div id="community-themes-list" class="community-theme-list"></div>
+    </div>`;
+
+  drawer.appendChild(studio);
+}
+
 function toAppearance(theme) {
   const styles = theme?.customStyles || {};
   return {
@@ -206,6 +250,7 @@ async function deleteTheme(themeId) {
 
 export function initThemeCommunity() {
   try {
+    ensureStudioMarkup();
     document.getElementById('save-custom-theme-btn')?.addEventListener('click', saveTheme);
     document.getElementById('refresh-community-themes-btn')?.addEventListener('click', loadCommunity);
 
