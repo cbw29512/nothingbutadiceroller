@@ -38,6 +38,7 @@ export function addDie(type) {
     state.selectedDice.push({ type });
     state.hasRolled = false;
     renderPool();
+    emitRollState();
   } catch (error) {
     console.error(`Failed to add ${type}:`, error);
   }
