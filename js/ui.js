@@ -1,6 +1,33 @@
 import { state } from './state.js';
 import { countDice } from './utils.js';
 
+export function formatRollButtonLabel(selectedDice = state.selectedDice) {
+  try {
+    const dice = Array.isArray(selectedDice) ? selectedDice : [];
+    const entries = Object.entries(countDice(dice));
+    if (!entries.length) return 'Roll Dice';
+
+    const formula = entries
+      .map(([type, count]) => `${count === 1 ? '' : count}${type}`)
+      .join(' + ');
+    return `Roll ${formula}`;
+  } catch (err) {
+    console.error('Failed to format roll button label:', err);
+    return 'Roll Dice';
+  }
+}
+
+function syncRollButtonLabels() {
+  const label = formatRollButtonLabel(state.selectedDice);
+  ['roll-btn', 'mobile-roll-btn'].forEach(id => {
+    const button = document.getElementById(id);
+    if (!button) return;
+    button.textContent = label;
+    button.setAttribute('aria-label', label);
+    button.title = label;
+  });
+}
+
 export function renderPool() {
   try {
     const chips = document.getElementById('pool-chips');
@@ -14,6 +41,7 @@ export function renderPool() {
     summary.textContent = entries.length
       ? entries.map(([type, count]) => `${count}${type}`).join(' + ')
       : 'No dice selected';
+    syncRollButtonLabels();
 
     entries.forEach(([type, count]) => {
       const chip = document.createElement('button');
