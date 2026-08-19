@@ -1,5 +1,5 @@
-import { state, savePreferences } from './state.js';
-import { TRAY_THEMES, DIE_SKINS, countDice } from './utils.js';
+import { state } from './state.js';
+import { countDice } from './utils.js';
 
 export function renderPool() {
   try {
@@ -102,44 +102,5 @@ export function showCrit(kind) {
     setTimeout(() => host.replaceChildren(), 1700);
   } catch (err) {
     console.error('Failed to render critical-roll effect:', err);
-  }
-}
-
-export function initStylePicker(onSkinChange) {
-  try {
-    const trayGrid = document.getElementById('tray-themes-grid');
-    const skinGrid = document.getElementById('die-skins-grid');
-    if (!trayGrid || !skinGrid) return;
-
-    trayGrid.replaceChildren();
-    TRAY_THEMES.forEach(theme => {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = `swatch-btn ${state.trayTheme === theme.id ? 'active' : ''}`.trim();
-      button.textContent = theme.name;
-      button.onclick = () => {
-        state.trayTheme = theme.id;
-        savePreferences();
-        initStylePicker(onSkinChange);
-      };
-      trayGrid.appendChild(button);
-    });
-
-    skinGrid.replaceChildren();
-    DIE_SKINS.forEach(skin => {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = `swatch-btn ${state.dieSkin === skin.id ? 'active' : ''}`.trim();
-      button.textContent = skin.name;
-      button.onclick = async () => {
-        state.dieSkin = skin.id;
-        savePreferences();
-        initStylePicker(onSkinChange);
-        try { await onSkinChange?.(); } catch (err) { console.error('Dice skin update failed:', err); }
-      };
-      skinGrid.appendChild(button);
-    });
-  } catch (err) {
-    console.error('Failed to initialize style picker:', err);
   }
 }
