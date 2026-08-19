@@ -35,6 +35,13 @@ export function normalizeCustomSides(rawValue) {
   return sides;
 }
 
+function showCustomTrayResult(sides, result) {
+  const trayMessage = document.getElementById('tray-empty-state');
+  if (!trayMessage) return;
+  trayMessage.textContent = `d${sides} → ${result}`;
+  trayMessage.classList.remove('hidden');
+}
+
 export async function performCustomRoll(rawSides) {
   if (state.rolling) return;
 
@@ -50,6 +57,7 @@ export async function performCustomRoll(rawSides) {
 
     const breakdown = `Custom d${sides} = ${result} • Web Crypto CSPRNG`;
     renderResults(result, breakdown);
+    showCustomTrayResult(sides, result);
 
     state.history.unshift({
       time: new Date().toLocaleTimeString([], {
