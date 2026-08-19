@@ -2,7 +2,8 @@ import { state, loadPreferences, savePreferences } from './state.js';
 import { getSkinColor } from './utils.js';
 import { initDicePhysics } from './physics.js';
 import { addDie, clearPool, performRoll } from './roller.js';
-import { initStylePicker, renderHistory, renderPool, setStatus } from './ui.js';
+import { renderHistory, renderPool, setStatus } from './ui.js';
+import { initStylePicker } from './style-picker.js';
 import { assertStylesLoaded } from './deployment.js';
 import { initAccount } from './account.js';
 
