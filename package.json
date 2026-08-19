@@ -1,6 +1,7 @@
 {
   "scripts": {
-    "build": "node scripts/build.mjs"
+    "check": "node scripts/check.mjs",
+    "build": "npm run check && node scripts/build.mjs"
   },
   "engines": {
     "node": ">=22.12.0"
