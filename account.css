@@ -1,0 +1,156 @@
+.quick-roll-group,
+.mobile-mode-row {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.account-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.account-panel.hidden {
+  display: none;
+}
+
+.account-auth-actions,
+.account-user-row,
+.saved-config-actions {
+  display: flex;
+  gap: .6rem;
+  align-items: center;
+}
+
+.account-auth-actions .btn {
+  flex: 1;
+}
+
+.account-user-row {
+  justify-content: space-between;
+  padding: .8rem;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  background: #182130;
+}
+
+.account-user-row > div {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: .25rem;
+}
+
+#account-email {
+  overflow-wrap: anywhere;
+}
+
+.save-config-form {
+  display: grid;
+  gap: .65rem;
+  padding: .9rem;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  background: #151f2e;
+}
+
+.text-input {
+  width: 100%;
+  min-height: 44px;
+  padding: .7rem .75rem;
+  border: 1px solid #475569;
+  border-radius: 10px;
+  background: #0f172a;
+  color: #fff;
+  font: inherit;
+}
+
+.text-input:focus-visible {
+  outline: 3px solid #38bdf8;
+  outline-offset: 2px;
+}
+
+.checkbox-row {
+  display: flex;
+  gap: .55rem;
+  align-items: center;
+  color: #e2e8f0;
+  font-size: .86rem;
+}
+
+.checkbox-row input {
+  width: 18px;
+  height: 18px;
+}
+
+.saved-config-list {
+  display: flex;
+  flex-direction: column;
+  gap: .55rem;
+  margin-top: .6rem;
+  color: #cbd5e1;
+}
+
+.saved-config-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: .7rem;
+  align-items: center;
+  padding: .75rem;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  background: #182130;
+}
+
+.saved-config-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: .2rem;
+}
+
+.saved-config-copy strong {
+  color: #fff;
+}
+
+.saved-config-copy span {
+  color: #cbd5e1;
+  font-size: .78rem;
+  text-transform: capitalize;
+}
+
+.saved-config-actions .btn {
+  padding: .5rem .65rem;
+  font-size: .76rem;
+}
+
+@media (max-width: 700px) {
+  .app-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: .5rem;
+  }
+
+  .app-header h1 {
+    text-align: center;
+  }
+
+  .header-controls {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .header-controls .btn {
+    min-width: 0;
+    padding: .5rem .25rem;
+    font-size: .7rem;
+  }
+
+  .saved-config-item {
+    grid-template-columns: 1fr;
+  }
+
+  .saved-config-actions .btn {
+    flex: 1;
+  }
+}
