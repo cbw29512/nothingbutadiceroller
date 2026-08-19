@@ -3,6 +3,40 @@ import { setAccountMessage } from './account-ui.js';
 
 let pendingCallback = null;
 
+function ensureAuthMarkup() {
+  const signedOut = document.getElementById('account-signed-out');
+  const drawer = document.querySelector('#account-drawer .drawer-content');
+  if (!signedOut || !drawer) return;
+
+  signedOut.innerHTML = `
+    <p>Sign in to save dice configurations permanently and load them on other devices.</p>
+    <div class="save-config-form account-auth-form">
+      <label for="account-auth-email" class="section-label">Email</label>
+      <input id="account-auth-email" class="text-input" type="email" autocomplete="email" placeholder="you@example.com">
+      <label for="account-auth-password" class="section-label">Password</label>
+      <input id="account-auth-password" class="text-input" type="password" autocomplete="current-password" minlength="6" placeholder="Password">
+      <div class="account-auth-actions">
+        <button id="account-login-btn" class="btn primary" type="button">Sign In</button>
+        <button id="account-signup-btn" class="btn secondary" type="button">Create Account</button>
+      </div>
+      <button id="account-recovery-btn" class="btn ghost" type="button">Forgot password?</button>
+    </div>`;
+
+  if (!document.getElementById('account-callback-panel')) {
+    const panel = document.createElement('div');
+    panel.id = 'account-callback-panel';
+    panel.className = 'account-panel hidden';
+    panel.innerHTML = `
+      <div class="save-config-form">
+        <strong id="account-callback-title">Finish account setup</strong>
+        <label for="account-callback-password" class="section-label">New password</label>
+        <input id="account-callback-password" class="text-input" type="password" autocomplete="new-password" minlength="6" placeholder="Choose a password">
+        <button id="account-callback-submit" class="btn primary" type="button">Continue</button>
+      </div>`;
+    signedOut.after(panel);
+  }
+}
+
 function accountDrawer(open = true) {
   const drawer = document.getElementById('account-drawer');
   drawer?.classList.toggle('hidden', !open);
@@ -68,6 +102,7 @@ async function processHash(onSession) {
 }
 
 export async function initAuthUI(onSession) {
+  ensureAuthMarkup();
   document.getElementById('account-login-btn')?.addEventListener('click', async () => {
     try {
       setAccountMessage('Signing in…');
@@ -76,7 +111,6 @@ export async function initAuthUI(onSession) {
       setAccountMessage('Signed in.', 'ready');
     } catch (error) { setAccountMessage(error.message, 'error'); }
   });
-
   document.getElementById('account-signup-btn')?.addEventListener('click', async () => {
     try {
       setAccountMessage('Creating account…');
@@ -85,7 +119,6 @@ export async function initAuthUI(onSession) {
       setAccountMessage(data.message || 'Check your email to confirm your account.', 'ready');
     } catch (error) { setAccountMessage(error.message, 'error'); }
   });
-
   document.getElementById('account-recovery-btn')?.addEventListener('click', async () => {
     try {
       const email = credentials().email;
@@ -94,7 +127,6 @@ export async function initAuthUI(onSession) {
       setAccountMessage(data.message, 'ready');
     } catch (error) { setAccountMessage(error.message, 'error'); }
   });
-
   document.getElementById('account-callback-submit')?.addEventListener('click', async () => {
     try {
       if (!pendingCallback) throw new Error('No account link is active.');
@@ -110,9 +142,8 @@ export async function initAuthUI(onSession) {
     } catch (error) { setAccountMessage(error.message, 'error'); }
   });
 
-  try {
-    await refresh(onSession, true);
-  } catch (error) {
+  try { await refresh(onSession, true); }
+  catch (error) {
     console.error('Initial account session check failed:', error);
     onSession(null);
     setAccountMessage('Guest mode active. Sign in to sync saved dice.');
