@@ -91,8 +91,11 @@ async function processHash(onSession) {
     setAccountMessage('Confirming your email…');
     await authAction('confirm', { token: confirmation });
     clearAuthHash();
-    await refresh(onSession);
-    setAccountMessage('Email confirmed. You are signed in.', 'ready');
+    const user = await refresh(onSession);
+    setAccountMessage(
+      user ? 'Email confirmed. You are signed in.' : 'Email confirmed. Sign in to continue.',
+      'ready',
+    );
     accountDrawer(true);
   } catch (error) {
     console.error('Email confirmation failed:', error);
@@ -107,16 +110,16 @@ export async function initAuthUI(onSession) {
     try {
       setAccountMessage('Signing in…');
       await authAction('login', credentials());
-      await refresh(onSession);
-      setAccountMessage('Signed in.', 'ready');
+      const user = await refresh(onSession);
+      setAccountMessage(user ? 'Signed in.' : 'Sign-in completed, but the session was not restored.', user ? 'ready' : 'error');
     } catch (error) { setAccountMessage(error.message, 'error'); }
   });
   document.getElementById('account-signup-btn')?.addEventListener('click', async () => {
     try {
       setAccountMessage('Creating account…');
       const data = await authAction('signup', credentials());
-      await refresh(onSession);
-      setAccountMessage(data.message || 'Check your email to confirm your account.', 'ready');
+      const user = await refresh(onSession);
+      setAccountMessage(user ? 'Account created and signed in.' : data.message || 'Check your email to confirm your account.', 'ready');
     } catch (error) { setAccountMessage(error.message, 'error'); }
   });
   document.getElementById('account-recovery-btn')?.addEventListener('click', async () => {
@@ -137,8 +140,8 @@ export async function initAuthUI(onSession) {
       pendingCallback = null;
       clearAuthHash();
       document.getElementById('account-callback-panel')?.classList.add('hidden');
-      await refresh(onSession);
-      setAccountMessage('Account ready. You are signed in.', 'ready');
+      const user = await refresh(onSession);
+      setAccountMessage(user ? 'Account ready. You are signed in.' : 'Account ready. Sign in to continue.', 'ready');
     } catch (error) { setAccountMessage(error.message, 'error'); }
   });
 
