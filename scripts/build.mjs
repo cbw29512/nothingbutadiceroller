@@ -1,6 +1,7 @@
 import { access, cp, mkdir, readFile, rm, copyFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { build } from 'esbuild';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, '..');
@@ -15,18 +16,38 @@ const files = [
   'mobile.css',
   'custom.css',
 ];
-const directories = ['js'];
 
 async function copySite() {
   try {
     await rm(dist, { recursive: true, force: true });
-    await mkdir(dist, { recursive: true });
+    await mkdir(resolve(dist, 'js'), { recursive: true });
     for (const file of files) await copyFile(resolve(root, file), resolve(dist, file));
-    for (const directory of directories) {
-      await cp(resolve(root, directory), resolve(dist, directory), { recursive: true });
-    }
+
+    // Keep source modules in the deploy for easy browser debugging. The entrypoint is
+    // overwritten below by the production browser bundle.
+    await cp(resolve(root, 'js'), resolve(dist, 'js'), { recursive: true });
   } catch (error) {
     console.error('Static site copy failed:', error);
+    throw error;
+  }
+}
+
+async function bundleBrowserApp() {
+  try {
+    await build({
+      entryPoints: [resolve(root, 'js/app.js')],
+      outfile: resolve(dist, 'js/app.js'),
+      bundle: true,
+      format: 'esm',
+      platform: 'browser',
+      target: ['es2022'],
+      sourcemap: false,
+      minify: false,
+      logLevel: 'info',
+    });
+    console.log('Browser bundle built with @netlify/identity included.');
+  } catch (error) {
+    console.error('Browser bundle failed:', error);
     throw error;
   }
 }
@@ -67,6 +88,11 @@ async function validateBuild() {
       throw new Error('Legacy Netlify Identity widget must not ship in production.');
     }
 
+    const bundle = await readFile(resolve(dist, 'js/app.js'), 'utf8');
+    if (!bundle.includes('handleAuthCallback')) {
+      throw new Error('Browser Identity callback handler was not bundled.');
+    }
+
     console.log('Build validation passed:', required.join(', '));
   } catch (error) {
     console.error('Build validation failed:', error);
@@ -76,6 +102,7 @@ async function validateBuild() {
 
 try {
   await copySite();
+  await bundleBrowserApp();
   await validateBuild();
   console.log(`Static site ready at ${dist}`);
 } catch (error) {
