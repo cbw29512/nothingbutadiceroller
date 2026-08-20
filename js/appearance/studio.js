@@ -1,126 +1,131 @@
 import { SYSTEM_DEFAULT_DICE_SET, SYSTEM_DEFAULT_DICE_SET_ID } from './defaults.mjs';
-import { canDeleteDiceSet, canEditDiceSet } from './authorization.mjs';
+import { canDeleteDiceSet, canEditDiceSet, canUseDiceSet } from './authorization.mjs';
 import { replaceVisualFace, removeVisualFace, useRawFaces } from './face-customization.mjs';
 import { createUserDiceSet, cloneDiceSet } from './schema.mjs';
-import { lockDiceSet, unlockDiceSet } from './transitions.mjs';
+import { lockDiceSet, makeDiceSetPrivate, publishDiceSet, unlockDiceSet } from './transitions.mjs';
 import { assertValidDiceSet } from './validation.mjs';
+import { deleteCloudDiceSet, loadCloudDiceSets, loadCommunityDiceSets, saveCloudDiceSet } from './studio-cloud.mjs';
 import {
-  deleteDiceSetLocal, getActiveDiceSetId, getOrCreateLocalOwnerId,
-  loadSavedDiceSets, resetActiveToDefault, saveDiceSetLocal, setActiveDiceSetId,
+  deleteDiceSetLocal, getActiveDiceSetId, getActiveDiceSetSnapshot, getOrCreateLocalOwnerId,
+  loadSavedDiceSets, resetActiveToDefault, saveDiceSetLocal, setActiveDiceSet,
 } from './studio-persistence.mjs';
-import { fillEditor, renderLibrary, renderPreview, setStatus } from './studio-render.mjs';
+import { fillEditor, renderCommunity, renderLibrary, renderPreview, setStatus } from './studio-render.mjs';
 
-const ownerId = getOrCreateLocalOwnerId();
+let ownerId = getOrCreateLocalOwnerId();
+let cloudEnabled = false;
 let savedSets = loadSavedDiceSets(localStorage, ownerId);
+let communitySets = [];
 let activeId = getActiveDiceSetId();
-let selectedId = [SYSTEM_DEFAULT_DICE_SET, ...savedSets].some((set) => set.id === activeId) ? activeId : SYSTEM_DEFAULT_DICE_SET_ID;
-let draft = cloneDiceSet(findSet(selectedId));
+let selectedId = SYSTEM_DEFAULT_DICE_SET_ID;
+let draft = cloneDiceSet(SYSTEM_DEFAULT_DICE_SET);
 let selectedDie = 'd20';
+const q = (id) => document.getElementById(id);
 
-function findSet(id) { return id === SYSTEM_DEFAULT_DICE_SET_ID ? SYSTEM_DEFAULT_DICE_SET : savedSets.find((set) => set.id === id); }
-function library() { return [SYSTEM_DEFAULT_DICE_SET, ...savedSets]; }
-function q(id) { return document.getElementById(id); }
-
+function findSet(id) {
+  if (id === SYSTEM_DEFAULT_DICE_SET_ID) return SYSTEM_DEFAULT_DICE_SET;
+  return savedSets.find((set) => set.id === id) || communitySets.find((set) => set.id === id) || null;
+}
+function selectSet(set) { if (set) { selectedId = set.id; draft = cloneDiceSet(set); refresh(); } }
 function refresh() {
-  renderLibrary(library(), selectedId, selectSet);
+  renderLibrary([SYSTEM_DEFAULT_DICE_SET, ...savedSets], selectedId, selectSet);
+  renderCommunity(communitySets, selectedId, selectSet);
   renderPreview(draft, selectedDie);
-  fillEditor(draft, selectedDie, activeId);
+  fillEditor(draft, selectedDie, activeId, ownerId, cloudEnabled);
 }
-
-function selectSet(id) {
-  const set = findSet(id);
-  if (!set) return;
-  selectedId = id;
-  draft = cloneDiceSet(set);
-  refresh();
+function replaceSaved(set) {
+  const index = savedSets.findIndex((item) => item.id === set.id);
+  if (index >= 0) savedSets[index] = cloneDiceSet(set); else savedSets.unshift(cloneDiceSet(set));
 }
-
+async function persist(set) {
+  if (cloudEnabled) { const saved = await saveCloudDiceSet(set); replaceSaved(saved); return saved; }
+  saveDiceSetLocal(set, localStorage, ownerId);
+  savedSets = loadSavedDiceSets(localStorage, ownerId);
+  return set;
+}
 function updateDraft(mutator) {
   if (!canEditDiceSet(draft, ownerId)) return;
-  const next = cloneDiceSet(draft);
-  mutator(next);
-  draft = assertValidDiceSet(next);
-  refresh();
+  const next = cloneDiceSet(draft); mutator(next); draft = assertValidDiceSet(next); refresh();
 }
-
-function saveDraft() {
+async function saveDraft() {
   try {
     if (!canEditDiceSet(draft, ownerId)) throw new Error('Unlock this set before editing it.');
     draft.name = q('set-name').value.trim() || 'Untitled Dice Set';
-    assertValidDiceSet(draft);
-    saveDiceSetLocal(draft, localStorage, ownerId);
-    savedSets = loadSavedDiceSets(localStorage, ownerId);
-    setStatus('Dice set saved.', 'ready');
-    refresh();
+    draft = await persist(assertValidDiceSet(draft)); setStatus('Dice set saved.', 'ready'); refresh();
   } catch (error) { setStatus(error.message, 'error'); }
 }
-
 function newSet() {
   const id = `set_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-  draft = createUserDiceSet({ id, ownerId, name: 'New Dice Set' });
-  selectedId = id;
-  setStatus('New set ready. Customize it, then Save Dice Set.');
-  refresh();
+  draft = createUserDiceSet({ id, ownerId, name: 'New Dice Set' }); selectedId = id;
+  setStatus('New set ready. Customize it, then Save Dice Set.'); refresh();
 }
-
-function toggleLock() {
+async function toggleLock() {
   try {
-    if (draft.systemOwned) return;
     draft = draft.locked ? unlockDiceSet(draft, ownerId) : lockDiceSet(draft, ownerId);
-    saveDiceSetLocal(draft, localStorage, ownerId);
-    savedSets = loadSavedDiceSets(localStorage, ownerId);
-    setStatus(draft.locked ? 'Set locked.' : 'Set unlocked and private.', 'ready');
-    refresh();
+    draft = await persist(draft); setStatus(draft.locked ? 'Set locked.' : 'Set unlocked and private.', 'ready'); refresh();
   } catch (error) { setStatus(error.message, 'error'); }
 }
-
+async function togglePublish() {
+  try {
+    if (!cloudEnabled) throw new Error('Sign in to publish community dice sets.');
+    draft = draft.visibility === 'public' ? makeDiceSetPrivate(draft, ownerId) : publishDiceSet(draft, ownerId);
+    draft = await persist(draft); communitySets = await loadCommunityDiceSets();
+    setStatus(draft.visibility === 'public' ? 'Set published read-only to the community.' : 'Set is private.', 'ready'); refresh();
+  } catch (error) { setStatus(error.message, 'error'); }
+}
 function applyFace() {
   try {
-    const logicalFace = q('logical-face').value;
-    if (q('face-mode').value === 'raw') draft = useRawFaces(draft, selectedDie);
-    else {
-      const kind = q('face-kind').value;
-      const value = q('face-value').value.trim();
-      draft = replaceVisualFace(draft, selectedDie, logicalFace, { kind, value, color: q('custom-face-color').value });
-    }
-    setStatus('Face appearance updated. Save the set to keep it.', 'ready');
-    refresh();
+    if (!canEditDiceSet(draft, ownerId)) throw new Error('Unlock this set before editing faces.');
+    const face = q('logical-face').value;
+    draft = q('face-mode').value === 'raw' ? useRawFaces(draft, selectedDie) : replaceVisualFace(draft, selectedDie, face, {
+      kind: q('face-kind').value, value: q('face-value').value.trim(), color: q('custom-face-color').value,
+    });
+    setStatus('Face appearance updated. Save the set to keep it.', 'ready'); refresh();
   } catch (error) { setStatus(error.message, 'error'); }
 }
-
 function activateDraft() {
   try {
-    const saved = draft.systemOwned || savedSets.some((set) => set.id === draft.id);
-    if (!saved) throw new Error('Save this dice set before using it.');
-    activeId = setActiveDiceSetId(draft.id);
-    setStatus('Set marked active for the roller.', 'ready');
-    refresh();
+    const persisted = draft.systemOwned || savedSets.some((set) => set.id === draft.id) || communitySets.some((set) => set.id === draft.id);
+    if (!persisted) throw new Error('Save this dice set before using it.');
+    if (!canUseDiceSet(draft, ownerId)) throw new Error('This dice set is not available to use.');
+    activeId = setActiveDiceSet(draft); setStatus('Set marked active for the roller.', 'ready'); refresh();
   } catch (error) { setStatus(error.message, 'error'); }
 }
-
+async function deleteDraft() {
+  try {
+    if (!canDeleteDiceSet(draft, ownerId)) throw new Error('This set cannot be deleted.');
+    if (cloudEnabled) { await deleteCloudDiceSet(draft.id); savedSets = savedSets.filter((set) => set.id !== draft.id); }
+    else savedSets = deleteDiceSetLocal(draft.id, localStorage, ownerId);
+    if (activeId === draft.id) activeId = resetActiveToDefault(); selectSet(SYSTEM_DEFAULT_DICE_SET);
+    setStatus('Dice set deleted.', 'ready');
+  } catch (error) { setStatus(error.message, 'error'); }
+}
+async function reloadCommunity() { communitySets = await loadCommunityDiceSets(); refresh(); }
 function bind() {
-  q('new-set').addEventListener('click', newSet);
-  q('save-set').addEventListener('click', saveDraft);
-  q('lock-set').addEventListener('click', toggleLock);
-  q('use-set').addEventListener('click', activateDraft);
-  q('reset-default').addEventListener('click', () => { activeId = resetActiveToDefault(); selectSet(SYSTEM_DEFAULT_DICE_SET_ID); setStatus('Default Dice restored. Saved sets were not deleted.', 'ready'); });
-  q('delete-set').addEventListener('click', () => {
-    try {
-      if (!canDeleteDiceSet(draft, ownerId)) throw new Error('This set cannot be deleted.');
-      savedSets = deleteDiceSetLocal(draft.id, localStorage, ownerId); activeId = getActiveDiceSetId(); selectSet(activeId);
-      setStatus('Dice set deleted.', 'ready');
-    } catch (error) { setStatus(error.message, 'error'); }
-  });
+  q('new-set').addEventListener('click', newSet); q('save-set').addEventListener('click', saveDraft);
+  q('lock-set').addEventListener('click', toggleLock); q('publish-set').addEventListener('click', togglePublish);
+  q('use-set').addEventListener('click', activateDraft); q('delete-set').addEventListener('click', deleteDraft);
+  q('refresh-community').addEventListener('click', reloadCommunity);
+  q('reset-default').addEventListener('click', () => { activeId = resetActiveToDefault(); selectSet(SYSTEM_DEFAULT_DICE_SET); setStatus('Default Dice restored. Saved sets were not deleted.', 'ready'); });
   document.addEventListener('click', (event) => { const type = event.target.closest('[data-die]')?.dataset.die; if (type) { selectedDie = type; refresh(); } });
   [['dice-body-color','bodyColor'],['dice-face-color','faceColor']].forEach(([id,key]) => q(id).addEventListener('input', () => updateDraft((set) => { set.appearance.diceSet.defaultStyle[key] = q(id).value; })));
   q('dice-glow-enabled').addEventListener('change', () => updateDraft((set) => { set.appearance.diceSet.defaultStyle.glow.enabled = q('dice-glow-enabled').checked; }));
-  q('dice-glow-color').addEventListener('input', () => updateDraft((set) => { set.appearance.diceSet.defaultStyle.glow.color = q('dice-glow-color').value; set.appearance.diceSet.defaultStyle.glow.intensity = 0.75; }));
+  q('dice-glow-color').addEventListener('input', () => updateDraft((set) => { set.appearance.diceSet.defaultStyle.glow.color = q('dice-glow-color').value; set.appearance.diceSet.defaultStyle.glow.intensity = .75; }));
   q('tray-color').addEventListener('input', () => updateDraft((set) => { set.appearance.tray.color = q('tray-color').value; }));
   q('tray-glow-enabled').addEventListener('change', () => updateDraft((set) => { set.appearance.tray.glow.enabled = q('tray-glow-enabled').checked; }));
-  q('tray-glow-color').addEventListener('input', () => updateDraft((set) => { set.appearance.tray.glow.color = q('tray-glow-color').value; set.appearance.tray.glow.intensity = 0.75; }));
-  q('face-mode').addEventListener('change', () => { if (q('face-mode').value === 'raw') { draft = useRawFaces(draft, selectedDie); refresh(); } });
+  q('tray-glow-color').addEventListener('input', () => updateDraft((set) => { set.appearance.tray.glow.color = q('tray-glow-color').value; set.appearance.tray.glow.intensity = .75; }));
+  q('face-mode').addEventListener('change', () => { if (q('face-mode').value === 'raw' && canEditDiceSet(draft, ownerId)) { draft = useRawFaces(draft, selectedDie); refresh(); } });
   q('apply-face').addEventListener('click', applyFace);
-  q('remove-face').addEventListener('click', () => { try { draft = removeVisualFace(draft, selectedDie, q('logical-face').value); refresh(); } catch (error) { setStatus(error.message, 'error'); } });
+  q('remove-face').addEventListener('click', () => { try { if (!canEditDiceSet(draft, ownerId)) throw new Error('Unlock this set before editing faces.'); draft = removeVisualFace(draft, selectedDie, q('logical-face').value); refresh(); } catch (error) { setStatus(error.message, 'error'); } });
 }
 
-try { bind(); refresh(); } catch (error) { console.error('Dice & Tray Studio failed to initialize:', error); setStatus('Studio failed to initialize.', 'error'); }
+async function initialize() {
+  try {
+    const [cloud, community] = await Promise.all([loadCloudDiceSets(), loadCommunityDiceSets()]);
+    communitySets = community;
+    if (cloud.authenticated && cloud.userId) { cloudEnabled = true; ownerId = cloud.userId; savedSets = cloud.sets; q('storage-mode').textContent = 'Signed in • sets sync to your account'; }
+    else q('storage-mode').textContent = 'Guest • sets stay in this browser';
+    const active = findSet(activeId) || getActiveDiceSetSnapshot() || SYSTEM_DEFAULT_DICE_SET;
+    selectedId = active.id; draft = cloneDiceSet(active); bind(); refresh(); setStatus('Dice Studio ready.', 'ready');
+  } catch (error) { console.error('Dice Studio initialization failed:', error); setStatus('Studio failed to initialize.', 'error'); }
+}
+initialize();
