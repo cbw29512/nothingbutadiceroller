@@ -1,4 +1,5 @@
 import { CANONICAL_DICE, RAW_FACE_MODE, SYSTEM_DEFAULT_DICE_SET_ID } from './defaults.mjs';
+import { getCanonicalFaceLabel, getCanonicalFaceResults } from './face-values.mjs';
 import { getSupportedFaceEditorDice } from './face-layouts.mjs';
 import { getVisualFace } from './face-customization.mjs';
 import { buildAppearanceRenderPlan } from './render-plan.mjs';
@@ -46,10 +47,11 @@ export function renderPreview(set, selectedDie) {
     const style = plan.dice[type].style;
     die.type = 'button'; die.className = `studio-preview-die${type === selectedDie ? ' active' : ''}`;
     if (FACE_EDITOR_DICE.has(type)) die.dataset.die = type;
-    else { die.disabled = true; die.title = 'Percentile face editing needs a dedicated two-d10 editor.'; }
     die.style.background = style.bodyColor; die.style.color = style.faceColor; die.style.opacity = String(style.opacity);
     die.style.boxShadow = style.glow.enabled ? `0 0 18px ${style.glow.color}` : 'none';
-    const face = getVisualFace(set, type, type === 'd100' ? 100 : CANONICAL_DICE[type]);
+    const results = getCanonicalFaceResults(type);
+    const previewResult = type === 'd100' ? 0 : results.at(-1);
+    const face = getVisualFace(set, type, previewResult);
     die.innerHTML = `<span></span><small>${type}</small>`; die.querySelector('span').textContent = visualText(face);
     return die;
   }));
@@ -64,10 +66,10 @@ export function fillEditor(set, selectedDie, activeId, ownerId, cloudEnabled) {
   const dieStyle = buildAppearanceRenderPlan(set).dice[selectedDie].style;
   const hasDieOverride = Object.keys(die.styleOverrides || {}).length > 0;
   const logicalFace = q('logical-face');
-  const maxFace = CANONICAL_DICE[selectedDie];
+  const results = getCanonicalFaceResults(selectedDie);
   const dieChanged = q('face-map').dataset.die && q('face-map').dataset.die !== selectedDie;
   let selectedFace = Number(logicalFace.value);
-  if (dieChanged || !Number.isInteger(selectedFace) || selectedFace < 1 || selectedFace > maxFace) selectedFace = maxFace;
+  if (dieChanged || !results.includes(selectedFace)) selectedFace = selectedDie === 'd100' ? 0 : results.at(-1);
   q('set-name').value = set.name; q('dice-body-color').value = style.bodyColor; q('dice-face-color').value = style.faceColor;
   q('dice-glow-enabled').checked = style.glow.enabled; q('dice-glow-color').value = style.glow.color;
   q('die-style-enabled').checked = hasDieOverride; q('die-body-color').value = dieStyle.bodyColor; q('die-face-color').value = dieStyle.faceColor;
@@ -82,8 +84,9 @@ export function fillEditor(set, selectedDie, activeId, ownerId, cloudEnabled) {
 
   const selectFace = (faceNumber) => {
     selectedFace = faceNumber; logicalFace.value = String(faceNumber);
+    const faceLabel = getCanonicalFaceLabel(selectedDie, faceNumber);
     const face = getVisualFace(set, selectedDie, faceNumber);
-    q('logical-face-label').textContent = `Face ${faceNumber}`; q('logical-result-label').textContent = `Always rolls ${faceNumber}`;
+    q('logical-face-label').textContent = `Face ${faceLabel}`; q('logical-result-label').textContent = `Always reports ${faceNumber}`;
     q('face-value').value = visualText(face); q('custom-face-color').value = face.color || dieStyle.faceColor;
     const disabled = system || locked || !owner || die.faceMode === RAW_FACE_MODE;
     document.querySelectorAll('[data-face-edit-control]').forEach((el) => { el.disabled = disabled; });
