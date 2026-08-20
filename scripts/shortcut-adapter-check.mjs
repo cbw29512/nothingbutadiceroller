@@ -121,38 +121,26 @@ assert.deepEqual(criticalRequest.request.notation, [{ qty: 2, sides: 6 }, { qty:
 assert.ok(criticalRequest.request.assignments.every((entry) => entry.instanceId !== 'attack:1'));
 
 // Built-in RAW examples are damage-only; character attack rolls belong on separate Homebrew cards.
-const rayEntry = getRawSpell('dnd5e-2024', 'scorching-ray');
-const rayPlan = compileRawCatalogEntry(rayEntry, { variantId: 'slot-2' });
-const rayRequest = buildShortcutPhysicsRequest(rayPlan);
-assert.equal(rayRequest.notation.length, 3);
-assert.deepEqual(rayRequest.notation, [
-  { qty: 2, sides: 6 }, { qty: 2, sides: 6 }, { qty: 2, sides: 6 },
-]);
-assert.deepEqual(rayRequest.assignments.map((entry) => entry.instanceId), [
-  'ray-damage:1', 'ray-damage:2', 'ray-damage:3',
-]);
+const stormEntry = getRawSpell('dnd5e-2024', 'ice-storm');
+const stormPlan = compileRawCatalogEntry(stormEntry, { variantId: 'slot-4' });
+const stormRequest = buildShortcutPhysicsRequest(stormPlan);
+assert.deepEqual(stormRequest.notation, [{ qty: 2, sides: 10 }, { qty: 4, sides: 6 }]);
+assert.deepEqual(stormRequest.assignments.map((entry) => entry.instanceId), ['bludgeoning-damage:1', 'cold-damage:1']);
 
-const rayCalls = [];
-const rayResult = await executeShortcutRoll(rayPlan, async (notation, meta) => {
-  rayCalls.push({ notation, phase: meta.phase });
-  return [grouped(6, [2, 3]), grouped(6, [4, 5]), grouped(6, [6, 1])];
+const stormCalls = [];
+const stormResult = await executeShortcutRoll(stormPlan, async (notation, meta) => {
+  stormCalls.push({ notation, phase: meta.phase });
+  return [grouped(10, [4, 7]), grouped(6, [2, 3, 5, 6])];
 });
-assert.equal(rayCalls.length, 1);
-const rayDamage = rayResult.result.groups.find((group) => group.id === 'ray-damage').instances;
-assert.deepEqual(rayDamage.map((instance) => instance.total), [5, 9, 7]);
-assert.deepEqual(rayDamage.map((instance) => instance.critical), [false, false, false]);
-assert.equal(rayResult.result.damageTotal, 21);
-assert.deepEqual(rayResult.criticalTriggerInstanceIds, []);
+assert.equal(stormCalls.length, 1);
+assert.equal(stormResult.result.damageTotal, 27);
+assert.deepEqual(stormResult.criticalTriggerInstanceIds, []);
 
-// Magic Missile: repeats remain individual instances, including +1 per dart.
-const missileEntry = getRawSpell('dnd5e-2024', 'magic-missile');
-const missilePlan = compileRawCatalogEntry(missileEntry, { variantId: 'slot-1' });
-const missileRequest = buildShortcutPhysicsRequest(missilePlan);
-assert.deepEqual(missileRequest.notation, [{ qty: 1, sides: 4 }, { qty: 1, sides: 4 }, { qty: 1, sides: 4 }]);
-const missile = await executeShortcutRoll(missilePlan, async () => [grouped(4, [2]), grouped(4, [3]), grouped(4, [4])]);
-const darts = missile.result.groups[0].instances;
-assert.deepEqual(darts.map((instance) => instance.total), [3, 4, 5]);
-assert.equal(missile.result.damageTotal, 12);
+// Meteor Swarm preserves its two separate 20d6 damage types in one physical roll.
+const meteorEntry = getRawSpell('dnd5e-2024', 'meteor-swarm');
+const meteorPlan = compileRawCatalogEntry(meteorEntry, { variantId: 'base' });
+const meteorRequest = buildShortcutPhysicsRequest(meteorPlan);
+assert.deepEqual(meteorRequest.notation, [{ qty: 20, sides: 6 }, { qty: 20, sides: 6 }]);
 
 // Flat DiceBox-like results without group wrappers are consumed deterministically by request order.
 const flatMapped = mapShortcutPhysicsResults(swordRequest, [
@@ -191,3 +179,4 @@ assert.ok(!rollerSource.includes('shortcuts/roller-adapter'), 'Phase 5 must not 
 assert.ok(physicsSource.includes('export async function rollPhysics(notation, themeColor)'), 'Existing physics boundary must remain intact.');
 
 console.log('Shortcut roller adapter checks passed.');
+

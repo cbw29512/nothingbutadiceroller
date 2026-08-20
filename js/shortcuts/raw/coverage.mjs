@@ -3,44 +3,40 @@ import { deepFreeze } from '../schema.mjs';
 export const RAW_COVERAGE = deepFreeze({
   catalogSchemaVersion: 1,
   exhaustive: false,
-  policy: 'Only official SRD damage rolls that can be represented with locked RAW mechanics plus, where necessary, a single player-supplied final to-hit modifier are shippable in V1.',
+  policy: 'Each ruleset provides the same three cantrips plus one damaging spell per spell level. RAW examples are locked, damage-only references; character-specific attacks and modifiers belong in Homebrew.',
   rulesets: {
     'dnd5e-2014': {
       srdVersion: '5.1',
       verifiedSpellIds: [
-        'acid-arrow',
         'acid-splash',
         'burning-hands',
+        'cone-of-cold',
+        'disintegrate',
         'fire-bolt',
         'fireball',
-        'guiding-bolt',
-        'lightning-bolt',
-        'magic-missile',
+        'finger-of-death',
+        'ice-storm',
+        'meteor-swarm',
         'ray-of-frost',
-        'scorching-ray',
         'shatter',
-        'thunderwave',
-        'disintegrate',
-        'harm',
+        'sunburst',
       ],
     },
     'dnd5e-2024': {
       srdVersion: '5.2.1',
       verifiedSpellIds: [
-        'acid-arrow',
         'acid-splash',
         'burning-hands',
+        'cone-of-cold',
+        'disintegrate',
         'fire-bolt',
         'fireball',
-        'guiding-bolt',
-        'lightning-bolt',
-        'magic-missile',
+        'finger-of-death',
+        'ice-storm',
+        'meteor-swarm',
         'ray-of-frost',
-        'scorching-ray',
         'shatter',
-        'thunderwave',
-        'disintegrate',
-        'harm',
+        'sunburst',
       ],
     },
   },
@@ -78,3 +74,4 @@ export function assertCoverageMatchesCatalog(catalog, ruleset) {
   }
   return true;
 }
+

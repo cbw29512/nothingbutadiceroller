@@ -62,6 +62,7 @@
 }
 
 .manager-help ol { margin: .65rem 0 .35rem; padding-left: 1.3rem; }
+.manager-help li + li { margin-top: .35rem; }
 .manager-help p { margin: .35rem 0 0; }
 
 .manager-panel {
@@ -380,3 +381,4 @@
     animation: none !important;
   }
 }
+

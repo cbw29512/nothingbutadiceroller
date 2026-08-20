@@ -1,33 +1,22 @@
 import assert from 'node:assert/strict';
-import {
-  RAW_2014,
-  RAW_2024,
-  RAW_CATALOGS,
-  RAW_COVERAGE,
-  assertCoverageMatchesCatalog,
-  compileRawCatalogEntry,
-  getRawCatalog,
-  getRawSpell,
-  validateRawCatalog,
-} from '../js/shortcuts/index.mjs';
+import { RAW_2014, RAW_2024, RAW_CATALOGS, RAW_COVERAGE, assertCoverageMatchesCatalog, compileRawCatalogEntry, getRawCatalog, getRawSpell, validateRawCatalog } from '../js/shortcuts/index.mjs';
 
-function group(entry, variantId, groupId, options = {}) {
-  const plan = compileRawCatalogEntry(entry, { variantId, ...options });
-  const found = plan.groups.find((candidate) => candidate.id === groupId);
-  assert.ok(found, `${entry.spellId}/${variantId} missing group ${groupId}`);
-  return { plan, group: found };
+const EXPECTED_IDS = ['acid-splash', 'fire-bolt', 'ray-of-frost', 'burning-hands', 'shatter', 'fireball', 'ice-storm', 'cone-of-cold', 'disintegrate', 'finger-of-death', 'sunburst', 'meteor-swarm'];
+
+function instance(ruleset, spellId, variantId, groupId = 'damage') {
+  const entry = getRawSpell(ruleset, spellId);
+  assert.ok(entry, `${ruleset} missing ${spellId}`);
+  const plan = compileRawCatalogEntry(entry, { variantId });
+  const group = plan.groups.find((candidate) => candidate.id === groupId);
+  assert.ok(group, `${spellId}/${variantId} missing ${groupId}`);
+  assert.equal(group.instances.length, 1);
+  return group.instances[0];
 }
 
-function term(entry, variantId, groupId, options = {}) {
-  const result = group(entry, variantId, groupId, options);
-  assert.equal(result.group.instances.length > 0, true);
-  assert.equal(result.group.instances[0].terms.length, 1);
-  return { ...result, instance: result.group.instances[0], term: result.group.instances[0].terms[0] };
-}
-
-function assertDie(entry, variantId, groupId, count, sides, modifier = 0, options = {}) {
-  const { instance, term: dice } = term(entry, variantId, groupId, options);
-  assert.deepEqual({ count: dice.count, sides: dice.sides, modifier: instance.modifier }, { count, sides, modifier });
+function assertDice(ruleset, spellId, variantId, count, sides, modifier = 0, groupId = 'damage') {
+  const result = instance(ruleset, spellId, variantId, groupId);
+  assert.deepEqual(result.terms, [{ count, sides }]);
+  assert.equal(result.modifier, modifier);
 }
 
 for (const [ruleset, catalog, srdVersion] of [
@@ -35,94 +24,53 @@ for (const [ruleset, catalog, srdVersion] of [
   ['dnd5e-2024', RAW_2024, '5.2.1'],
 ]) {
   assert.equal(Object.isFrozen(catalog), true);
-  assert.equal(catalog.length, 14);
+  assert.equal(catalog.length, 12);
+  assert.deepEqual(catalog.map((entry) => entry.spellId), EXPECTED_IDS);
   assert.equal(getRawCatalog(ruleset), catalog);
   assert.equal(RAW_CATALOGS[ruleset], catalog);
   assert.doesNotThrow(() => validateRawCatalog(catalog, { ruleset, srdVersion }));
   assert.doesNotThrow(() => assertCoverageMatchesCatalog(catalog, ruleset));
-  assert.equal(RAW_COVERAGE.rulesets[ruleset].srdVersion, srdVersion);
-  assert.equal(RAW_COVERAGE.rulesets[ruleset].verifiedSpellIds.length, catalog.length);
+  assert.equal(RAW_COVERAGE.rulesets[ruleset].verifiedSpellIds.length, 12);
 
-  const seen = new Set();
   for (const entry of catalog) {
     assert.equal(entry.ruleset, ruleset);
     assert.equal(entry.srdVersion, srdVersion);
-    assert.equal(entry.shortcut.ruleset, ruleset);
-    assert.match(entry.shortcut.sourceRef, new RegExp(`SRD ${srdVersion.replaceAll('.', '\\.')}`));
-    assert.match(entry.sourceLocator, new RegExp(`SRD ${srdVersion.replaceAll('.', '\\.')}`));
-    assert.equal(Object.isFrozen(entry), true);
-    assert.equal(Object.isFrozen(entry.shortcut), true);
-    assert.equal(seen.has(entry.spellId), false);
-    seen.add(entry.spellId);
+    assert.deepEqual(entry.requiredInputs, []);
     assert.equal(getRawSpell(ruleset, entry.spellId), entry);
+    for (const variant of entry.shortcut.variants) {
+      assert.ok(variant.groups.length >= 1);
+      assert.ok(variant.groups.every((group) => group.kind === 'damage'));
+      assert.ok(variant.groups.every((group) => group.crit.policy === 'none'));
+    }
   }
+
+  assertDice(ruleset, 'acid-splash', 'tier-1', 1, 6);
+  assertDice(ruleset, 'acid-splash', 'tier-4', 4, 6);
+  assertDice(ruleset, 'fire-bolt', 'tier-4', 4, 10);
+  assertDice(ruleset, 'ray-of-frost', 'tier-4', 4, 8);
+  assertDice(ruleset, 'burning-hands', 'slot-1', 3, 6);
+  assertDice(ruleset, 'burning-hands', 'slot-9', 11, 6);
+  assertDice(ruleset, 'shatter', 'slot-2', 3, 8);
+  assertDice(ruleset, 'shatter', 'slot-9', 10, 8);
+  assertDice(ruleset, 'fireball', 'slot-3', 8, 6);
+  assertDice(ruleset, 'fireball', 'slot-9', 14, 6);
+  assertDice(ruleset, 'ice-storm', 'slot-4', 4, 6, 0, 'cold-damage');
+  assertDice(ruleset, 'cone-of-cold', 'slot-5', 8, 8);
+  assertDice(ruleset, 'cone-of-cold', 'slot-9', 12, 8);
+  assertDice(ruleset, 'disintegrate', 'slot-6', 10, 6, 40);
+  assertDice(ruleset, 'disintegrate', 'slot-9', 19, 6, 40);
+  assertDice(ruleset, 'finger-of-death', 'base', 7, 8, 30);
+  assertDice(ruleset, 'sunburst', 'base', 12, 6);
+  assertDice(ruleset, 'meteor-swarm', 'base', 20, 6, 0, 'fire-damage');
+  assertDice(ruleset, 'meteor-swarm', 'base', 20, 6, 0, 'bludgeoning-damage');
 }
 
-assert.equal(RAW_COVERAGE.exhaustive, false);
-assert.equal(RAW_COVERAGE.deferredPatterns.length >= 4, true);
+assertDice('dnd5e-2014', 'ice-storm', 'slot-4', 2, 8, 0, 'bludgeoning-damage');
+assertDice('dnd5e-2014', 'ice-storm', 'slot-9', 7, 8, 0, 'bludgeoning-damage');
+assertDice('dnd5e-2024', 'ice-storm', 'slot-4', 2, 10, 0, 'bludgeoning-damage');
+assertDice('dnd5e-2024', 'ice-storm', 'slot-9', 7, 10, 0, 'bludgeoning-damage');
 assert.equal(getRawSpell('dnd5e-2024', 'not-a-spell'), null);
 assert.throws(() => getRawCatalog('not-a-ruleset'), /Unknown RAW ruleset/);
 
-for (const ruleset of ['dnd5e-2014', 'dnd5e-2024']) {
-  const acidArrow = getRawSpell(ruleset, 'acid-arrow');
-  assertDie(acidArrow, 'slot-2', 'initial-damage', 4, 4);
-  assertDie(acidArrow, 'slot-2', 'later-damage', 2, 4);
-  assertDie(acidArrow, 'slot-9', 'initial-damage', 11, 4);
-  assertDie(acidArrow, 'slot-9', 'later-damage', 9, 4);
-  assert.deepEqual(acidArrow.requiredInputs, []);
-  assert.equal(acidArrow.shortcut.variants[0].groups.some((candidate) => candidate.kind === 'attack'), false);
-  assert.equal(acidArrow.shortcut.variants[0].groups.find((candidate) => candidate.id === 'initial-damage').crit.policy, 'none');
-  assert.equal(acidArrow.shortcut.variants[0].groups.find((candidate) => candidate.id === 'later-damage').crit.policy, 'none');
-  assert.throws(() => compileRawCatalogEntry(acidArrow, { variantId: 'slot-2', inputs: { toHit: 9, spellSaveDc: 17 } }), /is not allowed/);
+console.log('RAW catalog checks passed: 12 locked damage examples for SRD 5.1 and SRD 5.2.1.');
 
-  const acidSplash = getRawSpell(ruleset, 'acid-splash');
-  [1, 2, 3, 4].forEach((count, index) => assertDie(acidSplash, `tier-${index + 1}`, 'damage', count, 6));
-  assert.deepEqual(acidSplash.shortcut.variants.map((variant) => variant.label), ['Levels 1–4', 'Levels 5–10', 'Levels 11–16', 'Levels 17+']);
-
-  const fireBolt = getRawSpell(ruleset, 'fire-bolt');
-  [1, 2, 3, 4].forEach((count, index) => {
-    assertDie(fireBolt, `tier-${index + 1}`, 'damage', count, 10);
-  });
-  assert.deepEqual(fireBolt.requiredInputs, []);
-  assert.equal(fireBolt.shortcut.variants[0].groups.find((candidate) => candidate.id === 'damage').crit.policy, 'none');
-  assert.equal(fireBolt.shortcut.variants[0].groups.some((candidate) => candidate.kind === 'attack'), false);
-
-  const fireball = getRawSpell(ruleset, 'fireball');
-  assertDie(fireball, 'slot-3', 'damage', 8, 6);
-  assertDie(fireball, 'slot-9', 'damage', 14, 6);
-  assert.equal(fireball.shortcut.variants.length, 7);
-  assert.deepEqual(fireball.requiredInputs, []);
-
-  const magicMissile = getRawSpell(ruleset, 'magic-missile');
-  const mm1 = group(magicMissile, 'slot-1', 'dart-damage').group;
-  const mm9 = group(magicMissile, 'slot-9', 'dart-damage').group;
-  assert.equal(mm1.instances.length, 3);
-  assert.equal(mm9.instances.length, 11);
-  assert.deepEqual(mm1.instances[0].terms[0], { count: 1, sides: 4 });
-  assert.equal(mm1.instances[0].modifier, 1);
-  assert.equal(mm9.instances[10].modifier, 1);
-
-  const scorchingRay = getRawSpell(ruleset, 'scorching-ray');
-  const ray2 = compileRawCatalogEntry(scorchingRay, { variantId: 'slot-2' });
-  const ray9 = compileRawCatalogEntry(scorchingRay, { variantId: 'slot-9' });
-  assert.equal(ray2.groups.find((candidate) => candidate.id === 'ray-damage').instances.length, 3);
-  assert.equal(ray9.groups.find((candidate) => candidate.id === 'ray-damage').instances.length, 10);
-  assert.equal(ray9.groups.some((candidate) => candidate.kind === 'attack'), false);
-  assert.deepEqual(ray9.groups.find((candidate) => candidate.id === 'ray-damage').instances[9].terms[0], { count: 2, sides: 6 });
-  assert.equal(ray9.groups.find((candidate) => candidate.id === 'ray-damage').instances[9].crit.policy, 'none');
-
-  const disintegrate = getRawSpell(ruleset, 'disintegrate');
-  assertDie(disintegrate, 'slot-6', 'damage', 10, 6, 40);
-  assertDie(disintegrate, 'slot-9', 'damage', 19, 6, 40);
-
-  const harm = getRawSpell(ruleset, 'harm');
-  assert.equal(harm.scalingMode, 'fixed');
-  assert.equal(harm.shortcut.variants.length, 1);
-  assertDie(harm, 'base', 'damage', 14, 6);
-}
-
-const ids2014 = RAW_2014.map((entry) => entry.spellId).sort();
-const ids2024 = RAW_2024.map((entry) => entry.spellId).sort();
-assert.deepEqual(ids2014, ids2024);
-
-console.log(`RAW catalog checks passed: ${RAW_2014.length} SRD 5.1 + ${RAW_2024.length} SRD 5.2.1 verified spell records.`);

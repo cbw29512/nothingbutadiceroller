@@ -52,9 +52,9 @@ export function isDeployPreviewDemo() {
 export function demoSlots() {
   return normalizeShortcutSlots([
     { id: 'demo-fireball', source: 'raw', ruleset: 'dnd5e-2024', spellId: 'fireball', baseVariantId: 'slot-3' },
-    { id: 'demo-fire-bolt', source: 'raw', ruleset: 'dnd5e-2024', spellId: 'fire-bolt', baseVariantId: 'tier-2', inputs: { toHit: 9 } },
-    { id: 'demo-scorching-ray', source: 'raw', ruleset: 'dnd5e-2024', spellId: 'scorching-ray', baseVariantId: 'slot-2', inputs: { toHit: 9 } },
-    { id: 'demo-magic-missile', source: 'raw', ruleset: 'dnd5e-2024', spellId: 'magic-missile', baseVariantId: 'slot-1' },
+    { id: 'demo-fire-bolt', source: 'raw', ruleset: 'dnd5e-2024', spellId: 'fire-bolt', baseVariantId: 'tier-2' },
+    { id: 'demo-ice-storm', source: 'raw', ruleset: 'dnd5e-2024', spellId: 'ice-storm', baseVariantId: 'slot-4' },
+    { id: 'demo-meteor-swarm', source: 'raw', ruleset: 'dnd5e-2024', spellId: 'meteor-swarm', baseVariantId: 'base' },
   ]);
 }
 
@@ -80,3 +80,4 @@ export function applyServerState(serverState, accountUser) {
   managerContext.selectedSlotId = null;
   managerContext.dirty = false;
 }
+

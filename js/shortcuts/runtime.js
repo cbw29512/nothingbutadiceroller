@@ -36,12 +36,11 @@ function isDeployPreviewDemo() {
 function demoSlots() {
   return normalizeShortcutSlots([
     { id: 'demo-fireball', source: 'raw', ruleset: 'dnd5e-2024', spellId: 'fireball', baseVariantId: 'slot-3' },
-    { id: 'demo-fire-bolt', source: 'raw', ruleset: 'dnd5e-2024', spellId: 'fire-bolt', baseVariantId: 'tier-2', inputs: { toHit: 9 } },
-    { id: 'demo-scorching-ray', source: 'raw', ruleset: 'dnd5e-2024', spellId: 'scorching-ray', baseVariantId: 'slot-2', inputs: { toHit: 9 } },
-    { id: 'demo-magic-missile', source: 'raw', ruleset: 'dnd5e-2024', spellId: 'magic-missile', baseVariantId: 'slot-1' },
-    { id: 'demo-acid-arrow', source: 'raw', ruleset: 'dnd5e-2024', spellId: 'acid-arrow', baseVariantId: 'slot-2', inputs: { toHit: 9 } },
+    { id: 'demo-fire-bolt', source: 'raw', ruleset: 'dnd5e-2024', spellId: 'fire-bolt', baseVariantId: 'tier-2' },
+    { id: 'demo-ice-storm', source: 'raw', ruleset: 'dnd5e-2024', spellId: 'ice-storm', baseVariantId: 'slot-4' },
+    { id: 'demo-meteor-swarm', source: 'raw', ruleset: 'dnd5e-2024', spellId: 'meteor-swarm', baseVariantId: 'base' },
     { id: 'demo-disintegrate', source: 'raw', ruleset: 'dnd5e-2024', spellId: 'disintegrate', baseVariantId: 'slot-6' },
-    { id: 'demo-harm', source: 'raw', ruleset: 'dnd5e-2024', spellId: 'harm', baseVariantId: 'base' },
+    { id: 'demo-finger-of-death', source: 'raw', ruleset: 'dnd5e-2024', spellId: 'finger-of-death', baseVariantId: 'base' },
     { id: 'demo-acid-splash', source: 'raw', ruleset: 'dnd5e-2024', spellId: 'acid-splash', baseVariantId: 'tier-2' },
   ]);
 }
@@ -382,3 +381,4 @@ export function initShortcutRuntime() {
   identity.on('login', loadForSession);
   identity.on('logout', () => loadForSession(null));
 }
+
