@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Shortcut Toolbar Harness</title>
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/shortcut-toolbar.css">
+  <link rel="stylesheet" href="/shortcut-harness.css">
+</head>
+<body class="shortcut-harness-page">
+  <main class="shortcut-harness-shell">
+    <header class="shortcut-harness-header">
+      <div>
+        <p class="eyebrow">Protected development harness</p>
+        <h1>Shortcut Toolbar — Phase 4</h1>
+        <p>This page exists only to prove toolbar behavior before the shortcut system is allowed anywhere near the live dice roller.</p>
+      </div>
+      <span class="shortcut-harness-badge">Not production UI</span>
+    </header>
+
+    <section class="shortcut-harness-panel" aria-labelledby="toolbar-test-heading">
+      <h2 id="toolbar-test-heading">Toolbar layout</h2>
+      <p class="shortcut-harness-note">Choose a boundary count, press a shortcut to lock the others, hold for about half a second to inspect it, then release. Release must count as exactly one activation.</p>
+
+      <div class="shortcut-harness-presets" aria-label="Shortcut count presets">
+        <button type="button" data-count="0">0</button>
+        <button type="button" data-count="1">1</button>
+        <button type="button" data-count="8" class="active">8</button>
+        <button type="button" data-count="9">9</button>
+        <button type="button" data-count="16">16</button>
+        <button type="button" data-count="17">17</button>
+        <button type="button" data-count="24">24</button>
+      </div>
+
+      <div class="shortcut-harness-toolbar-stage">
+        <div id="shortcut-toolbar-harness" class="shortcut-toolbar" aria-label="Saved roll shortcuts"></div>
+      </div>
+
+      <div class="shortcut-harness-controls" aria-label="Harness controls">
+        <button id="harness-clear" type="button">Clear active</button>
+        <button id="harness-move-left" type="button">Move active left</button>
+        <button id="harness-move-right" type="button">Move active right</button>
+        <button id="harness-reset-count" type="button">Reset to 8</button>
+      </div>
+
+      <div class="shortcut-harness-readout" aria-live="polite">
+        <div class="shortcut-harness-stat"><strong>Buttons</strong><span id="harness-button-count">8</span></div>
+        <div class="shortcut-harness-stat"><strong>Rows</strong><span id="harness-row-count">1</span></div>
+        <div class="shortcut-harness-stat"><strong>Active</strong><span id="harness-active">None</span></div>
+        <div class="shortcut-harness-stat"><strong>Activations</strong><span id="harness-activations">0</span></div>
+      </div>
+
+      <button id="harness-roll-label" class="shortcut-harness-roll" type="button" disabled>ROLL DICE</button>
+      <div id="harness-tooltip" class="shortcut-harness-tooltip" role="status" hidden></div>
+      <pre id="harness-log" class="shortcut-harness-log" aria-label="Harness event log">Harness ready.</pre>
+    </section>
+  </main>
+  <script type="module" src="/js/shortcut-harness.js"></script>
+</body>
+</html>
