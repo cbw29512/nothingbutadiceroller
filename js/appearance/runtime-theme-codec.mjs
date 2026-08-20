@@ -1,17 +1,10 @@
 import { CANONICAL_DICE } from './defaults.mjs';
+import { isValidFaceDisplayValue } from './face-display.mjs';
 
 export const RUNTIME_THEME_VERSION = 1;
 const HEX = /^#[0-9a-f]{6}$/i;
 const FONT_IDS = new Set(['', 'default', 'fantasy', 'runic', 'mono']);
 const MAX_OPERATIONS = 24;
-
-function graphemeCount(value) {
-  try {
-    return [...new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(String(value))].length;
-  } catch {
-    return Array.from(String(value)).length;
-  }
-}
 
 function base64UrlEncode(text) {
   const bytes = new TextEncoder().encode(text);
@@ -40,8 +33,7 @@ export function validateRuntimeThemePayload(payload) {
     for (const [index, operation] of (Array.isArray(payload.o) ? payload.o : []).entries()) {
       if (!Array.isArray(operation) || operation.length !== 6) { errors.push(`Operation ${index} has an invalid shape.`); continue; }
       const [text, color, fontId, x, y, fontPx] = operation;
-      const length = graphemeCount(String(text || '').trim());
-      if (length < 1 || length > 12) errors.push(`Operation ${index} text is invalid.`);
+      if (!isValidFaceDisplayValue(text)) errors.push(`Operation ${index} text must be a number or one visible character/symbol.`);
       if (!HEX.test(String(color || ''))) errors.push(`Operation ${index} color is invalid.`);
       if (!FONT_IDS.has(String(fontId || ''))) errors.push(`Operation ${index} font is invalid.`);
       if (![x, y].every((value) => Number.isFinite(value) && value >= 0 && value <= payload.s)) errors.push(`Operation ${index} position is invalid.`);

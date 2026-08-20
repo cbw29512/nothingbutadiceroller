@@ -6,6 +6,7 @@ import {
   SYSTEM_DEFAULT_DICE_SET,
   SYSTEM_DEFAULT_DICE_SET_ID,
 } from './defaults.mjs';
+import { countFaceDisplayGraphemes, isValidFaceDisplayValue } from './face-display.mjs';
 import { isCanonicalFaceResult } from './face-values.mjs';
 
 const HEX = /^#[0-9a-f]{6}$/i;
@@ -14,7 +15,6 @@ const LEGACY_ICON_IDS = new Set(['skull', 'star', 'flame', 'shield', 'heart', 's
 const FACE_MODES = new Set([RAW_FACE_MODE, CUSTOM_FACE_MODE]);
 const VISIBILITIES = new Set(['private', 'public', 'system']);
 const STYLE_OVERRIDE_KEYS = new Set(['bodyColor', 'faceColor', 'opacity', 'glow']);
-const MAX_FACE_GRAPHEMES = 12;
 
 function checkGlow(glow, path, errors) {
   if (!glow || typeof glow !== 'object') return errors.push(`${path} must be an object.`);
@@ -40,17 +40,6 @@ function checkStyleOverrides(overrides, path, errors) {
   if (overrides.glow != null) checkGlow(overrides.glow, `${path}.glow`, errors);
 }
 
-function countGraphemes(value) {
-  const text = String(value || '').trim();
-  if (!text) return 0;
-  try {
-    return [...new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(text)].length;
-  } catch (error) {
-    console.warn('Falling back to code-point face validation:', error);
-    return Array.from(text).length;
-  }
-}
-
 function checkFace(face, path, errors) {
   if (!face || typeof face !== 'object') return errors.push(`${path} must be an object.`);
   if (!FACE_KINDS.has(face.kind)) errors.push(`${path}.kind is unsupported.`);
@@ -58,15 +47,12 @@ function checkFace(face, path, errors) {
   if (face.fontId != null && (typeof face.fontId !== 'string' || face.fontId.length > 80)) {
     errors.push(`${path}.fontId must reference a supported font.`);
   }
-  if (face.kind === 'text') {
-    const length = countGraphemes(face.value);
-    if (length < 1 || length > MAX_FACE_GRAPHEMES) {
-      errors.push(`${path}.value must contain 1-${MAX_FACE_GRAPHEMES} visible characters.`);
-    }
+  if (face.kind === 'text' && !isValidFaceDisplayValue(face.value)) {
+    errors.push(`${path}.value must be a number or one visible character/symbol.`);
   }
   if (face.kind === 'icon') {
     const value = typeof face.value === 'string' ? face.value.trim() : '';
-    if (!LEGACY_ICON_IDS.has(value) && countGraphemes(value) !== 1) {
+    if (!LEGACY_ICON_IDS.has(value) && countFaceDisplayGraphemes(value) !== 1) {
       errors.push(`${path}.value must be one visible symbol or a supported built-in icon.`);
     }
   }
