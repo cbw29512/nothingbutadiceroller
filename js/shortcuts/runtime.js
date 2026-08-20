@@ -103,6 +103,8 @@ function setRollLabels() {
 
 function setGearState() {
   const available = Boolean(accountUser || demoMode);
+  const mobileHint = document.getElementById('mobile-shortcut-hint');
+  if (mobileHint) mobileHint.hidden = !available;
   ['shortcut-settings-btn', 'mobile-shortcut-settings-btn'].forEach((id) => {
     const button = document.getElementById(id);
     if (!button) return;

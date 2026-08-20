@@ -45,6 +45,7 @@ for (const required of [
 assert.ok(runtime.includes('state.selectedDice = [];'), 'Preparing a shortcut must replace the ordinary selected pool.');
 assert.ok(!runtime.includes('state.selectedDice.push'), 'Shortcut runtime must never encode shortcut dice into ordinary selectedDice.');
 assert.ok(runtime.includes('const available = Boolean(accountUser || demoMode);'), 'Customization gear must stay hidden for ordinary guests.');
+assert.ok(runtime.includes('if (mobileHint) mobileHint.hidden = !available;'), 'Mobile setup hint must match shortcut gear availability.');
 assert.ok(runtime.includes('slots = [];'), 'Signed-out non-demo sessions must collapse the toolbar.');
 
 for (const required of [
@@ -55,6 +56,10 @@ for (const required of [
   "wrapRollButton('mobile-roll-btn', 'mobile-shortcut-settings-btn'",
   "title.style.fontSize = '.86rem'",
   "title.style.letterSpacing = '.04em'",
+  "hint.id = 'mobile-shortcut-hint'",
+  "hint.textContent = 'Press ⚙ to configure'",
+  'actionRow.before(hint)',
+  'ensureMobileShortcutHint()',
 ]) {
   assert.ok(markup.includes(required), `Phase 6 runtime markup missing: ${required}`);
 }

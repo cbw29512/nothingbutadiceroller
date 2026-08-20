@@ -63,8 +63,27 @@ function wrapRollButton(rollId, gearId, label) {
   cluster.append(roll, makeGearButton(gearId, label));
 }
 
+function ensureMobileShortcutHint() {
+  if (document.getElementById('mobile-shortcut-hint')) return;
+  const actionRow = document.getElementById('mobile-roll-btn')?.closest('.mobile-action-row');
+  if (!actionRow) return;
+
+  const hint = document.createElement('p');
+  hint.id = 'mobile-shortcut-hint';
+  hint.hidden = true;
+  hint.textContent = 'Press ⚙ to configure';
+  hint.style.color = '#dbeafe';
+  hint.style.fontSize = '.78rem';
+  hint.style.fontWeight = '900';
+  hint.style.letterSpacing = '.04em';
+  hint.style.lineHeight = '1.25';
+  hint.style.textAlign = 'center';
+  actionRow.before(hint);
+}
+
 export function ensureShortcutRuntimeMarkup() {
   ensureToolbarSection();
   wrapRollButton('roll-btn', 'shortcut-settings-btn', 'Manage roll shortcuts');
   wrapRollButton('mobile-roll-btn', 'mobile-shortcut-settings-btn', 'Manage roll shortcuts');
+  ensureMobileShortcutHint();
 }
