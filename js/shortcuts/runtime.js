@@ -11,6 +11,7 @@ import { loadLocalShortcutWorkspace } from './local-persistence.mjs';
 import { hydrateShortcutSlot, normalizeShortcutSlots } from './persistence.mjs';
 import { compileRawCatalogEntry, getRawSpell } from './raw/index.mjs';
 import { renderShortcutToolbar } from './toolbar.mjs';
+import { assertPhysicalDiceBudget } from './dice-budget.mjs';
 
 let slots = [];
 let hydratedSlots = [];
@@ -73,6 +74,10 @@ function compileSlot(slot, variantId = slot.baseVariantId) {
     entry: null,
     definition: slot.definition,
   };
+}
+
+function assertCompiledDiceBudget(compiled) {
+  assertPhysicalDiceBudget(compiled.definition.variants.find((variant) => variant.id === compiled.plan.variant.id)?.groups || []);
 }
 
 function slotVariantLabel(slot, variantId) {
@@ -256,6 +261,7 @@ export async function prepareShortcut(slotId) {
     }
 
     const compiled = activeCompiled();
+    assertCompiledDiceBudget(compiled);
     renderResults(0, `Prepared: ${compiled.plan.name} • ${compiled.plan.variant.label}`);
     setStatus(`${compiled.plan.name} prepared. Press Roll or the tray to execute.`, 'ready');
     renderToolbar();
@@ -292,6 +298,7 @@ export async function performPreparedShortcutRoll() {
   try {
     if (!state.physicsReady) throw new Error('3D physics is not ready yet.');
     const compiled = compileSlot(current.slot, current.variantId);
+    assertCompiledDiceBudget(compiled);
     setStatus(`Rolling ${compiled.plan.name}…`);
     document.getElementById('tray-empty-state')?.classList.add('hidden');
     playDiceSound();

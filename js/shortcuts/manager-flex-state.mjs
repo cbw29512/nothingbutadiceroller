@@ -3,6 +3,7 @@ import {
 } from './constants.mjs';
 import { normalizeShortcutSlots } from './persistence.mjs';
 import { createFlexShortcut } from './schema.mjs';
+import { assertPhysicalDiceBudget } from './dice-budget.mjs';
 import { slugifyShortcutId, uniqueShortcutSlotId } from './manager-ids.mjs';
 
 function normalizeBuilderGroup(group, index, attackIds) {
@@ -52,6 +53,7 @@ export function createFlexManagerSlot(shortcuts, { name, icon, category = 'custo
   const attackIds = new Set(groups.map((group, index) => ({ group, id: ids[index] }))
     .filter(({ group }) => group.kind === 'attack').map(({ id }) => id));
   const normalizedGroups = groups.map((group, index) => normalizeBuilderGroup({ ...group, id: ids[index] }, index, attackIds));
+  assertPhysicalDiceBudget(normalizedGroups);
   const definitionId = slugifyShortcutId(cleanName, 'homebrew');
   const definition = createFlexShortcut({
     schemaVersion: SHORTCUT_SCHEMA_VERSION, source: 'flex', id: definitionId,
@@ -64,3 +66,4 @@ export function createFlexManagerSlot(shortcuts, { name, icon, category = 'custo
     source: 'flex', icon, baseVariantId: 'base', definition,
   }])[0];
 }
+

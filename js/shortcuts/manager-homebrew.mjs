@@ -3,8 +3,25 @@ import { createFlexManagerSlot } from './manager-flex-state.mjs';
 import { createBuilderGroup, managerContext, resetBuilder } from './manager-context.mjs';
 import { element, guard, markDirty, setStatus } from './manager-ui.mjs';
 import { homebrewPayload, renderBuilderGroups } from './manager-homebrew-fields.mjs';
+import { MAX_SHORTCUT_PHYSICAL_DICE, variantPhysicalDiceBudget } from './dice-budget.mjs';
+
+function renderDiceBudget() {
+  const host = document.getElementById('homebrew-dice-budget');
+  const save = document.getElementById('save-homebrew');
+  if (!host) return;
+  const budget = variantPhysicalDiceBudget(managerContext.builderGroups);
+  const over = budget.maximum > MAX_SHORTCUT_PHYSICAL_DICE;
+  const crit = budget.critical ? ` (includes ${budget.critical} possible critical dice)` : '';
+  host.textContent = over
+    ? `Too many physical dice: ${budget.maximum} / ${MAX_SHORTCUT_PHYSICAL_DICE}${crit}. Each d100 counts as two. Reduce the dice before adding this shortcut.`
+    : `Physical dice: ${budget.maximum} / ${MAX_SHORTCUT_PHYSICAL_DICE}${crit}. Each d100 counts as two.`;
+  host.classList.toggle('manager-warning', over);
+  host.classList.toggle('manager-note', !over);
+  if (save) save.disabled = over;
+}
 
 export function renderHomebrewPreview() {
+  renderDiceBudget();
   const host = document.getElementById('homebrew-preview');
   if (!host) return;
   host.replaceChildren();
@@ -66,3 +83,4 @@ export function bindHomebrewEvents(onChanged) {
     setStatus(`${name} added. Save Changes to keep it.`, 'ready');
   }));
 }
+

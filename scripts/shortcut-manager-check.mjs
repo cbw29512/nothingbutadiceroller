@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { createFlexManagerSlot } from '../js/shortcuts/manager-flex-state.mjs';
+import { MAX_SHORTCUT_PHYSICAL_DICE, variantPhysicalDiceBudget } from '../js/shortcuts/dice-budget.mjs';
 import {
   createRawManagerSlot, moveShortcutSlot, removeShortcutSlot, updateManagerOptions,
 } from '../js/shortcuts/manager-state.mjs';
@@ -34,6 +35,16 @@ assert.equal(groups[1].damageType, 'slashing');
 assert.equal(groups[1].crit.policy, 'double-dice');
 assert.equal(groups[1].crit.triggerGroupId, 'attack');
 assert.equal(groups[2].damageType, 'fire');
+assert.equal(MAX_SHORTCUT_PHYSICAL_DICE, 40);
+assert.deepEqual(variantPhysicalDiceBudget([{ count: 20, sides: 100, repeat: 1 }]), { base: 40, critical: 0, maximum: 40 });
+assert.throws(() => createFlexManagerSlot([], {
+  name: 'Too Many Dice', icon: 'dice', category: 'spell',
+  groups: [{ id: 'damage', label: 'Damage', kind: 'damage', count: 21, sides: 100, modifier: 0, repeat: 1, damageType: 'force' }],
+}), /needs up to 42 physical dice/);
+assert.doesNotThrow(() => createFlexManagerSlot([], {
+  name: 'Meteor Scale', icon: 'flame', category: 'spell',
+  groups: [{ id: 'damage', label: 'Damage', kind: 'damage', count: 40, sides: 6, modifier: 0, repeat: 1, damageType: 'fire' }],
+}));
 
 const moved = moveShortcutSlot([fireballSlot, fireBoltSlot, flexSlot], flexSlot.id, -2);
 assert.equal(moved[0].id, flexSlot.id);
@@ -80,7 +91,7 @@ for (const required of [
   'data-tab="options"', 'id="critical-mode"', '<option value="raw">RAW</option>',
   '<option value="custom">Custom</option>', 'id="preferred-ruleset"', 'id="add-homebrew-group"',
   'id="save-workspace"',
-  '<summary>How to use shortcuts</summary>', 'Damage-only examples are locked',
+  '<summary>How to use shortcuts</summary>', 'Damage-only examples are locked', 'id="homebrew-dice-budget"',
 ]) assert.ok(html.includes(required), `Manager HTML contract missing: ${required}`);
 assert.ok(css.includes('.manager-help'));
 assert.ok(
@@ -99,3 +110,4 @@ assert.ok(buildSource.includes("'rolls.html'"));
 assert.ok(buildSource.includes("rolls: resolve(root, 'js/rolls.js')"));
 
 console.log('Shortcut manager checks passed, including <=150-line modularity for manager JavaScript.');
+
