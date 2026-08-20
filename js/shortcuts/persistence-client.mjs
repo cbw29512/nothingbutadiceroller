@@ -1,4 +1,5 @@
 import {
+  normalizeShortcutOptions,
   normalizeShortcutSlots,
   validateStoredShortcutWorkspace,
 } from './persistence.mjs';
@@ -65,11 +66,12 @@ export async function loadShortcutWorkspace() {
   return normalizeServerState(await shortcutFetch('GET'));
 }
 
-export async function saveShortcutWorkspace(shortcuts, version) {
+export async function saveShortcutWorkspace(shortcuts, version, options) {
   const normalized = normalizeShortcutSlots(shortcuts);
   return normalizeServerState(await shortcutFetch('PUT', {
     version: normalizeVersion(version),
     shortcuts: normalized,
+    options: normalizeShortcutOptions(options),
   }));
 }
 

@@ -352,7 +352,7 @@ async function loadForSession(user) {
 function bindGear() {
   const openManager = () => {
     if (active || state.rolling) return;
-    location.href = '/shortcut-harness.html';
+    location.href = demoMode ? '/rolls.html?shortcutDemo=1' : '/rolls.html';
   };
   document.getElementById('shortcut-settings-btn')?.addEventListener('click', openManager);
   document.getElementById('mobile-shortcut-settings-btn')?.addEventListener('click', openManager);

@@ -1,16 +1,18 @@
 import { getStore } from '@netlify/blobs';
 import { getUser, verifyRequestOrigin } from '@netlify/identity';
 import {
+  DEFAULT_SHORTCUT_OPTIONS,
   SHORTCUT_WORKSPACE_MAX_BYTES,
   ShortcutWorkspaceValidationError,
   createEmptyShortcutWorkspace,
   createStoredShortcutWorkspace,
+  normalizeShortcutOptions,
   normalizeShortcutSlots,
   validateStoredShortcutWorkspace,
 } from '../../js/shortcuts/persistence.mjs';
 
 const STORE_NAME = 'dice-user-shortcuts-v1';
-const WRITE_KEYS = new Set(['version', 'shortcuts']);
+const WRITE_KEYS = new Set(['version', 'shortcuts', 'options']);
 const CLEAR_KEYS = new Set(['version']);
 
 class ShortcutStorageError extends Error {
@@ -111,10 +113,11 @@ function conflict(latest) {
   }, 409);
 }
 
-async function conditionalWrite(store, key, current, shortcuts) {
+async function conditionalWrite(store, key, current, shortcuts, options) {
   const workspace = createStoredShortcutWorkspace(shortcuts, {
     revision: current.workspace.revision + 1,
     updatedAt: new Date().toISOString(),
+    options,
   });
 
   let result;
@@ -136,11 +139,12 @@ async function saveWorkspace(request, store, key, clear = false) {
   const body = await readJsonBody(request, clear ? CLEAR_KEYS : WRITE_KEYS);
   const expectedVersion = requireVersion(body);
   const shortcuts = clear ? [] : normalizeShortcutSlots(body.shortcuts);
+  const options = clear ? DEFAULT_SHORTCUT_OPTIONS : normalizeShortcutOptions(body.options);
   const current = await readWorkspace(store, key);
 
   if (expectedVersion !== current.version) return conflict(current);
 
-  const saved = await conditionalWrite(store, key, current, shortcuts);
+  const saved = await conditionalWrite(store, key, current, shortcuts, options);
   if (saved) return json(saved);
 
   const latest = await readWorkspace(store, key);

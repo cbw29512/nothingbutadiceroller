@@ -2,12 +2,20 @@ import { BUILTIN_ICON_IDS, MAX_SHORTCUTS, RAW_RULESETS } from './constants.mjs';
 import { createFlexShortcut, deepFreeze } from './schema.mjs';
 import { getRawSpell } from './raw/index.mjs';
 
-export const SHORTCUT_WORKSPACE_SCHEMA_VERSION = 1;
+export const SHORTCUT_WORKSPACE_SCHEMA_VERSION = 2;
 export const SHORTCUT_WORKSPACE_MAX_BYTES = 256_000;
 export const SHORTCUT_SLOT_SOURCES = Object.freeze(['raw', 'flex']);
+export const SHORTCUT_CRITICAL_MODES = Object.freeze(['raw', 'custom']);
+export const SHORTCUT_RULESET_PREFERENCES = Object.freeze(['dnd5e-2024', 'dnd5e-2014']);
+export const DEFAULT_SHORTCUT_OPTIONS = deepFreeze({
+  criticalMode: 'raw',
+  preferredRuleset: 'dnd5e-2024',
+});
 
 const SLOT_ID_RE = /^[a-z0-9][a-z0-9-]{0,63}$/;
-const STORED_KEYS = new Set(['schemaVersion', 'revision', 'updatedAt', 'shortcuts']);
+const STORED_V1_KEYS = new Set(['schemaVersion', 'revision', 'updatedAt', 'shortcuts']);
+const STORED_KEYS = new Set(['schemaVersion', 'revision', 'updatedAt', 'shortcuts', 'options']);
+const OPTION_KEYS = new Set(['criticalMode', 'preferredRuleset']);
 const RAW_SLOT_KEYS = new Set(['id', 'source', 'ruleset', 'spellId', 'icon', 'baseVariantId', 'inputs']);
 const FLEX_SLOT_KEYS = new Set(['id', 'source', 'icon', 'baseVariantId', 'definition']);
 const INPUT_KEYS = new Set(['toHit']);
@@ -134,6 +142,23 @@ function normalizeFlexSlot(slot, path, issues) {
   };
 }
 
+export function normalizeShortcutOptions(value = DEFAULT_SHORTCUT_OPTIONS) {
+  const issues = [];
+  const options = value === undefined || value === null ? DEFAULT_SHORTCUT_OPTIONS : value;
+  if (!isPlainObject(options)) {
+    throw new ShortcutWorkspaceValidationError(['options must be an object']);
+  }
+  rejectUnknownKeys(options, OPTION_KEYS, 'options', issues);
+
+  const criticalMode = options.criticalMode ?? DEFAULT_SHORTCUT_OPTIONS.criticalMode;
+  const preferredRuleset = options.preferredRuleset ?? DEFAULT_SHORTCUT_OPTIONS.preferredRuleset;
+  if (!SHORTCUT_CRITICAL_MODES.includes(criticalMode)) issues.push('options.criticalMode is invalid');
+  if (!SHORTCUT_RULESET_PREFERENCES.includes(preferredRuleset)) issues.push('options.preferredRuleset is invalid');
+  if (issues.length) throw new ShortcutWorkspaceValidationError(issues);
+
+  return deepFreeze({ criticalMode, preferredRuleset });
+}
+
 export function normalizeShortcutSlots(shortcuts) {
   const issues = [];
   if (!Array.isArray(shortcuts)) throw new ShortcutWorkspaceValidationError(['shortcuts must be an array']);
@@ -165,8 +190,14 @@ export function normalizeShortcutSlots(shortcuts) {
   return deepFreeze(structuredClone(normalized));
 }
 
-export function createStoredShortcutWorkspace(shortcuts, { revision = 0, updatedAt = null } = {}) {
-  if (!Number.isInteger(revision) || revision < 0) throw new ShortcutWorkspaceValidationError(['revision must be a non-negative integer']);
+export function createStoredShortcutWorkspace(shortcuts, {
+  revision = 0,
+  updatedAt = null,
+  options = DEFAULT_SHORTCUT_OPTIONS,
+} = {}) {
+  if (!Number.isInteger(revision) || revision < 0) {
+    throw new ShortcutWorkspaceValidationError(['revision must be a non-negative integer']);
+  }
   if (updatedAt !== null && (typeof updatedAt !== 'string' || Number.isNaN(Date.parse(updatedAt)))) {
     throw new ShortcutWorkspaceValidationError(['updatedAt must be null or an ISO date string']);
   }
@@ -175,15 +206,27 @@ export function createStoredShortcutWorkspace(shortcuts, { revision = 0, updated
     revision,
     updatedAt,
     shortcuts: normalizeShortcutSlots(shortcuts),
+    options: normalizeShortcutOptions(options),
   });
 }
 
 export function validateStoredShortcutWorkspace(value) {
   const issues = [];
   if (!isPlainObject(value)) throw new ShortcutWorkspaceValidationError(['stored workspace must be an object']);
-  rejectUnknownKeys(value, STORED_KEYS, 'workspace', issues);
-  if (value.schemaVersion !== SHORTCUT_WORKSPACE_SCHEMA_VERSION) issues.push(`workspace.schemaVersion must be ${SHORTCUT_WORKSPACE_SCHEMA_VERSION}`);
-  if (!Number.isInteger(value.revision) || value.revision < 0) issues.push('workspace.revision must be a non-negative integer');
+
+  const sourceVersion = value.schemaVersion;
+  if (sourceVersion !== 1 && sourceVersion !== SHORTCUT_WORKSPACE_SCHEMA_VERSION) {
+    issues.push(`workspace.schemaVersion must be 1 or ${SHORTCUT_WORKSPACE_SCHEMA_VERSION}`);
+  }
+  rejectUnknownKeys(
+    value,
+    sourceVersion === 1 ? STORED_V1_KEYS : STORED_KEYS,
+    'workspace',
+    issues,
+  );
+  if (!Number.isInteger(value.revision) || value.revision < 0) {
+    issues.push('workspace.revision must be a non-negative integer');
+  }
   if (value.updatedAt !== null && (typeof value.updatedAt !== 'string' || Number.isNaN(Date.parse(value.updatedAt)))) {
     issues.push('workspace.updatedAt must be null or an ISO date string');
   }
@@ -195,6 +238,16 @@ export function validateStoredShortcutWorkspace(value) {
     if (Array.isArray(error?.issues)) error.issues.forEach((issue) => issues.push(issue));
     else issues.push(error?.message || 'workspace.shortcuts is invalid');
   }
+
+  let options = DEFAULT_SHORTCUT_OPTIONS;
+  try {
+    options = sourceVersion === 1
+      ? DEFAULT_SHORTCUT_OPTIONS
+      : normalizeShortcutOptions(value.options);
+  } catch (error) {
+    if (Array.isArray(error?.issues)) error.issues.forEach((issue) => issues.push(issue));
+    else issues.push(error?.message || 'workspace.options is invalid');
+  }
   if (issues.length) throw new ShortcutWorkspaceValidationError(issues);
 
   return deepFreeze({
@@ -202,11 +255,16 @@ export function validateStoredShortcutWorkspace(value) {
     revision: value.revision,
     updatedAt: value.updatedAt,
     shortcuts,
+    options: normalizeShortcutOptions(options),
   });
 }
 
 export function createEmptyShortcutWorkspace() {
-  return createStoredShortcutWorkspace([], { revision: 0, updatedAt: null });
+  return createStoredShortcutWorkspace([], {
+    revision: 0,
+    updatedAt: null,
+    options: DEFAULT_SHORTCUT_OPTIONS,
+  });
 }
 
 export function hydrateShortcutSlot(slot) {
