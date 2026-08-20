@@ -1,11 +1,8 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { createFlexManagerSlot } from '../js/shortcuts/manager-flex-state.mjs';
 import {
-  createFlexManagerSlot,
-  createRawManagerSlot,
-  moveShortcutSlot,
-  removeShortcutSlot,
-  updateManagerOptions,
+  createRawManagerSlot, moveShortcutSlot, removeShortcutSlot, updateManagerOptions,
 } from '../js/shortcuts/manager-state.mjs';
 import { getRawSpell } from '../js/shortcuts/raw/index.mjs';
 
@@ -24,9 +21,7 @@ const fireBoltSlot = createRawManagerSlot([fireballSlot], fireBolt, { variantId:
 assert.equal(fireBoltSlot.inputs.toHit, 9);
 
 const flexSlot = createFlexManagerSlot([fireballSlot, fireBoltSlot], {
-  name: 'Flaming Greatsword',
-  icon: 'sword',
-  category: 'attack',
+  name: 'Flaming Greatsword', icon: 'sword', category: 'attack',
   groups: [
     { id: 'attack', label: 'Attack', kind: 'attack', count: 1, sides: 20, modifier: 6, repeat: 1 },
     { id: 'slashing', label: 'Slashing Damage', kind: 'damage', count: 2, sides: 6, modifier: 11, repeat: 1, damageType: 'slashing', critEligible: true, triggerGroupId: 'attack' },
@@ -41,8 +36,7 @@ assert.equal(groups[1].crit.policy, 'double-dice');
 assert.equal(groups[1].crit.triggerGroupId, 'attack');
 assert.equal(groups[2].damageType, 'fire');
 
-const initial = [fireballSlot, fireBoltSlot, flexSlot];
-const moved = moveShortcutSlot(initial, flexSlot.id, -2);
+const moved = moveShortcutSlot([fireballSlot, fireBoltSlot, flexSlot], flexSlot.id, -2);
 assert.equal(moved[0].id, flexSlot.id);
 assert.equal(moved[1].id, fireballSlot.id);
 const removed = removeShortcutSlot(moved, fireballSlot.id);
@@ -55,35 +49,45 @@ const customOptions = updateManagerOptions(
 );
 assert.deepEqual(customOptions, { criticalMode: 'custom', preferredRuleset: 'dnd5e-2014' });
 
+const managerPaths = [
+  '../js/rolls.js',
+  '../js/shortcuts/manager-context.mjs',
+  '../js/shortcuts/manager-flex-state.mjs',
+  '../js/shortcuts/manager-homebrew-fields.mjs',
+  '../js/shortcuts/manager-homebrew.mjs',
+  '../js/shortcuts/manager-ids.mjs',
+  '../js/shortcuts/manager-organizer.mjs',
+  '../js/shortcuts/manager-raw.mjs',
+  '../js/shortcuts/manager-session.mjs',
+  '../js/shortcuts/manager-state.mjs',
+  '../js/shortcuts/manager-ui.mjs',
+];
+const managerModules = await Promise.all(managerPaths.map((path) => readFile(new URL(path, import.meta.url), 'utf8')));
+const managerSource = managerModules.join('\n');
+managerModules.forEach((source, index) => {
+  const lineCount = source.split('\n').length;
+  assert.ok(lineCount <= 150, `${managerPaths[index]} must stay at or below 150 lines; received ${lineCount}`);
+});
+
 const html = await readFile(new URL('../rolls.html', import.meta.url), 'utf8');
-const source = await readFile(new URL('../js/rolls.js', import.meta.url), 'utf8');
 const css = await readFile(new URL('../rolls.css', import.meta.url), 'utf8');
 const runtime = await readFile(new URL('../js/shortcuts/runtime.js', import.meta.url), 'utf8');
 const buildSource = await readFile(new URL('./build.mjs', import.meta.url), 'utf8');
-
 for (const required of [
-  'id="manager-toolbar"',
-  'data-tab="2024"',
-  'data-tab="2014"',
-  'data-tab="homebrew"',
-  'data-tab="options"',
-  'id="critical-mode"',
-  '<option value="raw">RAW</option>',
-  '<option value="custom">Custom</option>',
-  'id="preferred-ruleset"',
-  'id="add-homebrew-group"',
+  'id="manager-toolbar"', 'data-tab="2024"', 'data-tab="2014"', 'data-tab="homebrew"',
+  'data-tab="options"', 'id="critical-mode"', '<option value="raw">RAW</option>',
+  '<option value="custom">Custom</option>', 'id="preferred-ruleset"', 'id="add-homebrew-group"',
   'id="save-workspace"',
 ]) assert.ok(html.includes(required), `Manager HTML contract missing: ${required}`);
 assert.ok(html.includes('safely falls back to RAW critical dice'));
-assert.ok(source.includes('renderShortcutToolbar('));
-assert.ok(source.includes('createRawManagerSlot('));
-assert.ok(source.includes('createFlexManagerSlot('));
-assert.ok(source.includes('saveShortcutWorkspace(shortcuts, serverState.version, options)'));
-assert.ok(!source.includes('.innerHTML'), 'Manager must not render user Homebrew text through innerHTML.');
+for (const required of ['renderShortcutToolbar(', 'createRawManagerSlot(', 'createFlexManagerSlot(', 'saveShortcutWorkspace(']) {
+  assert.ok(managerSource.includes(required), `Manager behavior missing after modular split: ${required}`);
+}
+assert.ok(!managerSource.includes('.innerHTML'), 'Manager must not render user Homebrew text through innerHTML.');
 assert.ok(css.includes('repeat(8, minmax(0, 1fr))'), 'Mobile organizer must preserve eight shortcut columns.');
-assert.ok(runtime.includes("'/rolls.html'"), 'Live gear must route to the real Phase 7 manager.');
-assert.ok(!runtime.includes("location.href = '/shortcut-harness.html'"), 'Live gear must not route to the development harness.');
+assert.ok(runtime.includes("'/rolls.html'"));
+assert.ok(!runtime.includes("location.href = '/shortcut-harness.html'"));
 assert.ok(buildSource.includes("'rolls.html'"));
 assert.ok(buildSource.includes("rolls: resolve(root, 'js/rolls.js')"));
 
-console.log('Shortcut manager checks passed.');
+console.log('Shortcut manager checks passed, including <=150-line modularity for manager JavaScript.');
