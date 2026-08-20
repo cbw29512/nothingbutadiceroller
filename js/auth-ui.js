@@ -1,12 +1,20 @@
-import { authAction, refreshAccountUser } from './account-api.js';
+import {
+  acceptInviteAccount,
+  completeRecoveryAccount,
+  loginAccount,
+  logoutAccount,
+  processIdentityCallback,
+  refreshAccountUser,
+  requestRecoveryAccount,
+  signupAccount,
+} from './account-api.js';
 import { setAccountMessage } from './account-ui.js';
 
 let pendingCallback = null;
 
 function ensureAuthMarkup() {
   const signedOut = document.getElementById('account-signed-out');
-  const drawer = document.querySelector('#account-drawer .drawer-content');
-  if (!signedOut || !drawer) return;
+  if (!signedOut) return;
 
   signedOut.innerHTML = `
     <p>Sign in to save dice configurations permanently and load them on other devices.</p>
@@ -22,19 +30,18 @@ function ensureAuthMarkup() {
       <button id="account-recovery-btn" class="btn ghost" type="button">Forgot password?</button>
     </div>`;
 
-  if (!document.getElementById('account-callback-panel')) {
-    const panel = document.createElement('div');
-    panel.id = 'account-callback-panel';
-    panel.className = 'account-panel hidden';
-    panel.innerHTML = `
-      <div class="save-config-form">
-        <strong id="account-callback-title">Finish account setup</strong>
-        <label for="account-callback-password" class="section-label">New password</label>
-        <input id="account-callback-password" class="text-input" type="password" autocomplete="new-password" minlength="6" placeholder="Choose a password">
-        <button id="account-callback-submit" class="btn primary" type="button">Continue</button>
-      </div>`;
-    signedOut.after(panel);
-  }
+  if (document.getElementById('account-callback-panel')) return;
+  const panel = document.createElement('div');
+  panel.id = 'account-callback-panel';
+  panel.className = 'account-panel hidden';
+  panel.innerHTML = `
+    <div class="save-config-form">
+      <strong id="account-callback-title">Finish account setup</strong>
+      <label for="account-callback-password" class="section-label">New password</label>
+      <input id="account-callback-password" class="text-input" type="password" autocomplete="new-password" minlength="6" placeholder="Choose a password">
+      <button id="account-callback-submit" class="btn primary" type="button">Continue</button>
+    </div>`;
+  signedOut.after(panel);
 }
 
 function accountDrawer(open = true) {
@@ -43,17 +50,18 @@ function accountDrawer(open = true) {
   drawer?.setAttribute('aria-hidden', String(!open));
 }
 
-function clearAuthHash() {
-  history.replaceState(null, '', `${location.pathname}${location.search}`);
-}
-
-function showCallback(type, token) {
+function showCallback(type, token = null) {
   pendingCallback = { type, token };
   document.getElementById('account-callback-panel')?.classList.remove('hidden');
   document.getElementById('account-signed-out')?.classList.add('hidden');
   const title = document.getElementById('account-callback-title');
   if (title) title.textContent = type === 'invite' ? 'Finish creating your account' : 'Set a new password';
   accountDrawer(true);
+}
+
+function hideCallback() {
+  pendingCallback = null;
+  document.getElementById('account-callback-panel')?.classList.add('hidden');
 }
 
 function credentials() {
@@ -63,99 +71,102 @@ function credentials() {
   };
 }
 
-async function refresh(onSession, initial = false) {
-  const user = await refreshAccountUser({ initial });
-  onSession(user);
-  return user;
-}
-
-async function processHash(onSession) {
-  const params = new URLSearchParams(location.hash.replace(/^#/, ''));
-  const confirmation = params.get('confirmation_token');
-  const invite = params.get('invite_token');
-  const recovery = params.get('recovery_token');
-
-  if (invite) {
-    showCallback('invite', invite);
-    setAccountMessage('Invitation found. Set a password to finish your account.');
-    return;
-  }
-  if (recovery) {
-    showCallback('recovery', recovery);
-    setAccountMessage('Recovery link verified. Choose a new password.');
-    return;
-  }
-  if (!confirmation) return;
+async function processCallback(onSession) {
+  const hasAuthHash = /(?:confirmation|invite|recovery|email_change)_token=|access_token=/.test(location.hash);
+  if (!hasAuthHash) return false;
 
   try {
-    setAccountMessage('Confirming your email…');
-    await authAction('confirm', { token: confirmation });
-    clearAuthHash();
-    const user = await refresh(onSession);
+    setAccountMessage('Finishing account verification…');
+    const result = await processIdentityCallback();
+    if (!result) return false;
+
+    if (result.type === 'invite') {
+      showCallback('invite', result.token);
+      setAccountMessage('Invitation verified. Choose a password to finish your account.');
+      return true;
+    }
+    if (result.type === 'recovery') {
+      onSession(result.user);
+      showCallback('recovery');
+      setAccountMessage('Recovery link verified. Choose a new password.');
+      return true;
+    }
+
+    hideCallback();
+    onSession(result.user);
     setAccountMessage(
-      user ? 'Email confirmed. You are signed in.' : 'Email confirmed. Sign in to continue.',
+      result.type === 'confirmation' ? 'Email confirmed. You are signed in.' : 'Account verified. You are signed in.',
       'ready',
     );
     accountDrawer(true);
+    return true;
   } catch (error) {
-    console.error('Email confirmation failed:', error);
-    setAccountMessage(error.message, 'error');
+    console.error('Identity callback failed:', error);
+    setAccountMessage(error.message || 'Unable to verify this account link.', 'error');
     accountDrawer(true);
+    return true;
   }
 }
 
 export async function initAuthUI(onSession) {
   ensureAuthMarkup();
+
   document.getElementById('account-login-btn')?.addEventListener('click', async () => {
     try {
       setAccountMessage('Signing in…');
-      await authAction('login', credentials());
-      const user = await refresh(onSession);
-      setAccountMessage(user ? 'Signed in.' : 'Sign-in completed, but the session was not restored.', user ? 'ready' : 'error');
+      const { email, password } = credentials();
+      const user = await loginAccount(email, password);
+      onSession(user);
+      setAccountMessage('Signed in.', 'ready');
     } catch (error) { setAccountMessage(error.message, 'error'); }
   });
+
   document.getElementById('account-signup-btn')?.addEventListener('click', async () => {
     try {
       setAccountMessage('Creating account…');
-      const data = await authAction('signup', credentials());
-      const user = await refresh(onSession);
-      setAccountMessage(user ? 'Account created and signed in.' : data.message || 'Check your email to confirm your account.', 'ready');
+      const { email, password } = credentials();
+      const { user } = await signupAccount(email, password);
+      onSession(user);
+      setAccountMessage(user ? 'Account created and signed in.' : 'Account created. Check your email to confirm it.', 'ready');
     } catch (error) { setAccountMessage(error.message, 'error'); }
   });
+
   document.getElementById('account-recovery-btn')?.addEventListener('click', async () => {
     try {
-      const email = credentials().email;
-      if (!email) throw new Error('Enter your email address first.');
-      const data = await authAction('request-recovery', { email });
-      setAccountMessage(data.message, 'ready');
+      await requestRecoveryAccount(credentials().email);
+      setAccountMessage('If that account exists, a password reset email is on the way.', 'ready');
     } catch (error) { setAccountMessage(error.message, 'error'); }
   });
+
   document.getElementById('account-callback-submit')?.addEventListener('click', async () => {
     try {
       if (!pendingCallback) throw new Error('No account link is active.');
       const password = document.getElementById('account-callback-password')?.value || '';
-      const action = pendingCallback.type === 'invite' ? 'accept-invite' : 'recover';
-      setAccountMessage('Finishing account setup…');
-      await authAction(action, { token: pendingCallback.token, password });
-      pendingCallback = null;
-      clearAuthHash();
-      document.getElementById('account-callback-panel')?.classList.add('hidden');
-      const user = await refresh(onSession);
-      setAccountMessage(user ? 'Account ready. You are signed in.' : 'Account ready. Sign in to continue.', 'ready');
+      const user = pendingCallback.type === 'invite'
+        ? await acceptInviteAccount(pendingCallback.token, password)
+        : await completeRecoveryAccount(password);
+      hideCallback();
+      onSession(user);
+      setAccountMessage('Account ready. You are signed in.', 'ready');
     } catch (error) { setAccountMessage(error.message, 'error'); }
   });
 
-  try { await refresh(onSession, true); }
-  catch (error) {
+  const callbackHandled = await processCallback(onSession);
+  if (callbackHandled) return;
+
+  try {
+    const user = await refreshAccountUser({ initial: true });
+    onSession(user);
+    if (!user) setAccountMessage('Guest mode active. Sign in to sync saved dice.');
+  } catch (error) {
     console.error('Initial account session check failed:', error);
     onSession(null);
     setAccountMessage('Guest mode active. Sign in to sync saved dice.');
   }
-  await processHash(onSession);
 }
 
 export async function signOutAccount(onSession) {
-  await authAction('logout');
-  await refresh(onSession);
+  await logoutAccount();
+  onSession(null);
   setAccountMessage('Signed out.', 'ready');
 }
