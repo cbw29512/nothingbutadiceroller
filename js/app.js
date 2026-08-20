@@ -4,7 +4,6 @@ import { initDicePhysics } from './physics.js';
 import { addDie, clearPool, performRoll } from './roller.js';
 import { renderHistory, renderPool, setStatus } from './ui.js';
 import { initStylePicker } from './style-picker.js';
-import { initThemeCommunity } from './theme-community.js';
 import { assertStylesLoaded } from './deployment.js';
 import { initAccount } from './account.js';
 import { closeCustomDieControls, initCustomDieControls } from './custom-controls.js';
@@ -82,17 +81,13 @@ function syncControls() {
 
 function bindDiceButtons(selector) {
   document.querySelectorAll(selector).forEach(button => {
-    if (button.dataset.type) {
-      button.addEventListener('click', () => addDie(button.dataset.type));
-    }
+    if (button.dataset.type) button.addEventListener('click', () => addDie(button.dataset.type));
   });
 }
 
 function bindQuickRollButtons() {
   document.querySelectorAll('[data-quick-roll]').forEach(button => {
-    button.addEventListener('click', () => {
-      performActiveRoll(button.dataset.quickRoll, { quickD20: true });
-    });
+    button.addEventListener('click', () => performActiveRoll(button.dataset.quickRoll, { quickD20: true }));
   });
 }
 
@@ -153,7 +148,6 @@ async function boot() {
     initStylePicker();
     initAccount();
     initShortcutRuntime();
-    initThemeCommunity();
 
     const stylesButton = document.getElementById('open-styles-btn');
     if (stylesButton) stylesButton.textContent = 'Customize';
