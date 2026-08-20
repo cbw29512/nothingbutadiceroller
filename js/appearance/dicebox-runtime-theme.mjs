@@ -1,18 +1,10 @@
 import { CANONICAL_DICE } from './defaults.mjs';
 import { buildDiceBoxAtlasDrawOperations } from './dicebox-atlas-renderer.mjs';
+import { buildRuntimeThemeIdentity } from './runtime-theme-identity.mjs';
 import { RUNTIME_THEME_VERSION, encodeRuntimeThemePayload } from './runtime-theme-codec.mjs';
 
 function round(value) {
   return Math.round(Number(value) * 100) / 100;
-}
-
-function shortHash(value) {
-  let hash = 2166136261;
-  for (const char of String(value)) {
-    hash ^= char.codePointAt(0);
-    hash = Math.imul(hash, 16777619);
-  }
-  return (hash >>> 0).toString(36);
 }
 
 export function buildDiceBoxRuntimeTheme(glyphPlan, themePlan, dieType, { size = 1024 } = {}) {
@@ -37,7 +29,7 @@ export function buildDiceBoxRuntimeTheme(glyphPlan, themePlan, dieType, { size =
     const token = encodeRuntimeThemePayload(payload);
     return {
       dieType,
-      themeName: `ndr_${dieType}_${shortHash(token)}`,
+      themeName: buildRuntimeThemeIdentity(dieType, token),
       basePath: `/api/dice-theme/${token}`,
       themeColor: dieTheme.material.bodyColor,
       token,

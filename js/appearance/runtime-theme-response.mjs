@@ -1,4 +1,5 @@
-import { validateRuntimeThemePayload } from './runtime-theme-codec.mjs';
+import { encodeRuntimeThemePayload, validateRuntimeThemePayload } from './runtime-theme-codec.mjs';
+import { buildRuntimeThemeIdentity } from './runtime-theme-identity.mjs';
 
 const FONT_STACKS = Object.freeze({
   '': 'Arial, sans-serif',
@@ -25,9 +26,10 @@ function escapeXml(value) {
 
 export function buildRuntimeThemeConfig(payload) {
   const valid = assertPayload(payload);
+  const token = encodeRuntimeThemePayload(valid);
   return {
     name: `Runtime ${valid.d.toUpperCase()} Appearance`,
-    systemName: `ndr-runtime-${valid.d}`,
+    systemName: buildRuntimeThemeIdentity(valid.d, token),
     author: 'Nothing But A Dice Roller',
     version: 1,
     material: {
