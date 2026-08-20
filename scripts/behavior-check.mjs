@@ -19,6 +19,42 @@ function group(values, sides = 20, id = 0) {
   }];
 }
 
+for (const sides of [4, 6, 8, 10, 12, 20, 100]) {
+  const type = `d${sides}`;
+  const standard = buildPhysicsNotation([{ type }], 'normal');
+  assert.deepEqual(standard.pool, [{ type }]);
+  assert.deepEqual(standard.notation, [{ qty: 1, sides }]);
+}
+
+const mixedNotation = buildPhysicsNotation([
+  { type: 'd20' },
+  { type: 'd6' },
+  { type: 'd6' },
+  { type: 'd4' },
+], 'normal');
+assert.deepEqual(mixedNotation.notation, [
+  { qty: 1, sides: 20 },
+  { qty: 2, sides: 6 },
+  { qty: 1, sides: 4 },
+]);
+
+const mixedStandard = parseRollResults([
+  ...group([14], 20, 0),
+  ...group([5, 2], 6, 1),
+  ...group([3], 4, 2),
+], 'normal');
+assert.equal(mixedStandard.total, 24);
+assert.deepEqual(mixedStandard.keptD20s, [14]);
+assert.equal(getCriticalOutcome(
+  [{ type: 'd20' }, { type: 'd6' }, { type: 'd6' }, { type: 'd4' }],
+  'normal',
+  mixedStandard.keptD20s,
+), null);
+
+const d100Result = parseRollResults(group([87], 100), 'normal');
+assert.equal(d100Result.total, 87);
+assert.equal(d100Result.breakdown, 'Base roll: d100 = 87');
+
 const advantageNotation = buildPhysicsNotation([], 'advantage');
 assert.deepEqual(advantageNotation.pool, [{ type: 'd20' }]);
 assert.deepEqual(advantageNotation.notation, [{ qty: 2, sides: 20 }]);
@@ -65,6 +101,7 @@ assert.equal(getCriticalOutcome(
   multipleD20s.keptD20s,
 ), null);
 
+assert.equal(normalizeCustomSides(2), 2);
 assert.equal(normalizeCustomSides(3), 3);
 assert.equal(normalizeCustomSides('3'), 3);
 assert.equal(normalizeCustomSides('d3'), 3);
@@ -75,7 +112,7 @@ assert.throws(() => normalizeCustomSides('d1000001'));
 assert.throws(() => normalizeCustomSides('d3.5'));
 assert.throws(() => normalizeCustomSides('three'));
 
-for (const sides of [3, 37, 1_000_000]) {
+for (const sides of [2, 3, 37, 1_000_000]) {
   for (let index = 0; index < 64; index += 1) {
     const value = secureCustomRoll(sides);
     assert.ok(Number.isInteger(value));
@@ -113,5 +150,5 @@ assert.equal(formatRollButtonLabel([
 ]), 'Roll 2d20 + d6');
 
 console.log(
-  'Behavior checks passed: ADV/DIS, kept-d20 criticals, mixed pools, multi-d20 gating, custom dN ranges, tray roll eligibility, and dynamic roll labels.',
+  'Behavior checks passed: all seven standard dice, mixed pools/totals, d100, ADV/DIS, kept-d20 criticals, multi-d20 gating, custom dN boundaries/ranges, tray roll eligibility, and dynamic roll labels.',
 );
