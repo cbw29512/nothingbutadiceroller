@@ -37,7 +37,7 @@ for (const required of [
   'TOTAL DAMAGE =',
   "showCrit('nat20')",
   "section.hidden = !accountUser && !demoMode",
-  "title.textContent = 'Press ⚙ to configure shortcuts'",
+  "title.textContent = 'Press ⚙ to configure'",
   'note.hidden = !hasShortcuts',
 ]) {
   assert.ok(runtime.includes(required), `Phase 6 runtime contract missing: ${required}`);
@@ -53,6 +53,8 @@ for (const required of [
   "tooltip.id = 'shortcut-tooltip'",
   "wrapRollButton('roll-btn', 'shortcut-settings-btn'",
   "wrapRollButton('mobile-roll-btn', 'mobile-shortcut-settings-btn'",
+  "title.style.fontSize = '.86rem'",
+  "title.style.letterSpacing = '.04em'",
 ]) {
   assert.ok(markup.includes(required), `Phase 6 runtime markup missing: ${required}`);
 }

@@ -27,6 +27,9 @@ function ensureToolbarSection() {
   const title = document.createElement('span');
   title.id = 'shortcut-toolbar-title';
   title.className = 'section-label';
+  title.style.fontSize = '.86rem';
+  title.style.letterSpacing = '.04em';
+  title.style.lineHeight = '1.25';
   title.textContent = 'My shortcuts';
   const note = document.createElement('span');
   note.className = 'shortcut-toolbar-note';

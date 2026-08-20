@@ -144,7 +144,7 @@ function renderToolbar() {
   hydratedSlots = slots.map((slot) => ({ slot, hydrated: hydrateShortcutSlot(slot) }));
   const hasShortcuts = slots.length > 0;
   section.hidden = !accountUser && !demoMode;
-  title.textContent = 'Press ⚙ to configure shortcuts';
+  title.textContent = 'Press ⚙ to configure';
   note.hidden = !hasShortcuts;
   if (!slots.length) {
     container.replaceChildren();
