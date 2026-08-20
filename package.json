@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "check": "node scripts/check.mjs && node scripts/behavior-check.mjs && node scripts/baseline-contract.mjs",
+    "check": "node scripts/check.mjs && node scripts/dependency-lock-check.mjs && node scripts/behavior-check.mjs && node scripts/baseline-contract.mjs",
     "build": "npm run check && node scripts/build.mjs"
   },
   "engines": {
