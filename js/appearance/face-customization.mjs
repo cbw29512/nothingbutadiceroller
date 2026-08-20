@@ -1,4 +1,5 @@
 import { CANONICAL_DICE, CUSTOM_FACE_MODE, RAW_FACE_MODE } from './defaults.mjs';
+import { getCanonicalFaceLabel, isCanonicalFaceResult } from './face-values.mjs';
 import { cloneDiceSet } from './schema.mjs';
 import { assertValidDiceSet } from './validation.mjs';
 
@@ -11,9 +12,8 @@ function getDie(set, dieType) {
 
 function assertLogicalFace(dieType, logicalFace) {
   const value = Number(logicalFace);
-  const sides = CANONICAL_DICE[dieType];
-  if (!Number.isInteger(value) || value < 1 || value > sides) {
-    throw new Error(`${logicalFace} is not a valid logical result for ${dieType}.`);
+  if (!isCanonicalFaceResult(dieType, value)) {
+    throw new Error(`${logicalFace} is not a physical face result for ${dieType}.`);
   }
   return String(value);
 }
@@ -66,7 +66,7 @@ export function getVisualFace(set, dieType, logicalResult) {
     const die = getDie(set, dieType);
     const key = assertLogicalFace(dieType, logicalResult);
     if (die.faceMode === CUSTOM_FACE_MODE && die.faces?.[key]) return die.faces[key];
-    return { kind: 'number', value: key, canonical: true };
+    return { kind: 'number', value: getCanonicalFaceLabel(dieType, logicalResult), canonical: true };
   } catch (error) {
     console.error('Failed to resolve visual die face:', error);
     throw error;
