@@ -89,8 +89,8 @@ export function renderBuilderGroups(renderPreview) {
   host.replaceChildren();
   const attackGroups = managerContext.builderGroups.filter((group) => group.kind === 'attack');
   const specs = [
-    ['Label', 'text', 'label'], ['Kind', 'select', 'kind'], ['Dice', 'number', 'count'],
-    ['Sides', 'select', 'sides'], ['Modifier', 'number', 'modifier'], ['Repeat', 'number', 'repeat'],
+    ['Group name', 'text', 'label'], ['Roll type', 'select', 'kind'], ['Number of dice', 'number', 'count'],
+    ['Die type', 'select', 'sides'], ['Bonus / Modifier', 'number', 'modifier'], ['Attacks / Targets', 'number', 'repeat'],
   ];
 
   managerContext.builderGroups.forEach((group, index) => {
@@ -119,3 +119,4 @@ export function renderBuilderGroups(renderPreview) {
     if (index < managerContext.builderGroups.length - 1) host.append(element('div', 'and-divider', 'AND'));
   });
 }
+

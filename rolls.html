@@ -48,6 +48,7 @@
         <span id="selected-shortcut-name" class="selected-shortcut-name">Select a shortcut to manage it.</span>
         <button id="move-shortcut-left" class="btn secondary" type="button" disabled>Move Left</button>
         <button id="move-shortcut-right" class="btn secondary" type="button" disabled>Move Right</button>
+        <button id="duplicate-shortcut" class="btn secondary" type="button" disabled>Duplicate Custom</button>
         <button id="remove-shortcut" class="btn danger" type="button" disabled>Remove</button>
       </div>
     </section>
@@ -85,7 +86,7 @@
       <div class="homebrew-grid">
         <form id="homebrew-form" class="manager-panel" novalidate>
           <div class="manager-section-heading">
-            <div><span class="section-label">Flex Card</span><h2>Homebrew / Custom Roll</h2></div>
+            <div><span class="section-label">Custom Shortcut</span><h2>Build Your Own Shortcut</h2></div>
           </div>
           <div class="manager-form-grid">
             <label>Name
@@ -102,15 +103,18 @@
             <div><span class="section-label">Roll groups</span><p class="manager-note">Each group stays separate in results. Add AND groups for mixed damage or multiple actions.</p></div>
             <button id="add-homebrew-group" class="btn secondary" type="button">+ AND Group</button>
           </div>
+          <p class="homebrew-example"><strong>Example:</strong> Attack: 1d20 + 7 <span>AND</span> Slashing Damage: 2d6 + 4 <span>AND</span> Fire Damage: 1d6</p>
           <div id="homebrew-groups" class="homebrew-groups"></div>
           <p id="homebrew-dice-budget" class="manager-note" role="status">Physical dice: 1 / 40. Each d100 counts as two.</p>
-          <button id="save-homebrew" class="btn primary" type="submit">Add Homebrew to Toolbar</button>
+          <button id="validate-homebrew" class="btn secondary" type="button">Validate Shortcut</button>
+          <button id="save-homebrew" class="btn primary" type="submit">Add Custom Shortcut to Toolbar</button>
         </form>
 
         <aside class="manager-panel preview-panel" aria-labelledby="preview-heading">
           <span class="section-label">Compiled preview</span>
           <h2 id="preview-heading">What the roller will execute</h2>
           <div id="homebrew-preview" class="homebrew-preview">Add or edit groups to preview the structured roll.</div>
+          <p id="homebrew-validation" class="manager-note" role="status">Validation checks the formula and dice limit before you save.</p>
         </aside>
       </div>
     </section>
@@ -121,17 +125,6 @@
         <h2>Options</h2>
         <div class="option-row">
           <div>
-            <strong>Critical Rule</strong>
-            <p class="manager-note">RAW is the default. Custom is stored as a table override, never as an edit to RAW cards.</p>
-          </div>
-          <select id="critical-mode" class="manager-select">
-            <option value="raw">RAW</option>
-            <option value="custom">Custom</option>
-          </select>
-        </div>
-        <p id="custom-crit-note" class="manager-warning hidden">No custom critical method is defined yet. Until one is explicitly supported, the roller safely falls back to RAW critical dice.</p>
-        <div class="option-row">
-          <div>
             <strong>Ruleset preference</strong>
             <p class="manager-note">Choose which RAW library opens first when you return to this page.</p>
           </div>
@@ -139,6 +132,13 @@
             <option value="dnd5e-2024">2024 RAW</option>
             <option value="dnd5e-2014">2014 RAW</option>
           </select>
+        </div>
+        <div class="option-row reset-option">
+          <div>
+            <strong>Dice Roller Only</strong>
+            <p class="manager-note">Remove every shortcut and return to the plain dice roller. You must save afterward to keep the reset.</p>
+          </div>
+          <button id="reset-shortcuts" class="btn danger" type="button">Reset Shortcuts</button>
         </div>
       </div>
     </section>

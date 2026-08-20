@@ -18,6 +18,22 @@ export function removeShortcutSlot(shortcuts, slotId) {
   return normalizeShortcutSlots((shortcuts || []).filter((slot) => slot.id !== slotId));
 }
 
+export function duplicateFlexShortcutSlot(shortcuts, slotId) {
+  ensureCapacity(shortcuts);
+  const source = normalizeShortcutSlots(shortcuts || []).find((slot) => slot.id === slotId);
+  if (!source) throw new Error(`Unknown shortcut slot: ${slotId}`);
+  if (source.source !== 'flex') throw new Error('Only custom shortcuts can be duplicated.');
+  const definition = structuredClone(source.definition);
+  definition.name = `${definition.name} Copy`.slice(0, 80);
+  definition.id = uniqueShortcutSlotId([], definition.id).slice(0, 64);
+  const copy = {
+    ...structuredClone(source),
+    id: uniqueShortcutSlotId(shortcuts, `flex-${definition.id}`),
+    definition,
+  };
+  return normalizeShortcutSlots([...(shortcuts || []), copy]);
+}
+
 export function moveShortcutSlot(shortcuts, slotId, offset) {
   const normalized = [...normalizeShortcutSlots(shortcuts || [])];
   if (!Number.isInteger(offset) || offset === 0) return Object.freeze(normalized);
@@ -64,3 +80,4 @@ export function createRawManagerSlot(shortcuts, entry, {
 export function updateManagerOptions(current, patch) {
   return normalizeShortcutOptions({ ...(current || {}), ...(patch || {}) });
 }
+
