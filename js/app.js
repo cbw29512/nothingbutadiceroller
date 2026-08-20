@@ -57,7 +57,7 @@ function syncControls() {
       button.classList.toggle('active', active);
       button.disabled = state.rolling || shortcutPrepared;
     });
-    document.querySelectorAll('.die-btn, .mobile-die-btn, .pool-chip').forEach(button => {
+    document.querySelectorAll('.die-btn, .mobile-die-btn, .pool-chip, #desktop-custom-die-roll-btn, #custom-die-roll-btn').forEach(button => {
       button.disabled = state.rolling || shortcutPrepared;
     });
     ['roll-btn', 'mobile-roll-btn', 'clear-btn', 'mobile-clear-btn', 'keep-btn'].forEach(id => {
