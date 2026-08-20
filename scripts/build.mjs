@@ -15,6 +15,9 @@ const files = [
   'community.css',
   'mobile.css',
   'custom.css',
+  'shortcut-harness.html',
+  'shortcut-toolbar.css',
+  'shortcut-harness.css',
 ];
 const directories = ['js'];
 
@@ -68,11 +71,15 @@ async function validateBuild() {
       'js/style-picker.js',
       'js/theme-community.js',
       'js/tray-controls.js',
+      'js/shortcut-harness.js',
+      'js/shortcuts/icons.mjs',
+      'js/shortcuts/toolbar.mjs',
     ];
 
     await Promise.all(required.map(path => access(resolve(dist, path))));
 
     const html = await readFile(resolve(dist, 'index.html'), 'utf8');
+    const harnessHtml = await readFile(resolve(dist, 'shortcut-harness.html'), 'utf8');
     const browserApp = await readFile(resolve(dist, 'js/app.js'), 'utf8');
     const accountApi = await readFile(resolve(dist, 'js/account-api.js'), 'utf8');
     const authUi = await readFile(resolve(dist, 'js/auth-ui.js'), 'utf8');
@@ -104,6 +111,22 @@ async function validateBuild() {
       if (!html.includes(reference)) {
         throw new Error(`Missing completed UI reference: ${reference}`);
       }
+    }
+
+    const expectedHarness = [
+      'name="robots" content="noindex,nofollow"',
+      'href="/shortcut-toolbar.css"',
+      'href="/shortcut-harness.css"',
+      'id="shortcut-toolbar-harness"',
+      'src="/js/shortcut-harness.js"',
+    ];
+    for (const reference of expectedHarness) {
+      if (!harnessHtml.includes(reference)) {
+        throw new Error(`Missing Phase 4 harness reference: ${reference}`);
+      }
+    }
+    if (html.includes('shortcut-toolbar.css') || html.includes('shortcut-toolbar-harness')) {
+      throw new Error('Phase 4 shortcut toolbar must remain disconnected from the live roller.');
     }
 
     const expectedCustomControls = [
