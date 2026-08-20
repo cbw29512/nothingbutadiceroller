@@ -6,6 +6,7 @@ import {
   SYSTEM_DEFAULT_DICE_SET,
   SYSTEM_DEFAULT_DICE_SET_ID,
 } from './defaults.mjs';
+import { isCanonicalFaceResult } from './face-values.mjs';
 
 const HEX = /^#[0-9a-f]{6}$/i;
 const FACE_KINDS = new Set(['text', 'icon']);
@@ -13,6 +14,7 @@ const LEGACY_ICON_IDS = new Set(['skull', 'star', 'flame', 'shield', 'heart', 's
 const FACE_MODES = new Set([RAW_FACE_MODE, CUSTOM_FACE_MODE]);
 const VISIBILITIES = new Set(['private', 'public', 'system']);
 const STYLE_OVERRIDE_KEYS = new Set(['bodyColor', 'faceColor', 'opacity', 'glow']);
+const MAX_FACE_GRAPHEMES = 12;
 
 function checkGlow(glow, path, errors) {
   if (!glow || typeof glow !== 'object') return errors.push(`${path} must be an object.`);
@@ -49,10 +51,6 @@ function countGraphemes(value) {
   }
 }
 
-function isNumericFaceValue(value) {
-  return /^-?\d+$/.test(String(value || '').trim());
-}
-
 function checkFace(face, path, errors) {
   if (!face || typeof face !== 'object') return errors.push(`${path} must be an object.`);
   if (!FACE_KINDS.has(face.kind)) errors.push(`${path}.kind is unsupported.`);
@@ -61,20 +59,20 @@ function checkFace(face, path, errors) {
     errors.push(`${path}.fontId must reference a supported font.`);
   }
   if (face.kind === 'text') {
-    const value = typeof face.value === 'string' ? face.value.trim() : '';
-    if (!isNumericFaceValue(value) && countGraphemes(value) !== 1) {
-      errors.push(`${path}.value must be a number or one visible character/symbol.`);
+    const length = countGraphemes(face.value);
+    if (length < 1 || length > MAX_FACE_GRAPHEMES) {
+      errors.push(`${path}.value must contain 1-${MAX_FACE_GRAPHEMES} visible characters.`);
     }
   }
   if (face.kind === 'icon') {
     const value = typeof face.value === 'string' ? face.value.trim() : '';
     if (!LEGACY_ICON_IDS.has(value) && countGraphemes(value) !== 1) {
-      errors.push(`${path}.value must be one visible symbol or a supported legacy icon.`);
+      errors.push(`${path}.value must be one visible symbol or a supported built-in icon.`);
     }
   }
 }
 
-function checkDie(type, sides, die, errors) {
+function checkDie(type, die, errors) {
   if (!die) return errors.push(`${type} configuration is required.`);
   if (die.shapeId !== `canonical:${type}`) errors.push(`${type} shapeId must remain canonical:${type}.`);
   if (die.logicalDie !== type) errors.push(`${type} logicalDie must remain ${type}.`);
@@ -86,9 +84,8 @@ function checkDie(type, sides, die, errors) {
     errors.push(`${type} RAW faces must use standard numbering with no visual replacements.`);
   }
   for (const [logicalFace, face] of faceEntries) {
-    const value = Number(logicalFace);
-    if (!Number.isInteger(value) || value < 1 || value > sides) {
-      errors.push(`${type} custom face ${logicalFace} is outside its logical result range.`);
+    if (!isCanonicalFaceResult(type, logicalFace)) {
+      errors.push(`${type} custom face ${logicalFace} is not a physical face result for this die.`);
     } else if (die.faceMode === CUSTOM_FACE_MODE) {
       checkFace(face, `appearance.diceSet.dice.${type}.faces.${logicalFace}`, errors);
     }
@@ -106,7 +103,7 @@ function checkAppearance(appearance, errors) {
   if (!dice || typeof dice !== 'object') return errors.push('appearance.diceSet.dice is required.');
   const unsupportedDice = Object.keys(dice).filter((type) => !Object.hasOwn(CANONICAL_DICE, type));
   if (unsupportedDice.length) errors.push(`Unsupported dice are not allowed: ${unsupportedDice.join(', ')}.`);
-  for (const [type, sides] of Object.entries(CANONICAL_DICE)) checkDie(type, sides, dice[type], errors);
+  for (const type of Object.keys(CANONICAL_DICE)) checkDie(type, dice[type], errors);
   if (!HEX.test(String(appearance?.tray?.color || ''))) errors.push('Tray color is invalid.');
   checkGlow(appearance?.tray?.glow, 'appearance.tray.glow', errors);
 }
