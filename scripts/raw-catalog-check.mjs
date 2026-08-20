@@ -35,7 +35,7 @@ for (const [ruleset, catalog, srdVersion] of [
   ['dnd5e-2024', RAW_2024, '5.2.1'],
 ]) {
   assert.equal(Object.isFrozen(catalog), true);
-  assert.equal(catalog.length, 8);
+  assert.equal(catalog.length, 14);
   assert.equal(getRawCatalog(ruleset), catalog);
   assert.equal(RAW_CATALOGS[ruleset], catalog);
   assert.doesNotThrow(() => validateRawCatalog(catalog, { ruleset, srdVersion }));

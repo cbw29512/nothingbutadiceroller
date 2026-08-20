@@ -90,3 +90,15 @@ export function slotDamageVariants({ baseLevel, maxLevel = 9, damageType, baseCo
   }
   return variants;
 }
+
+export function slotAttackDamageVariants({ baseLevel, maxLevel = 9, damageType, baseCount, sides, perSlot = 1 }) {
+  const variants = [];
+  for (let slot = baseLevel; slot <= maxLevel; slot += 1) {
+    const count = baseCount + ((slot - baseLevel) * perSlot);
+    variants.push(variant(`slot-${slot}`, `Level ${slot}`, slot, [
+      attackGroup({ repeat: 1 }),
+      damageGroup({ damageType, count, sides, crit: true }),
+    ]));
+  }
+  return variants;
+}
