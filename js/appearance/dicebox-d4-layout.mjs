@@ -35,6 +35,12 @@ function findOppositeVertex(collider, bottomFaceId) {
   return opposite;
 }
 
+function region(vertices) {
+  const us = vertices.map((vertex) => vertex.uv[0]);
+  const vs = vertices.map((vertex) => vertex.uv[1]);
+  return { minU: Math.min(...us), maxU: Math.max(...us), minV: Math.min(...vs), maxV: Math.max(...vs) };
+}
+
 function insetUv(vertices, target, ratio = 0.28) {
   const centerU = vertices.reduce((sum, vertex) => sum + vertex.uv[0], 0) / vertices.length;
   const centerV = vertices.reduce((sum, vertex) => sum + vertex.uv[1], 0) / vertices.length;
@@ -61,7 +67,7 @@ export function extractD4VertexAnchors(modelData) {
         const nearest = vertices.reduce((best, vertex) => (
           distance(vertex.position, opposite) < distance(best.position, opposite) ? vertex : best
         ));
-        marks.push({ faceId, ...insetUv(vertices, nearest) });
+        marks.push({ faceId, ...insetUv(vertices, nearest), region: region(vertices) });
       }
       if (marks.length !== 3) throw new Error(`d4 result ${logicalResult} must have three visible vertex marks.`);
       anchors[String(logicalResult)] = { logicalResult, marks };
