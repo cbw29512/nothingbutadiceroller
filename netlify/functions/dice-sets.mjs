@@ -35,12 +35,12 @@ export default async (request) => {
         if (!record) return json({ error: 'Dice set not found.' }, 404);
         const publicLocked = record.set?.locked && record.set?.visibility === 'public';
         if (ownerId !== user.id && !publicLocked) return json({ error: 'Dice set is private.' }, 403);
-        return json({ record });
+        return json({ record, userId: user.id });
       }
       const index = await readArray(store, indexKey(user.id));
       const records = (await Promise.all(index.map((item) => store.get(recordKey(user.id, item.setId), { type: 'json' }).catch(() => null))))
         .filter(Boolean);
-      return json({ records });
+      return json({ records, userId: user.id });
     }
 
     if (request.method === 'DELETE') {
