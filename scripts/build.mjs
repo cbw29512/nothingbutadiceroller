@@ -131,7 +131,9 @@ async function validateBuild() {
       'data-tab="2014"',
       'data-tab="homebrew"',
       'data-tab="options"',
-      'id="critical-mode"',
+      'id="duplicate-shortcut"',
+      'id="validate-homebrew"',
+      'id="reset-shortcuts"',
       'id="preferred-ruleset"',
       'src="/js/rolls.js"',
     ];
