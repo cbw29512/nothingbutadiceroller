@@ -58,6 +58,7 @@ for (const required of [
   "title.style.letterSpacing = '.04em'",
   "hint.id = 'mobile-shortcut-hint'",
   "hint.textContent = 'Press ⚙ to configure'",
+  "hint.style.fontSize = '.86rem'",
   'actionRow.before(hint)',
   'ensureMobileShortcutHint()',
 ]) {

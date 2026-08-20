@@ -73,7 +73,7 @@ function ensureMobileShortcutHint() {
   hint.hidden = true;
   hint.textContent = 'Press ⚙ to configure';
   hint.style.color = '#dbeafe';
-  hint.style.fontSize = '.78rem';
+  hint.style.fontSize = '.86rem';
   hint.style.fontWeight = '900';
   hint.style.letterSpacing = '.04em';
   hint.style.lineHeight = '1.25';
