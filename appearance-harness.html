@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="theme-color" content="#090c12">
+  <title>3D Appearance Proof • Nothing But A Dice Roller</title>
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/appearance-harness.css">
+</head>
+<body class="appearance-harness-page">
+  <main class="appearance-harness-shell">
+    <header class="appearance-harness-header">
+      <div>
+        <p class="eyebrow">ISOLATED V2 PROOF</p>
+        <h1>3D Face Artwork vs. Real Result</h1>
+        <p>This page never replaces the production roller. It proves the visual theme path separately first.</p>
+      </div>
+      <a class="btn secondary" href="/customize.html">Back to Dice Studio</a>
+    </header>
+
+    <section class="proof-card">
+      <div class="proof-copy">
+        <span class="section-label">Test design</span>
+        <h2>Red d20 • purple face art</h2>
+        <p>Logical faces 1–19 are visually painted as <strong>1</strong>. Logical face 20 is painted as <strong>☠</strong>. DiceBox must still return the untouched numerical result from its canonical collider.</p>
+      </div>
+      <div id="appearance-proof-tray" class="appearance-proof-tray" aria-label="Isolated 3D dice proof tray"></div>
+      <div class="proof-actions">
+        <button id="proof-roll-one" class="btn primary" type="button" disabled>Roll d20</button>
+        <button id="proof-roll-ten" class="btn secondary" type="button" disabled>Roll 10 d20s</button>
+      </div>
+      <div class="proof-results" aria-live="polite">
+        <strong id="proof-result">No proof roll yet.</strong>
+        <span id="proof-expected">Visible artwork will be 1, except a natural 20 shows ☠.</span>
+      </div>
+      <p id="proof-status" class="status-line" role="status">Loading canonical DiceBox model and visual-only theme…</p>
+    </section>
+  </main>
+  <script type="module" src="/js/appearance/dicebox-proof-harness.js"></script>
+</body>
+</html>
