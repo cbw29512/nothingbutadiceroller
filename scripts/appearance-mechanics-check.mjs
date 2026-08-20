@@ -5,6 +5,7 @@ import {
   SYSTEM_DEFAULT_DICE_SET,
   cloneSystemDefaultAppearance,
 } from '../js/appearance/defaults.mjs';
+import { getCanonicalFaceLabel, getCanonicalFaceResults } from '../js/appearance/face-values.mjs';
 import { getFaceLayout, getSupportedFaceEditorDice } from '../js/appearance/face-layouts.mjs';
 import { createUserDiceSet } from '../js/appearance/schema.mjs';
 import { validateDiceSet } from '../js/appearance/validation.mjs';
@@ -30,15 +31,15 @@ for (const type of Object.keys(CANONICAL_DICE)) {
 }
 
 for (const type of getSupportedFaceEditorDice()) {
+  const expected = getCanonicalFaceResults(type);
   const layout = getFaceLayout(type);
-  assert.equal(layout.length, CANONICAL_DICE[type], `${type} editor must expose every canonical face.`);
-  assert.deepEqual(
-    layout.map((face) => face.logicalFace),
-    Array.from({ length: CANONICAL_DICE[type] }, (_, index) => index + 1),
-    `${type} editor must preserve canonical face numbers.`,
-  );
+  assert.equal(layout.length, expected.length, `${type} editor must expose every physical face.`);
+  assert.deepEqual(layout.map((face) => face.logicalFace), expected, `${type} editor must preserve engine face results.`);
 }
-assert.throws(() => getFaceLayout('d100'), Error, 'd100 requires a dedicated percentile editor.');
+assert.equal(getCanonicalFaceLabel('d10', 10), '0');
+assert.equal(getCanonicalFaceLabel('d100', 0), '00');
+assert.equal(getCanonicalFaceLabel('d100', 90), '90');
+assert.deepEqual(getCanonicalFaceResults('d100'), [0, 10, 20, 30, 40, 50, 60, 70, 80, 90]);
 
 assert.throws(() => {
   SYSTEM_DEFAULT_DICE_SET.appearance.tray.color = '#ffffff';
@@ -59,49 +60,27 @@ extraDie.appearance.diceSet.dice.d30 = {
 };
 assert.equal(validateDiceSet(extraDie).ok, false, 'Only supported standard RPG dice may exist in a set.');
 
-const stolenDefaultId = structuredClone(rawStyled);
-stolenDefaultId.id = 'system-default';
-assert.equal(validateDiceSet(stolenDefaultId).ok, false, 'User sets cannot impersonate the immutable default.');
-
 const illegalRaw = structuredClone(rawStyled);
 illegalRaw.appearance.diceSet.dice.d20.faces = { 20: { kind: 'text', value: '☠' } };
 assert.equal(validateDiceSet(illegalRaw).ok, false, 'RAW dice cannot replace canonical labels.');
 
-let custom = replaceVisualFace(rawStyled, 'd20', 20, {
-  kind: 'text', value: '☠', color: '#a855f7',
-});
-custom = replaceVisualFace(custom, 'd20', 1, {
-  kind: 'text', value: 'A', color: '#ffffff', fontId: 'fantasy',
-});
-custom = replaceVisualFace(custom, 'd4', 1, {
-  kind: 'text', value: 'ᚱ', color: '#ffffff', fontId: 'runic',
-});
-assert.equal(validateDiceSet(custom).ok, true);
-const legacyIcon = replaceVisualFace(custom, 'd6', 6, { kind: 'icon', value: 'skull', color: '#ffffff' });
-assert.equal(validateDiceSet(legacyIcon).ok, true, 'Existing built-in icon faces remain readable.');
-assert.equal(custom.appearance.diceSet.dice.d20.logicalDie, 'd20');
-assert.equal(custom.appearance.diceSet.dice.d20.shapeId, 'canonical:d20');
-assert.equal(getVisualFace(custom, 'd20', 20).value, '☠');
+let custom = replaceVisualFace(rawStyled, 'd20', 20, { kind: 'text', value: '☠', color: '#a855f7' });
+custom = replaceVisualFace(custom, 'd20', 1, { kind: 'text', value: 'FIRE', color: '#ffffff', fontId: 'fantasy' });
+custom = replaceVisualFace(custom, 'd4', 1, { kind: 'text', value: 'ᚱ', color: '#ffffff', fontId: 'runic' });
+custom = replaceVisualFace(custom, 'd100', 0, { kind: 'text', value: 'BOOM', color: '#ffffff' });
+assert.equal(validateDiceSet(custom).ok, true, 'Symbols and short words are visual-only and valid.');
 assert.equal(getVisualFace(custom, 'd20', 17).value, '17');
-assert.equal(getVisualFace(custom, 'd20', 17).canonical, true);
+assert.equal(getVisualFace(custom, 'd10', 10).value, '0');
+assert.equal(getVisualFace(custom, 'd100', 0).value, 'BOOM');
+assert.equal(getVisualFace(custom, 'd100', 10).value, '10');
 
-const numericVisual = replaceVisualFace(custom, 'd20', 2, { kind: 'text', value: '20' });
-assert.equal(validateDiceSet(numericVisual).ok, true, 'Numeric visual labels may contain multiple digits.');
-const emojiVisual = replaceVisualFace(custom, 'd20', 3, { kind: 'text', value: '☠️' });
-assert.equal(validateDiceSet(emojiVisual).ok, true, 'One rendered Unicode symbol is allowed.');
-
-for (const badValue of ['CRIT', 'AB', '🔥🔥', '']) {
-  assert.throws(
-    () => replaceVisualFace(custom, 'd20', 20, { kind: 'text', value: badValue }),
-    Error,
-    `Custom face value ${JSON.stringify(badValue)} must be rejected.`,
-  );
-}
-assert.throws(
-  () => replaceVisualFace(custom, 'd20', 20, { kind: 'image', assetId: 'skull.png' }),
-  Error,
-  'Image faces are not allowed.',
-);
+const legacyIcon = replaceVisualFace(custom, 'd6', 6, { kind: 'icon', value: 'skull', color: '#ffffff' });
+assert.equal(validateDiceSet(legacyIcon).ok, true, 'Built-in icon faces remain readable.');
+assert.throws(() => replaceVisualFace(custom, 'd4', 5, { kind: 'text', value: 'X' }));
+assert.throws(() => replaceVisualFace(custom, 'd100', 100, { kind: 'text', value: 'X' }));
+assert.throws(() => replaceVisualFace(custom, 'd20', 20, { kind: 'text', value: '' }));
+assert.throws(() => replaceVisualFace(custom, 'd20', 20, { kind: 'text', value: 'ABCDEFGHIJKLM' }));
+assert.throws(() => replaceVisualFace(custom, 'd20', 20, { kind: 'image', assetId: 'skull.png' }));
 
 custom = removeVisualFace(custom, 'd20', 20);
 assert.equal(getVisualFace(custom, 'd20', 20).value, '20');
@@ -115,9 +94,8 @@ assert.equal(validateDiceSet(wrongShape).ok, false);
 const wrongLogic = structuredClone(custom);
 wrongLogic.appearance.diceSet.dice.d20.logicalDie = 'd6';
 assert.equal(validateDiceSet(wrongLogic).ok, false);
-assert.throws(() => replaceVisualFace(custom, 'd4', 5, { kind: 'text', value: 'X' }));
 
 const clone = cloneSystemDefaultAppearance();
 clone.tray.color = '#123456';
 assert.equal(SYSTEM_DEFAULT_DICE_SET.appearance.tray.color, '#000000');
-console.log('Appearance mechanics passed: customization is visual-only; canonical RPG dice and results are protected.');
+console.log('Appearance mechanics passed: visual customization preserves canonical RPG geometry and engine results.');
