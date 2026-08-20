@@ -7,6 +7,7 @@ import { getSkinColor } from '../utils.js';
 import { compileShortcut, getNextRollChangingVariantId } from './compiler.mjs';
 import { executeShortcutRoll } from './roller-adapter.mjs';
 import { loadShortcutWorkspace } from './persistence-client.mjs';
+import { loadLocalShortcutWorkspace } from './local-persistence.mjs';
 import { hydrateShortcutSlot, normalizeShortcutSlots } from './persistence.mjs';
 import { compileRawCatalogEntry, getRawSpell } from './raw/index.mjs';
 import { renderShortcutToolbar } from './toolbar.mjs';
@@ -102,7 +103,7 @@ function setRollLabels() {
 }
 
 function setGearState() {
-  const available = Boolean(accountUser || demoMode);
+  const available = true;
   const mobileHint = document.getElementById('mobile-shortcut-hint');
   if (mobileHint) mobileHint.hidden = !available;
   ['shortcut-settings-btn', 'mobile-shortcut-settings-btn'].forEach((id) => {
@@ -145,7 +146,7 @@ function renderToolbar() {
 
   hydratedSlots = slots.map((slot) => ({ slot, hydrated: hydrateShortcutSlot(slot) }));
   const hasShortcuts = slots.length > 0;
-  section.hidden = !accountUser && !demoMode;
+  section.hidden = false;
   title.textContent = 'Press ⚙ to configure';
   note.hidden = !hasShortcuts;
   if (!slots.length) {
@@ -338,7 +339,7 @@ async function loadForSession(user) {
       return;
     }
     if (!accountUser) {
-      slots = [];
+      slots = loadLocalShortcutWorkspace().workspace.shortcuts;
       renderToolbar();
       emitState();
       return;

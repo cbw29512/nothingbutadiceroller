@@ -10,6 +10,7 @@ export const managerContext = {
   selectedSlotId: null,
   dirty: false,
   demoMode: false,
+  localMode: false,
   activeTab: '2024',
   nextGroupNumber: 1,
   builderGroups: [],
@@ -58,7 +59,7 @@ export function demoSlots() {
 }
 
 export function canEdit() {
-  return Boolean(managerContext.accountUser || managerContext.demoMode);
+  return Boolean(managerContext.accountUser || managerContext.demoMode || managerContext.localMode);
 }
 
 export function slotName(slot) {

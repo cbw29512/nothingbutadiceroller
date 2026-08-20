@@ -43,11 +43,14 @@ export function markDirty(value = true) {
   managerContext.dirty = Boolean(value);
   const save = document.getElementById('save-workspace');
   const label = document.getElementById('save-state-label');
-  if (save) save.disabled = !managerContext.dirty || !managerContext.accountUser || managerContext.demoMode;
+  if (save) save.disabled = !managerContext.dirty || managerContext.demoMode
+    || (!managerContext.accountUser && !managerContext.localMode);
   if (label) {
     label.textContent = managerContext.demoMode
       ? 'Demo mode — changes stay in memory'
-      : managerContext.dirty ? 'Unsaved changes' : 'No unsaved changes';
+      : managerContext.dirty
+        ? 'Unsaved changes'
+        : managerContext.localMode ? 'Saved in this browser' : 'No unsaved changes';
   }
 }
 

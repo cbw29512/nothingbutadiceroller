@@ -1,6 +1,7 @@
 import { refreshAccountUser } from '../account-api.js';
 import { DEFAULT_SHORTCUT_OPTIONS, normalizeShortcutOptions } from './persistence.mjs';
 import { loadShortcutWorkspace, saveShortcutWorkspace } from './persistence-client.mjs';
+import { loadLocalShortcutWorkspace, saveLocalShortcutWorkspace } from './local-persistence.mjs';
 import {
   applyServerState, demoSlots, isDeployPreviewDemo, managerContext,
 } from './manager-context.mjs';
@@ -8,6 +9,7 @@ import { setStatus } from './manager-ui.mjs';
 
 export async function loadManagerState(renderAll) {
   managerContext.demoMode = isDeployPreviewDemo();
+  managerContext.localMode = false;
   if (managerContext.demoMode) {
     managerContext.accountUser = null;
     managerContext.serverState = {
@@ -26,15 +28,10 @@ export async function loadManagerState(renderAll) {
 
   const user = await refreshAccountUser({ initial: true });
   if (!user) {
-    managerContext.accountUser = null;
-    managerContext.serverState = null;
-    managerContext.shortcuts = [];
-    managerContext.options = DEFAULT_SHORTCUT_OPTIONS;
-    managerContext.activeTab = '2024';
-    managerContext.selectedSlotId = null;
-    managerContext.dirty = false;
+    managerContext.localMode = true;
+    applyServerState(loadLocalShortcutWorkspace(), null);
     renderAll();
-    setStatus('Sign in from the roller first to load and save your shortcut toolbar.', 'error');
+    setStatus('Guest shortcuts are saved in this browser.', 'ready');
     return;
   }
 
@@ -45,7 +42,16 @@ export async function loadManagerState(renderAll) {
 }
 
 export async function saveManagerState(renderAll) {
-  if (!managerContext.accountUser || managerContext.demoMode) return;
+  if (managerContext.demoMode) return;
+  if (managerContext.localMode) {
+    const saved = saveLocalShortcutWorkspace(managerContext.shortcuts, managerContext.options);
+    applyServerState(saved, null);
+    managerContext.localMode = true;
+    renderAll();
+    setStatus('Shortcut toolbar saved in this browser.', 'ready');
+    return;
+  }
+  if (!managerContext.accountUser) return;
   if (!managerContext.serverState) throw new Error('Load your shortcut workspace before saving.');
   const saved = await saveShortcutWorkspace(
     managerContext.shortcuts,

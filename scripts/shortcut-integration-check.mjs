@@ -36,7 +36,7 @@ for (const required of [
   'active = null;',
   'TOTAL DAMAGE =',
   "showCrit('nat20')",
-  "section.hidden = !accountUser && !demoMode",
+  'section.hidden = false',
   "title.textContent = 'Press ⚙ to configure'",
   'note.hidden = !hasShortcuts',
 ]) {
@@ -44,9 +44,9 @@ for (const required of [
 }
 assert.ok(runtime.includes('state.selectedDice = [];'), 'Preparing a shortcut must replace the ordinary selected pool.');
 assert.ok(!runtime.includes('state.selectedDice.push'), 'Shortcut runtime must never encode shortcut dice into ordinary selectedDice.');
-assert.ok(runtime.includes('const available = Boolean(accountUser || demoMode);'), 'Customization gear must stay hidden for ordinary guests.');
+assert.ok(runtime.includes('const available = true;'), 'Customization gear must remain available for local guest shortcuts.');
 assert.ok(runtime.includes('if (mobileHint) mobileHint.hidden = !available;'), 'Mobile setup hint must match shortcut gear availability.');
-assert.ok(runtime.includes('slots = [];'), 'Signed-out non-demo sessions must collapse the toolbar.');
+assert.ok(runtime.includes('slots = loadLocalShortcutWorkspace().workspace.shortcuts;'), 'Signed-out sessions must load local guest shortcuts.');
 
 for (const required of [
   "section.id = 'shortcut-toolbar-section'",

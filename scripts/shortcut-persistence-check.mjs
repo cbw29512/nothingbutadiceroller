@@ -110,6 +110,9 @@ assert.throws(() => validateStoredShortcutWorkspace({ ...structuredClone(stored)
 
 const apiSource = await readFile(new URL('../netlify/functions/shortcuts.mjs', import.meta.url), 'utf8');
 const clientSource = await readFile(new URL('../js/shortcuts/persistence-client.mjs', import.meta.url), 'utf8');
+const localSource = await readFile(new URL('../js/shortcuts/local-persistence.mjs', import.meta.url), 'utf8');
+const managerSessionSource = await readFile(new URL('../js/shortcuts/manager-session.mjs', import.meta.url), 'utf8');
+const runtimeSource = await readFile(new URL('../js/shortcuts/runtime.js', import.meta.url), 'utf8');
 for (const required of [
   'verifyRequestOrigin(request)',
   "getStore({ name: STORE_NAME, consistency: 'strong' })",
@@ -126,5 +129,27 @@ assert.ok(!apiSource.includes('body.userId'));
 for (const required of ["credentials: 'include'", "fetch('/api/shortcuts'", 'normalizeShortcutOptions(options)', "shortcut-version-required", "shortcut-persistence-error"]) {
   assert.ok(clientSource.includes(required), `Shortcut persistence client contract missing: ${required}`);
 }
+for (const required of [
+  'LOCAL_SHORTCUT_WORKSPACE_KEY', 'validateStoredShortcutWorkspace(JSON.parse(raw))',
+  'createStoredShortcutWorkspace(shortcuts', 'current.revision + 1', 'storage().setItem(',
+]) assert.ok(localSource.includes(required), `Local shortcut persistence contract missing: ${required}`);
+assert.ok(managerSessionSource.includes('loadLocalShortcutWorkspace()'));
+assert.ok(managerSessionSource.includes('saveLocalShortcutWorkspace(managerContext.shortcuts, managerContext.options)'));
+assert.ok(runtimeSource.includes('loadLocalShortcutWorkspace().workspace.shortcuts'));
+
+const originalLocalStorage = globalThis.localStorage;
+const memory = new Map();
+globalThis.localStorage = {
+  getItem: (key) => memory.get(key) ?? null,
+  setItem: (key, value) => memory.set(key, value),
+};
+const { loadLocalShortcutWorkspace, saveLocalShortcutWorkspace } = await import('../js/shortcuts/local-persistence.mjs');
+assert.deepEqual(loadLocalShortcutWorkspace().workspace.shortcuts, []);
+const locallySaved = saveLocalShortcutWorkspace([fireballSlot], { criticalMode: 'raw', preferredRuleset: 'dnd5e-2014' });
+assert.equal(locallySaved.workspace.revision, 1);
+assert.equal(locallySaved.workspace.shortcuts[0].spellId, 'fireball');
+assert.equal(loadLocalShortcutWorkspace().workspace.options.preferredRuleset, 'dnd5e-2014');
+if (originalLocalStorage === undefined) delete globalThis.localStorage;
+else globalThis.localStorage = originalLocalStorage;
 
 console.log('Shortcut persistence checks passed.');
