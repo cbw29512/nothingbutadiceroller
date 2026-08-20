@@ -51,6 +51,8 @@ export function fillEditor(set, selectedDie, activeId) {
   const locked = set.locked;
   const style = set.appearance.diceSet.defaultStyle;
   const die = set.appearance.diceSet.dice[selectedDie];
+  const logicalFace = q('logical-face');
+  const maxFace = CANONICAL_DICE[selectedDie];
   q('set-name').value = set.name;
   q('dice-body-color').value = style.bodyColor;
   q('dice-face-color').value = style.faceColor;
@@ -60,7 +62,10 @@ export function fillEditor(set, selectedDie, activeId) {
   q('tray-glow-enabled').checked = set.appearance.tray.glow.enabled;
   q('tray-glow-color').value = set.appearance.tray.glow.color;
   q('face-mode').value = die.faceMode;
-  q('logical-face').max = String(CANONICAL_DICE[selectedDie]);
+  logicalFace.max = String(maxFace);
+  if (!Number.isInteger(Number(logicalFace.value)) || Number(logicalFace.value) < 1 || Number(logicalFace.value) > maxFace) {
+    logicalFace.value = String(maxFace);
+  }
   q('selected-die-label').textContent = selectedDie.toUpperCase();
   q('active-badge').textContent = set.id === activeId ? 'ACTIVE' : '';
   document.querySelectorAll('[data-edit-control]').forEach((el) => { el.disabled = system || locked; });
