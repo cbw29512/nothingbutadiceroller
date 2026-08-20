@@ -11,7 +11,7 @@ const glyphPlan = {
       region: { minU: 0.1, maxU: 0.3, minV: 0.2, maxV: 0.4, centerU: 0.2, centerV: 0.3 },
     },
     {
-      dieType: 'd20', logicalResult: 1, strategy: 'centered-region', text: 'FIREBALL', color: '#ffffff', fontId: null,
+      dieType: 'd20', logicalResult: 1, strategy: 'centered-region', text: '12345678901234', color: '#ffffff', fontId: null,
       region: { minU: 0.4, maxU: 0.6, minV: 0.5, maxV: 0.7, centerU: 0.5, centerV: 0.6 },
     },
     {
@@ -29,7 +29,7 @@ const d20 = buildDiceBoxAtlasDrawOperations(glyphPlan, 'd20', 1024);
 assert.equal(d20.length, 2);
 assert.equal(d20[0].x, 204.8);
 assert.equal(d20[0].y, 716.8, 'Canvas Y must invert UV V to match DiceBox texture loading.');
-assert.ok(d20[1].fontPx < d20[0].fontPx, 'Long words must shrink to fit the same-sized face region.');
+assert.ok(d20[1].fontPx < d20[0].fontPx, 'Long legal numeric labels must shrink to fit the same-sized face region.');
 assert.ok(d20.every((operation) => operation.maxWidth > 0 && operation.maxHeight > 0));
 
 const d4 = buildDiceBoxAtlasDrawOperations(glyphPlan, 'd4', 1024);
@@ -52,4 +52,4 @@ assert.equal(canvas.height, 512);
 assert.equal(calls.filter(([name]) => name === 'fillText').length, 2);
 assert.deepEqual(calls.find(([name]) => name === 'clearRect'), ['clearRect', 0, 0, 512, 512]);
 assert.throws(() => buildDiceBoxAtlasDrawOperations(glyphPlan, 'd20', 128), /256-4096/);
-console.log('DiceBox atlas renderer passed: UVs become safe pixel operations, words scale down, d4 repeats correctly, and output stays transparent except glyphs.');
+console.log('DiceBox atlas renderer passed: UVs become safe pixel operations, legal numeric labels scale down, d4 repeats correctly, and output stays transparent except glyphs.');
