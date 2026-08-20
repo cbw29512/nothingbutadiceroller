@@ -64,7 +64,9 @@ function normalizeRawInputs(entry, rawInputs, path, issues) {
 
   for (const key of Object.keys(inputs)) {
     if (!INPUT_KEYS.has(key)) issues.push(`${path}.${key} is not supported`);
-    if (!entry.requiredInputs.includes(key)) issues.push(`${path}.${key} is not allowed for ${entry.spellId}`);
+    if (!entry.requiredInputs.includes(key) && key !== 'toHit') {
+      issues.push(`${path}.${key} is not allowed for ${entry.spellId}`);
+    }
   }
 
   const normalized = {};

@@ -1,9 +1,7 @@
 import {
-  attackGroup,
   cantripDamageVariants,
   damageGroup,
   makeRawSpell,
-  slotAttackDamageVariants,
   slotDamageVariants,
   variant,
 } from './helpers.mjs';
@@ -16,8 +14,7 @@ function acidArrowVariants() {
   for (let slot = 2; slot <= 9; slot += 1) {
     const bonus = slot - 2;
     variants.push(variant(`slot-${slot}`, `Level ${slot}`, slot, [
-      attackGroup({ repeat: 1 }),
-      damageGroup({ id: 'initial-damage', label: 'Initial acid', damageType: 'acid', count: 4 + bonus, sides: 4, crit: true }),
+      damageGroup({ id: 'initial-damage', label: 'Initial acid', damageType: 'acid', count: 4 + bonus, sides: 4 }),
       damageGroup({ id: 'later-damage', label: 'Later acid', damageType: 'acid', count: 2 + bonus, sides: 4 }),
     ]));
   }
@@ -39,8 +36,7 @@ function scorchingRayVariants() {
   for (let slot = 2; slot <= 9; slot += 1) {
     const rays = slot + 1;
     variants.push(variant(`slot-${slot}`, `Level ${slot}`, slot, [
-      attackGroup({ repeat: rays }),
-      damageGroup({ id: 'ray-damage', label: 'Fire ray', damageType: 'fire', count: 2, sides: 6, repeat: rays, crit: true }),
+      damageGroup({ id: 'ray-damage', label: 'Fire ray', damageType: 'fire', count: 2, sides: 6, repeat: rays }),
     ]));
   }
   return variants;
@@ -50,7 +46,7 @@ export const RAW_2024 = Object.freeze([
   makeRawSpell({
     ruleset: RULESET, srdVersion: SRD, spellId: 'acid-arrow', name: 'Acid Arrow', spellLevel: 2,
     scalingMode: 'slot', icon: 'spark', sourceLocator: 'SRD 5.2.1 Spell Descriptions: Acid Arrow',
-    variants: acidArrowVariants(), requiresToHit: true,
+    variants: acidArrowVariants(),
   }),
   makeRawSpell({
     ruleset: RULESET, srdVersion: SRD, spellId: 'acid-splash', name: 'Acid Splash', spellLevel: 0,
@@ -65,7 +61,7 @@ export const RAW_2024 = Object.freeze([
   makeRawSpell({
     ruleset: RULESET, srdVersion: SRD, spellId: 'fire-bolt', name: 'Fire Bolt', spellLevel: 0,
     scalingMode: 'cantrip-tier', icon: 'flame', sourceLocator: 'SRD 5.2.1 Spell Descriptions: Fire Bolt',
-    variants: cantripDamageVariants({ damageType: 'fire', sides: 10, crit: true, includeAttack: true }), requiresToHit: true,
+    variants: cantripDamageVariants({ damageType: 'fire', sides: 10 }),
   }),
   makeRawSpell({
     ruleset: RULESET, srdVersion: SRD, spellId: 'fireball', name: 'Fireball', spellLevel: 3,
@@ -75,7 +71,7 @@ export const RAW_2024 = Object.freeze([
   makeRawSpell({
     ruleset: RULESET, srdVersion: SRD, spellId: 'guiding-bolt', name: 'Guiding Bolt', spellLevel: 1,
     scalingMode: 'slot', icon: 'star', sourceLocator: 'SRD 5.2.1 Spell Descriptions: Guiding Bolt',
-    variants: slotAttackDamageVariants({ baseLevel: 1, damageType: 'radiant', baseCount: 4, sides: 6 }), requiresToHit: true,
+    variants: slotDamageVariants({ baseLevel: 1, damageType: 'radiant', baseCount: 4, sides: 6 }),
   }),
   makeRawSpell({
     ruleset: RULESET, srdVersion: SRD, spellId: 'lightning-bolt', name: 'Lightning Bolt', spellLevel: 3,
@@ -90,12 +86,12 @@ export const RAW_2024 = Object.freeze([
   makeRawSpell({
     ruleset: RULESET, srdVersion: SRD, spellId: 'ray-of-frost', name: 'Ray of Frost', spellLevel: 0,
     scalingMode: 'cantrip-tier', icon: 'frost', sourceLocator: 'SRD 5.2.1 Spell Descriptions: Ray of Frost',
-    variants: cantripDamageVariants({ damageType: 'cold', sides: 8, crit: true, includeAttack: true }), requiresToHit: true,
+    variants: cantripDamageVariants({ damageType: 'cold', sides: 8 }),
   }),
   makeRawSpell({
     ruleset: RULESET, srdVersion: SRD, spellId: 'scorching-ray', name: 'Scorching Ray', spellLevel: 2,
     scalingMode: 'slot', icon: 'sun', sourceLocator: 'SRD 5.2.1 Spell Descriptions: Scorching Ray',
-    variants: scorchingRayVariants(), requiresToHit: true,
+    variants: scorchingRayVariants(),
   }),
   makeRawSpell({
     ruleset: RULESET, srdVersion: SRD, spellId: 'shatter', name: 'Shatter', spellLevel: 2,

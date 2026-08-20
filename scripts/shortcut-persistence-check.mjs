@@ -60,7 +60,7 @@ const fireBoltSlot = normalizeShortcutSlots([{
   id: 'fire-bolt-main', source: 'raw', ruleset: 'dnd5e-2024', spellId: 'fire-bolt', icon: 'bolt', baseVariantId: 'tier-3', inputs: { toHit: 9 },
 }])[0];
 assert.equal(fireBoltSlot.baseVariantId, 'tier-3');
-assert.equal(fireBoltSlot.inputs.toHit, 9);
+assert.deepEqual(fireBoltSlot.inputs, {});
 assert.equal(BUILTIN_ICON_IDS.includes(fireBoltSlot.icon), true);
 
 const hydrated = hydrateShortcutSlot(fireBoltSlot);
@@ -68,10 +68,11 @@ assert.equal(hydrated.definition.source, 'raw');
 assert.equal(hydrated.definition.variants[2].groups[0].modifier, 0);
 const fireBoltEntry = getRawSpell('dnd5e-2024', 'fire-bolt');
 const fireBoltPlan = compileRawCatalogEntry(fireBoltEntry, { variantId: fireBoltSlot.baseVariantId, inputs: fireBoltSlot.inputs });
-assert.equal(fireBoltPlan.groups[0].instances[0].modifier, 9);
-assert.equal(fireBoltEntry.shortcut.variants[2].groups[0].modifier, 0);
+assert.equal(fireBoltPlan.groups[0].kind, 'damage');
+assert.equal(fireBoltPlan.groups[0].instances[0].modifier, 0);
+assert.equal(fireBoltEntry.shortcut.variants[2].groups.some((group) => group.kind === 'attack'), false);
 
-assert.throws(() => normalizeShortcutSlots([{ id: 'bad-fire-bolt', source: 'raw', ruleset: 'dnd5e-2024', spellId: 'fire-bolt', baseVariantId: 'tier-2' }]), ShortcutWorkspaceValidationError);
+assert.doesNotThrow(() => normalizeShortcutSlots([{ id: 'damage-only-fire-bolt', source: 'raw', ruleset: 'dnd5e-2024', spellId: 'fire-bolt', baseVariantId: 'tier-2' }]));
 assert.throws(() => normalizeShortcutSlots([{ id: 'tampered-fireball', source: 'raw', ruleset: 'dnd5e-2024', spellId: 'fireball', definition: flexDefinition('fake-raw-copy') }]), ShortcutWorkspaceValidationError);
 
 const flexSlot = normalizeShortcutSlots([{ id: 'flaming-greatsword-slot', source: 'flex', icon: 'flame', definition: flexDefinition() }])[0];

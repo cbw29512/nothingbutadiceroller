@@ -23,6 +23,16 @@
   <main class="rolls-shell">
     <p id="manager-status" class="status-line manager-status" role="status">Checking account…</p>
 
+    <details class="manager-help">
+      <summary>How to use shortcuts</summary>
+      <ol>
+        <li>Add an immutable RAW spell-damage example or build a Homebrew card.</li>
+        <li>Put character-specific attack rolls and bonuses on a separate Homebrew card.</li>
+        <li>Save, return to the roller, press a shortcut, then press Roll.</li>
+      </ol>
+      <p>You can remove every shortcut at any time and use only the standard dice roller.</p>
+    </details>
+
     <section class="manager-panel toolbar-organizer" aria-labelledby="toolbar-heading">
       <div class="manager-section-heading">
         <div>
@@ -54,7 +64,7 @@
           <div><span class="section-label">SRD 5.2.1</span><h2>2024 RAW</h2></div>
           <input id="search-2024" class="manager-input raw-search" type="search" placeholder="Search verified rolls…" aria-label="Search 2024 RAW shortcuts">
         </div>
-        <p class="manager-note">Mechanics are locked to the verified RAW catalog. Only the starting tier, icon, and required character to-hit value are editable.</p>
+        <p class="manager-note">Damage-only examples are locked to the verified RAW catalog. Add character-specific attack rolls and bonuses on a separate Homebrew card.</p>
         <div id="raw-list-2024" class="raw-list"></div>
       </div>
     </section>
@@ -65,7 +75,7 @@
           <div><span class="section-label">SRD 5.1</span><h2>2014 RAW</h2></div>
           <input id="search-2014" class="manager-input raw-search" type="search" placeholder="Search verified rolls…" aria-label="Search 2014 RAW shortcuts">
         </div>
-        <p class="manager-note">2014 shortcuts are separate catalog references. RAW mechanics remain immutable.</p>
+        <p class="manager-note">2014 damage-only examples are separate catalog references. RAW mechanics remain immutable.</p>
         <div id="raw-list-2014" class="raw-list"></div>
       </div>
     </section>

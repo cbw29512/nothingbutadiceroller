@@ -44,6 +44,26 @@
   margin: 0 0 .8rem;
 }
 
+.manager-help {
+  margin: 0 0 .8rem;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  background: #111827;
+  color: #dbeafe;
+  padding: .7rem .85rem;
+  font-size: .9rem;
+  line-height: 1.45;
+}
+
+.manager-help summary {
+  cursor: pointer;
+  color: #f8fafc;
+  font-weight: 900;
+}
+
+.manager-help ol { margin: .65rem 0 .35rem; padding-left: 1.3rem; }
+.manager-help p { margin: .35rem 0 0; }
+
 .manager-panel {
   border: 1px solid #334155;
   border-radius: 16px;

@@ -65,16 +65,14 @@ assert.throws(() => getRawCatalog('not-a-ruleset'), /Unknown RAW ruleset/);
 
 for (const ruleset of ['dnd5e-2014', 'dnd5e-2024']) {
   const acidArrow = getRawSpell(ruleset, 'acid-arrow');
-  assertDie(acidArrow, 'slot-2', 'initial-damage', 4, 4, 0, { inputs: { toHit: 9 } });
-  assertDie(acidArrow, 'slot-2', 'later-damage', 2, 4, 0, { inputs: { toHit: 9 } });
-  assertDie(acidArrow, 'slot-9', 'initial-damage', 11, 4, 0, { inputs: { toHit: 9 } });
-  assertDie(acidArrow, 'slot-9', 'later-damage', 9, 4, 0, { inputs: { toHit: 9 } });
-  const acidAttack = term(acidArrow, 'slot-2', 'attack', { inputs: { toHit: 9 } });
-  assert.deepEqual({ count: acidAttack.term.count, sides: acidAttack.term.sides, modifier: acidAttack.instance.modifier }, { count: 1, sides: 20, modifier: 9 });
-  assert.equal(acidArrow.shortcut.variants[0].groups.find((candidate) => candidate.id === 'attack').modifier, 0);
-  assert.equal(acidArrow.shortcut.variants[0].groups.find((candidate) => candidate.id === 'initial-damage').crit.policy, 'double-dice');
+  assertDie(acidArrow, 'slot-2', 'initial-damage', 4, 4);
+  assertDie(acidArrow, 'slot-2', 'later-damage', 2, 4);
+  assertDie(acidArrow, 'slot-9', 'initial-damage', 11, 4);
+  assertDie(acidArrow, 'slot-9', 'later-damage', 9, 4);
+  assert.deepEqual(acidArrow.requiredInputs, []);
+  assert.equal(acidArrow.shortcut.variants[0].groups.some((candidate) => candidate.kind === 'attack'), false);
+  assert.equal(acidArrow.shortcut.variants[0].groups.find((candidate) => candidate.id === 'initial-damage').crit.policy, 'none');
   assert.equal(acidArrow.shortcut.variants[0].groups.find((candidate) => candidate.id === 'later-damage').crit.policy, 'none');
-  assert.throws(() => compileRawCatalogEntry(acidArrow, { variantId: 'slot-2' }), /requires toHit/);
   assert.throws(() => compileRawCatalogEntry(acidArrow, { variantId: 'slot-2', inputs: { toHit: 9, spellSaveDc: 17 } }), /is not allowed/);
 
   const acidSplash = getRawSpell(ruleset, 'acid-splash');
@@ -83,12 +81,11 @@ for (const ruleset of ['dnd5e-2014', 'dnd5e-2024']) {
 
   const fireBolt = getRawSpell(ruleset, 'fire-bolt');
   [1, 2, 3, 4].forEach((count, index) => {
-    assertDie(fireBolt, `tier-${index + 1}`, 'damage', count, 10, 0, { inputs: { toHit: 9 } });
-    const attack = term(fireBolt, `tier-${index + 1}`, 'attack', { inputs: { toHit: 9 } });
-    assert.equal(attack.instance.modifier, 9);
+    assertDie(fireBolt, `tier-${index + 1}`, 'damage', count, 10);
   });
-  assert.equal(fireBolt.shortcut.variants[0].groups.find((candidate) => candidate.id === 'damage').crit.policy, 'double-dice');
-  assert.equal(fireBolt.shortcut.variants[0].groups.find((candidate) => candidate.id === 'attack').modifier, 0);
+  assert.deepEqual(fireBolt.requiredInputs, []);
+  assert.equal(fireBolt.shortcut.variants[0].groups.find((candidate) => candidate.id === 'damage').crit.policy, 'none');
+  assert.equal(fireBolt.shortcut.variants[0].groups.some((candidate) => candidate.kind === 'attack'), false);
 
   const fireball = getRawSpell(ruleset, 'fireball');
   assertDie(fireball, 'slot-3', 'damage', 8, 6);
@@ -106,15 +103,13 @@ for (const ruleset of ['dnd5e-2014', 'dnd5e-2024']) {
   assert.equal(mm9.instances[10].modifier, 1);
 
   const scorchingRay = getRawSpell(ruleset, 'scorching-ray');
-  const ray2 = compileRawCatalogEntry(scorchingRay, { variantId: 'slot-2', inputs: { toHit: 8 } });
-  const ray9 = compileRawCatalogEntry(scorchingRay, { variantId: 'slot-9', inputs: { toHit: 8 } });
-  assert.equal(ray2.groups.find((candidate) => candidate.id === 'attack').instances.length, 3);
+  const ray2 = compileRawCatalogEntry(scorchingRay, { variantId: 'slot-2' });
+  const ray9 = compileRawCatalogEntry(scorchingRay, { variantId: 'slot-9' });
   assert.equal(ray2.groups.find((candidate) => candidate.id === 'ray-damage').instances.length, 3);
-  assert.equal(ray9.groups.find((candidate) => candidate.id === 'attack').instances.length, 10);
   assert.equal(ray9.groups.find((candidate) => candidate.id === 'ray-damage').instances.length, 10);
-  assert.equal(ray9.groups.find((candidate) => candidate.id === 'attack').instances[9].modifier, 8);
+  assert.equal(ray9.groups.some((candidate) => candidate.kind === 'attack'), false);
   assert.deepEqual(ray9.groups.find((candidate) => candidate.id === 'ray-damage').instances[9].terms[0], { count: 2, sides: 6 });
-  assert.equal(ray9.groups.find((candidate) => candidate.id === 'ray-damage').instances[9].crit.triggerInstanceId, 'attack:10');
+  assert.equal(ray9.groups.find((candidate) => candidate.id === 'ray-damage').instances[9].crit.policy, 'none');
 
   const disintegrate = getRawSpell(ruleset, 'disintegrate');
   assertDie(disintegrate, 'slot-6', 'damage', 10, 6, 40);

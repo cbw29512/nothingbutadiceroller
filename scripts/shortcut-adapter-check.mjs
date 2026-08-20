@@ -120,42 +120,29 @@ const criticalRequest = buildShortcutCriticalRequest(swordPlan, baseCritResolved
 assert.deepEqual(criticalRequest.request.notation, [{ qty: 2, sides: 6 }, { qty: 1, sides: 6 }]);
 assert.ok(criticalRequest.request.assignments.every((entry) => entry.instanceId !== 'attack:1'));
 
-// Scorching Ray: all attacks and damage dice launch in the same initial physical call,
-// while attack/damage ownership stays separate and only the matching ray gets crit dice.
+// Built-in RAW examples are damage-only; character attack rolls belong on separate Homebrew cards.
 const rayEntry = getRawSpell('dnd5e-2024', 'scorching-ray');
-const rayPlan = compileRawCatalogEntry(rayEntry, { variantId: 'slot-2', inputs: { toHit: 9 } });
+const rayPlan = compileRawCatalogEntry(rayEntry, { variantId: 'slot-2' });
 const rayRequest = buildShortcutPhysicsRequest(rayPlan);
-assert.equal(rayRequest.notation.length, 6);
-assert.deepEqual(rayRequest.notation.slice(0, 3), [
-  { qty: 1, sides: 20 }, { qty: 1, sides: 20 }, { qty: 1, sides: 20 },
-]);
-assert.deepEqual(rayRequest.notation.slice(3), [
+assert.equal(rayRequest.notation.length, 3);
+assert.deepEqual(rayRequest.notation, [
   { qty: 2, sides: 6 }, { qty: 2, sides: 6 }, { qty: 2, sides: 6 },
 ]);
 assert.deepEqual(rayRequest.assignments.map((entry) => entry.instanceId), [
-  'attack:1', 'attack:2', 'attack:3', 'ray-damage:1', 'ray-damage:2', 'ray-damage:3',
+  'ray-damage:1', 'ray-damage:2', 'ray-damage:3',
 ]);
 
 const rayCalls = [];
 const rayResult = await executeShortcutRoll(rayPlan, async (notation, meta) => {
   rayCalls.push({ notation, phase: meta.phase });
-  if (meta.phase === 'base') {
-    return [
-      grouped(20, [20]), grouped(20, [10]), grouped(20, [15]),
-      grouped(6, [2, 3]), grouped(6, [4, 5]), grouped(6, [6, 1]),
-    ];
-  }
-  return [grouped(6, [6, 6])];
+  return [grouped(6, [2, 3]), grouped(6, [4, 5]), grouped(6, [6, 1])];
 });
-assert.equal(rayCalls.length, 2);
-assert.deepEqual(rayCalls[1].notation, [{ qty: 2, sides: 6 }]);
-const rayAttacks = rayResult.result.groups.find((group) => group.id === 'attack').instances;
+assert.equal(rayCalls.length, 1);
 const rayDamage = rayResult.result.groups.find((group) => group.id === 'ray-damage').instances;
-assert.deepEqual(rayAttacks.map((instance) => instance.total), [29, 19, 24]);
-assert.deepEqual(rayDamage.map((instance) => instance.total), [17, 9, 7]);
-assert.deepEqual(rayDamage.map((instance) => instance.critical), [true, false, false]);
-assert.equal(rayResult.result.damageTotal, 33);
-assert.deepEqual(rayResult.criticalTriggerInstanceIds, ['attack:1']);
+assert.deepEqual(rayDamage.map((instance) => instance.total), [5, 9, 7]);
+assert.deepEqual(rayDamage.map((instance) => instance.critical), [false, false, false]);
+assert.equal(rayResult.result.damageTotal, 21);
+assert.deepEqual(rayResult.criticalTriggerInstanceIds, []);
 
 // Magic Missile: repeats remain individual instances, including +1 per dart.
 const missileEntry = getRawSpell('dnd5e-2024', 'magic-missile');

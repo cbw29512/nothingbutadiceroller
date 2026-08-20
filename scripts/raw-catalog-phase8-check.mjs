@@ -51,35 +51,18 @@ for (const [ruleset, catalog] of [
   assertDice(ruleset, 'burning-hands', 'slot-1', 3, 6);
   assertDice(ruleset, 'burning-hands', 'slot-9', 11, 6);
 
-  const guidingAttack = assertDice(ruleset, 'guiding-bolt', 'slot-1', 1, 20, {
-    groupId: 'attack',
-    modifier: 9,
-    toHit: 9,
-  });
-  assert.equal(guidingAttack.crit.policy, 'none');
-  const guidingDamage = assertDice(ruleset, 'guiding-bolt', 'slot-1', 4, 6, { toHit: 9 });
-  assert.equal(guidingDamage.crit.policy, 'double-dice');
-  assert.equal(guidingDamage.crit.triggerInstanceId, 'attack:1');
-  assertDice(ruleset, 'guiding-bolt', 'slot-9', 12, 6, { toHit: 9 });
-  assert.throws(
-    () => compileRawCatalogEntry(getRawSpell(ruleset, 'guiding-bolt'), { variantId: 'slot-1' }),
-    /requires toHit/,
-  );
+  const guidingDamage = assertDice(ruleset, 'guiding-bolt', 'slot-1', 4, 6);
+  assert.equal(guidingDamage.crit.policy, 'none');
+  assertDice(ruleset, 'guiding-bolt', 'slot-9', 12, 6);
+  assert.deepEqual(getRawSpell(ruleset, 'guiding-bolt').requiredInputs, []);
 
   assertDice(ruleset, 'lightning-bolt', 'slot-3', 8, 6);
   assertDice(ruleset, 'lightning-bolt', 'slot-9', 14, 6);
 
   [1, 2, 3, 4].forEach((count, index) => {
     const variantId = `tier-${index + 1}`;
-    const attack = assertDice(ruleset, 'ray-of-frost', variantId, 1, 20, {
-      groupId: 'attack',
-      modifier: 8,
-      toHit: 8,
-    });
-    assert.equal(attack.crit.policy, 'none');
-    const damage = assertDice(ruleset, 'ray-of-frost', variantId, count, 8, { toHit: 8 });
-    assert.equal(damage.crit.policy, 'double-dice');
-    assert.equal(damage.crit.triggerInstanceId, 'attack:1');
+    const damage = assertDice(ruleset, 'ray-of-frost', variantId, count, 8);
+    assert.equal(damage.crit.policy, 'none');
   });
 
   assertDice(ruleset, 'shatter', 'slot-2', 3, 8);

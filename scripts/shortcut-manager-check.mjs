@@ -16,9 +16,8 @@ assert.deepEqual(fireballSlot.inputs, {});
 assert.equal(Object.prototype.hasOwnProperty.call(fireballSlot, 'definition'), false);
 
 const fireBolt = getRawSpell('dnd5e-2024', 'fire-bolt');
-assert.throws(() => createRawManagerSlot([], fireBolt, { variantId: 'tier-2', icon: 'flame' }), /To-hit modifier/);
 const fireBoltSlot = createRawManagerSlot([fireballSlot], fireBolt, { variantId: 'tier-4', icon: 'bolt', toHit: 9 });
-assert.equal(fireBoltSlot.inputs.toHit, 9);
+assert.deepEqual(fireBoltSlot.inputs, {});
 
 const flexSlot = createFlexManagerSlot([fireballSlot, fireBoltSlot], {
   name: 'Flaming Greatsword', icon: 'sword', category: 'attack',
@@ -42,6 +41,8 @@ assert.equal(moved[1].id, fireballSlot.id);
 const removed = removeShortcutSlot(moved, fireballSlot.id);
 assert.equal(removed.length, 2);
 assert.equal(removed.some((slot) => slot.id === fireballSlot.id), false);
+const removeAll = removed.reduce((slots, slot) => removeShortcutSlot(slots, slot.id), removed);
+assert.deepEqual(removeAll, []);
 
 const customOptions = updateManagerOptions(
   { criticalMode: 'raw', preferredRuleset: 'dnd5e-2024' },
@@ -79,7 +80,9 @@ for (const required of [
   'data-tab="options"', 'id="critical-mode"', '<option value="raw">RAW</option>',
   '<option value="custom">Custom</option>', 'id="preferred-ruleset"', 'id="add-homebrew-group"',
   'id="save-workspace"',
+  '<summary>How to use shortcuts</summary>', 'Damage-only examples are locked',
 ]) assert.ok(html.includes(required), `Manager HTML contract missing: ${required}`);
+assert.ok(css.includes('.manager-help'));
 assert.ok(
   html.indexOf('data-tab="2014"') < html.indexOf('data-tab="2024"'),
   '2014 RAW must appear before 2024 RAW in the manager tabs.',
