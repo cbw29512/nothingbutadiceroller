@@ -76,62 +76,104 @@ export function classifyShortcutPress(durationMs) {
   return durationMs >= SHORTCUT_LONG_PRESS_MS ? 'long' : 'short';
 }
 
-function bindPress(button, item, { onActivate, onInfo, onInfoHide }) {
+export function createShortcutPressController({
+  onActivate,
+  onInfo,
+  onInfoHide,
+  longPressMs = SHORTCUT_LONG_PRESS_MS,
+  schedule = setTimeout,
+  cancel = clearTimeout,
+  defer = (callback) => setTimeout(callback, 0),
+} = {}) {
+  if (!Number.isFinite(longPressMs) || longPressMs < 1) throw new Error('Long-press threshold must be positive.');
   let timer = null;
   let pointerActive = false;
   let infoShownByHold = false;
   let suppressClick = false;
 
   const clearTimer = () => {
-    if (timer !== null) clearTimeout(timer);
+    if (timer !== null) cancel(timer);
     timer = null;
   };
 
+  return Object.freeze({
+    pointerDown() {
+      pointerActive = true;
+      infoShownByHold = false;
+      clearTimer();
+      timer = schedule(() => {
+        timer = null;
+        if (!pointerActive) return;
+        infoShownByHold = true;
+        onInfo?.('hold');
+      }, longPressMs);
+      return true;
+    },
+    pointerUp() {
+      if (!pointerActive) return false;
+      pointerActive = false;
+      clearTimer();
+      if (infoShownByHold) onInfoHide?.('hold');
+      infoShownByHold = false;
+      suppressClick = true;
+      onActivate?.('pointer');
+      defer(() => { suppressClick = false; });
+      return true;
+    },
+    pointerCancel() {
+      if (!pointerActive && !infoShownByHold) return false;
+      pointerActive = false;
+      clearTimer();
+      if (infoShownByHold) onInfoHide?.('hold');
+      infoShownByHold = false;
+      suppressClick = false;
+      return true;
+    },
+    click() {
+      if (suppressClick) {
+        suppressClick = false;
+        return false;
+      }
+      onActivate?.('keyboard-or-click');
+      return true;
+    },
+    focus() {
+      onInfo?.('focus');
+    },
+    blur() {
+      onInfoHide?.('focus');
+    },
+    getState() {
+      return Object.freeze({ pointerActive, infoShownByHold, suppressClick });
+    },
+  });
+}
+
+function bindPress(button, item, { onActivate, onInfo, onInfoHide }) {
+  const controller = createShortcutPressController({
+    onActivate: (source) => onActivate?.(item, { source }),
+    onInfo: (source) => onInfo?.(item, button, source),
+    onInfoHide: (source) => onInfoHide?.(item, button, source),
+  });
+
   button.addEventListener('pointerdown', (event) => {
     if (event.button !== 0 || button.disabled) return;
-    pointerActive = true;
-    infoShownByHold = false;
-    clearTimer();
-    timer = setTimeout(() => {
-      if (!pointerActive) return;
-      infoShownByHold = true;
-      onInfo?.(item, button, 'hold');
-    }, SHORTCUT_LONG_PRESS_MS);
+    controller.pointerDown();
   });
-
   button.addEventListener('pointerup', (event) => {
-    if (event.button !== 0 || !pointerActive || button.disabled) return;
-    pointerActive = false;
-    clearTimer();
-    if (infoShownByHold) onInfoHide?.(item, button, 'hold');
-    infoShownByHold = false;
-    suppressClick = true;
-    onActivate?.(item, { source: 'pointer' });
-    setTimeout(() => { suppressClick = false; }, 0);
+    if (event.button !== 0 || button.disabled) return;
+    controller.pointerUp();
   });
-
-  button.addEventListener('pointercancel', () => {
-    pointerActive = false;
-    clearTimer();
-    if (infoShownByHold) onInfoHide?.(item, button, 'hold');
-    infoShownByHold = false;
-  });
-
+  button.addEventListener('pointercancel', () => controller.pointerCancel());
   button.addEventListener('click', () => {
-    if (button.disabled) return;
-    if (suppressClick) {
-      suppressClick = false;
-      return;
-    }
-    onActivate?.(item, { source: 'keyboard-or-click' });
+    if (!button.disabled) controller.click();
   });
-
   button.addEventListener('focus', () => {
-    if (button.matches(':focus-visible')) onInfo?.(item, button, 'focus');
+    if (button.matches(':focus-visible')) controller.focus();
   });
-  button.addEventListener('blur', () => onInfoHide?.(item, button, 'focus'));
+  button.addEventListener('blur', () => controller.blur());
   button.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') onInfoHide?.(item, button, 'focus');
+    if (event.key === 'Escape') controller.blur();
   });
 }
 
