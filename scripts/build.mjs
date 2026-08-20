@@ -1,6 +1,7 @@
 import { access, cp, mkdir, readFile, rm, copyFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { build } from 'esbuild';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, '..');
@@ -31,6 +32,23 @@ async function copySite() {
   }
 }
 
+async function bundleBrowserApp() {
+  try {
+    await build({
+      entryPoints: [resolve(root, 'js/app.js')],
+      bundle: true,
+      format: 'esm',
+      platform: 'browser',
+      target: ['es2022'],
+      outfile: resolve(dist, 'js/app.js'),
+      logLevel: 'warning',
+    });
+  } catch (error) {
+    console.error('Browser app bundle failed:', error);
+    throw error;
+  }
+}
+
 async function validateBuild() {
   try {
     const required = [
@@ -55,6 +73,9 @@ async function validateBuild() {
     await Promise.all(required.map(path => access(resolve(dist, path))));
 
     const html = await readFile(resolve(dist, 'index.html'), 'utf8');
+    const browserApp = await readFile(resolve(dist, 'js/app.js'), 'utf8');
+    const accountApi = await readFile(resolve(dist, 'js/account-api.js'), 'utf8');
+    const authUi = await readFile(resolve(dist, 'js/auth-ui.js'), 'utf8');
     const customControls = await readFile(resolve(dist, 'js/custom-controls.js'), 'utf8');
     const customRoll = await readFile(resolve(dist, 'js/custom-roll.js'), 'utf8');
     const trayControls = await readFile(resolve(dist, 'js/tray-controls.js'), 'utf8');
@@ -120,6 +141,21 @@ async function validateBuild() {
       }
     }
 
+    const expectedIdentitySource = [
+      'handleAuthCallback',
+      'processIdentityCallback',
+      'onAuthChange',
+    ];
+    for (const reference of expectedIdentitySource) {
+      if (!accountApi.includes(reference) && !authUi.includes(reference)) {
+        throw new Error(`Missing browser Identity callback behavior: ${reference}`);
+      }
+    }
+
+    if (browserApp.includes("from '@netlify/identity'")) {
+      throw new Error('Browser bundle must not ship an unresolved @netlify/identity import.');
+    }
+
     if (html.includes('netlify-identity-widget')) {
       throw new Error('Legacy Netlify Identity widget must not ship in production.');
     }
@@ -133,6 +169,7 @@ async function validateBuild() {
 
 try {
   await copySite();
+  await bundleBrowserApp();
   await validateBuild();
   console.log(`Static site ready at ${dist}`);
 } catch (error) {
