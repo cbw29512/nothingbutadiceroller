@@ -18,6 +18,8 @@ for (const required of [
   'performPreparedShortcutRoll()',
   'canRollPreparedShortcutFromTray()',
   'button.disabled = state.rolling || shortcutPrepared',
+  '#desktop-custom-die-roll-btn',
+  '#custom-die-roll-btn',
 ]) {
   assert.ok(app.includes(required), `Phase 6 app integration missing: ${required}`);
 }
