@@ -63,6 +63,6 @@ export function bindHomebrewEvents(onChanged) {
     resetBuilder();
     markDirty();
     onChanged();
-    setStatus(`${name} added. Save Changes to sync it.`, 'ready');
+    setStatus(`${name} added. Save Changes to keep it.`, 'ready');
   }));
 }

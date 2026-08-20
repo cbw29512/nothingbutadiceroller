@@ -72,7 +72,7 @@ export function bindOrganizerEvents(onChanged) {
       managerContext.selectedSlotId = null;
       markDirty();
       onChanged();
-      setStatus(`${selected ? slotName(selected) : 'Shortcut'} removed. Save Changes to sync it.`);
+      setStatus(`${selected ? slotName(selected) : 'Shortcut'} removed. Save Changes to keep it.`);
     } catch (error) {
       console.error('Failed to remove shortcut:', error);
       setStatus(error.message || 'Unable to remove shortcut.', 'error');

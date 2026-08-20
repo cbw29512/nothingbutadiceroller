@@ -69,7 +69,7 @@ function buildRawControls(entry, draft, ruleset, year, onChanged) {
     managerContext.selectedSlotId = slot.id;
     markDirty();
     onChanged();
-    setStatus(`${entry.shortcut.name} added. Save Changes to sync it.`, 'ready');
+    setStatus(`${entry.shortcut.name} added. Save Changes to keep it.`, 'ready');
   }));
   controls.append(add);
   return controls;

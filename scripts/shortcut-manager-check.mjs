@@ -63,6 +63,7 @@ const managerPaths = [
   '../js/shortcuts/manager-ui.mjs',
 ];
 const managerModules = await Promise.all(managerPaths.map((path) => readFile(new URL(path, import.meta.url), 'utf8')));
+assert.ok(managerModules.every((source) => !source.includes('Save Changes to sync it.')));
 const managerSource = managerModules.join('\n');
 managerModules.forEach((source, index) => {
   const lineCount = source.split('\n').length;
