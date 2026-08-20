@@ -26,9 +26,15 @@
           <div><span class="section-label">Dice Sets</span><h2>My Collection</h2></div>
           <button id="new-set" class="btn primary" type="button">New Set</button>
         </div>
+        <p id="storage-mode" class="studio-note">Checking account…</p>
         <div id="studio-library" class="studio-library"></div>
         <button id="reset-default" class="btn secondary full" type="button">Reset to Default</button>
         <p class="studio-note">Default Dice is permanent and cannot be edited or deleted.</p>
+        <div class="studio-panel-heading community-heading">
+          <div><span class="section-label">Community</span><h2>Public Locked Sets</h2></div>
+          <button id="refresh-community" class="btn ghost" type="button">Refresh</button>
+        </div>
+        <div id="community-library" class="studio-library"></div>
       </aside>
 
       <section class="studio-preview-panel" aria-label="Dice set preview">
@@ -84,9 +90,10 @@
           <button id="save-set" class="btn primary" type="button">Save Dice Set</button>
           <button id="use-set" class="btn secondary" type="button">Use This Set</button>
           <button id="lock-set" class="btn secondary" type="button">Lock Set</button>
+          <button id="publish-set" class="btn secondary" type="button">Publish Set</button>
           <button id="delete-set" class="btn danger" type="button">Delete Set</button>
         </div>
-        <p id="studio-status" class="status-line" role="status">Select a set or create a new one.</p>
+        <p id="studio-status" class="status-line" role="status">Loading Dice Studio…</p>
       </aside>
     </main>
   </div>
