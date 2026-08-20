@@ -63,6 +63,16 @@
           <label class="check-row"><input id="dice-glow-enabled" data-edit-control type="checkbox"> Enable dice glow</label>
         </fieldset>
         <fieldset class="studio-group">
+          <legend>Selected die look</legend>
+          <label class="check-row"><input id="die-style-enabled" data-edit-control type="checkbox"> Customize this die separately</label>
+          <div class="color-grid">
+            <label>Body<input id="die-body-color" data-edit-control data-die-style-control type="color"></label>
+            <label>Faces<input id="die-face-color" data-edit-control data-die-style-control type="color"></label>
+            <label>Glow<input id="die-glow-color" data-edit-control data-die-style-control type="color"></label>
+          </div>
+          <label class="check-row"><input id="die-glow-enabled" data-edit-control data-die-style-control type="checkbox"> Enable glow for this die</label>
+        </fieldset>
+        <fieldset class="studio-group">
           <legend>Selected die faces</legend>
           <label class="studio-field">Face mode
             <select id="face-mode" data-edit-control>
