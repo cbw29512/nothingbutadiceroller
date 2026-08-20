@@ -56,6 +56,17 @@ assert.equal(fireballRequest.assignments[0].instanceId, 'damage:1');
 const fireballResolved = mapShortcutPhysicsResults(fireballRequest, [grouped(6, [1,2,3,4,5,6,1,2,3,4])]);
 assert.deepEqual(fireballResolved[0].dice[0].values, [1,2,3,4,5,6,1,2,3,4]);
 
+// DiceBox 1.1.4 annotates notation entries (for example with `modifier`).
+// The semantic request stays frozen, but its physics-boundary copy must remain mutable.
+const mutableBoundary = await executeShortcutRoll(fireball5, async (notation, meta) => {
+  notation[0].modifier = 0;
+  assert.equal(Object.isFrozen(notation[0]), false);
+  assert.equal(meta.request.notation[0].modifier, undefined);
+  return [grouped(6, [1,2,3,4,5,6,1,2,3,4])];
+});
+assert.equal(mutableBoundary.result.damageTotal, 31);
+assert.equal(mutableBoundary.initialRequest.notation[0].modifier, undefined);
+
 // Same-sided damage groups stay separate instead of being merged just because both use d6s.
 const swordPlan = compileShortcut(flamingGreatsword());
 const swordRequest = buildShortcutPhysicsRequest(swordPlan);

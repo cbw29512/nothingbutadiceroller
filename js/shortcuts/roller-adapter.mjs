@@ -229,19 +229,23 @@ export function summarizeShortcutGroupedResult(grouped) {
   });
 }
 
+function mutablePhysicsNotation(notation) {
+  return notation.map((entry) => ({ ...entry }));
+}
+
 export async function executeShortcutRoll(plan, rollPhysicalDice) {
   assertRollPlan(plan);
   if (typeof rollPhysicalDice !== 'function') throw new Error('A physical dice executor is required.');
 
   const initialRequest = buildShortcutPhysicsRequest(plan);
   if (!initialRequest.notation.length) throw new Error('Shortcut produced no physical dice.');
-  const initialRaw = await rollPhysicalDice(initialRequest.notation, { phase: 'base', request: initialRequest });
+  const initialRaw = await rollPhysicalDice(mutablePhysicsNotation(initialRequest.notation), { phase: 'base', request: initialRequest });
   const initialResolved = mapShortcutPhysicsResults(initialRequest, initialRaw);
 
   const critical = buildShortcutCriticalRequest(plan, initialResolved);
   let criticalResolved = [];
   if (critical.request.notation.length) {
-    const criticalRaw = await rollPhysicalDice(critical.request.notation, { phase: 'critical', request: critical.request });
+    const criticalRaw = await rollPhysicalDice(mutablePhysicsNotation(critical.request.notation), { phase: 'critical', request: critical.request });
     criticalResolved = mapShortcutPhysicsResults(critical.request, criticalRaw);
   }
 
