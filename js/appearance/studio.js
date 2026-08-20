@@ -88,11 +88,21 @@ function applyFace() {
   } catch (error) { setStatus(error.message, 'error'); }
 }
 
+function activateDraft() {
+  try {
+    const saved = draft.systemOwned || savedSets.some((set) => set.id === draft.id);
+    if (!saved) throw new Error('Save this dice set before using it.');
+    activeId = setActiveDiceSetId(draft.id);
+    setStatus('Set marked active for the roller.', 'ready');
+    refresh();
+  } catch (error) { setStatus(error.message, 'error'); }
+}
+
 function bind() {
   q('new-set').addEventListener('click', newSet);
   q('save-set').addEventListener('click', saveDraft);
   q('lock-set').addEventListener('click', toggleLock);
-  q('use-set').addEventListener('click', () => { activeId = setActiveDiceSetId(draft.id); setStatus('Set marked active for the roller.', 'ready'); refresh(); });
+  q('use-set').addEventListener('click', activateDraft);
   q('reset-default').addEventListener('click', () => { activeId = resetActiveToDefault(); selectSet(SYSTEM_DEFAULT_DICE_SET_ID); setStatus('Default Dice restored. Saved sets were not deleted.', 'ready'); });
   q('delete-set').addEventListener('click', () => {
     try {
