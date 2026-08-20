@@ -2,27 +2,39 @@ import { CANONICAL_DICE, SYSTEM_DEFAULT_DICE_SET_ID } from './defaults.mjs';
 import { getVisualFace } from './face-customization.mjs';
 
 const ICONS = { skull: '☠', star: '★', flame: '🔥', shield: '◆', heart: '♥', sword: '⚔' };
-
 function q(id) { return document.getElementById(id); }
-function visualText(face) {
-  if (face.kind === 'icon') return ICONS[face.value] || '◆';
-  return face.value;
+function visualText(face) { return face.kind === 'icon' ? (ICONS[face.value] || '◆') : face.value; }
+function makeSetCard(set, selectedId, onSelect, subtitle) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = `studio-set-card${set.id === selectedId ? ' active' : ''}`;
+  button.innerHTML = '<strong></strong><span></span>';
+  button.querySelector('strong').textContent = set.name;
+  button.querySelector('span').textContent = subtitle;
+  button.addEventListener('click', () => onSelect(set));
+  return button;
 }
 
 export function renderLibrary(sets, selectedId, onSelect) {
   const host = q('studio-library');
   if (!host) return;
-  host.replaceChildren();
-  sets.forEach((set) => {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = `studio-set-card${set.id === selectedId ? ' active' : ''}`;
-    button.innerHTML = `<strong></strong><span></span>`;
-    button.querySelector('strong').textContent = set.name;
-    button.querySelector('span').textContent = set.systemOwned ? 'Immutable Default' : `${set.locked ? 'Locked' : 'Editable'} • ${set.visibility}`;
-    button.addEventListener('click', () => onSelect(set.id));
-    host.appendChild(button);
-  });
+  host.replaceChildren(...sets.map((set) => makeSetCard(
+    set, selectedId, onSelect,
+    set.systemOwned ? 'Immutable Default' : `${set.locked ? 'Locked' : 'Editable'} • ${set.visibility}`,
+  )));
+}
+
+export function renderCommunity(sets, selectedId, onSelect) {
+  const host = q('community-library');
+  if (!host) return;
+  if (!sets.length) {
+    const empty = document.createElement('p');
+    empty.className = 'studio-note';
+    empty.textContent = 'No public locked dice sets yet.';
+    host.replaceChildren(empty);
+    return;
+  }
+  host.replaceChildren(...sets.map((set) => makeSetCard(set, selectedId, onSelect, 'Public • Locked • Read only')));
 }
 
 export function renderPreview(set, selectedDie) {
@@ -46,8 +58,9 @@ export function renderPreview(set, selectedDie) {
   }));
 }
 
-export function fillEditor(set, selectedDie, activeId) {
+export function fillEditor(set, selectedDie, activeId, ownerId, cloudEnabled) {
   const system = set.id === SYSTEM_DEFAULT_DICE_SET_ID;
+  const owner = !system && set.ownerId === ownerId;
   const locked = set.locked;
   const style = set.appearance.diceSet.defaultStyle;
   const die = set.appearance.diceSet.dice[selectedDie];
@@ -63,16 +76,16 @@ export function fillEditor(set, selectedDie, activeId) {
   q('tray-glow-color').value = set.appearance.tray.glow.color;
   q('face-mode').value = die.faceMode;
   logicalFace.max = String(maxFace);
-  if (!Number.isInteger(Number(logicalFace.value)) || Number(logicalFace.value) < 1 || Number(logicalFace.value) > maxFace) {
-    logicalFace.value = String(maxFace);
-  }
+  if (!Number.isInteger(Number(logicalFace.value)) || Number(logicalFace.value) < 1 || Number(logicalFace.value) > maxFace) logicalFace.value = String(maxFace);
   q('selected-die-label').textContent = selectedDie.toUpperCase();
   q('active-badge').textContent = set.id === activeId ? 'ACTIVE' : '';
-  document.querySelectorAll('[data-edit-control]').forEach((el) => { el.disabled = system || locked; });
-  q('save-set').disabled = system || locked;
-  q('delete-set').disabled = system;
-  q('lock-set').disabled = system;
+  document.querySelectorAll('[data-edit-control]').forEach((el) => { el.disabled = system || locked || !owner; });
+  q('save-set').disabled = system || locked || !owner;
+  q('delete-set').disabled = system || !owner;
+  q('lock-set').disabled = system || !owner;
   q('lock-set').textContent = locked ? 'Unlock Set' : 'Lock Set';
+  q('publish-set').disabled = system || !owner || !locked || !cloudEnabled;
+  q('publish-set').textContent = set.visibility === 'public' ? 'Make Private' : 'Publish Set';
 }
 
 export function setStatus(message, kind = '') {
