@@ -1,0 +1,27 @@
+name: Appearance V2 Validation
+
+on:
+  push:
+    branches:
+      - feature/dice-appearance-v2
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v4
+      - name: Use Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.16.0'
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Run full checks and build
+        run: npm run build
