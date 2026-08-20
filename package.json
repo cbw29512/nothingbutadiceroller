@@ -9,6 +9,7 @@
   "dependencies": {
     "@netlify/blobs": "^11.0.1",
     "@netlify/identity": "^1.2.0",
+    "esbuild": "^0.28.1",
     "obscenity": "^0.4.6"
   }
 }
