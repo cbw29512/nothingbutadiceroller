@@ -6,3 +6,5 @@ export * from './crit.mjs';
 export * from './results.mjs';
 export * from './raw/index.mjs';
 export * from './persistence.mjs';
+export * from './icons.mjs';
+export * from './toolbar.mjs';
