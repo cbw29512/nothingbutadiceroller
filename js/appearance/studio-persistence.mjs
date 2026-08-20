@@ -3,6 +3,7 @@ import { assertValidDiceSet, validateDiceSet } from './validation.mjs';
 
 export const LOCAL_SETS_KEY = 'ndr.appearance.savedSets.v2';
 export const ACTIVE_SET_KEY = 'ndr.appearance.activeSet.v2';
+export const ACTIVE_SNAPSHOT_KEY = 'ndr.appearance.activeSnapshot.v2';
 export const LOCAL_OWNER_KEY = 'ndr.appearance.localOwner.v2';
 
 function parseArray(raw) {
@@ -16,9 +17,8 @@ function parseArray(raw) {
 }
 
 function makeOwnerId() {
-  try {
-    return `local_${crypto.randomUUID()}`;
-  } catch (error) {
+  try { return `local_${crypto.randomUUID()}`; }
+  catch (error) {
     console.error('Failed to create local owner id:', error);
     return `local_${Date.now()}_${Math.random().toString(36).slice(2)}`;
   }
@@ -81,20 +81,43 @@ export function deleteDiceSetLocal(setId, storage = localStorage, ownerId) {
 }
 
 export function getActiveDiceSetId(storage = localStorage) {
-  try {
-    return String(storage.getItem(ACTIVE_SET_KEY) || SYSTEM_DEFAULT_DICE_SET_ID);
-  } catch (error) {
+  try { return String(storage.getItem(ACTIVE_SET_KEY) || SYSTEM_DEFAULT_DICE_SET_ID); }
+  catch (error) {
     console.error('Failed to read active dice set:', error);
     return SYSTEM_DEFAULT_DICE_SET_ID;
   }
 }
 
+export function getActiveDiceSetSnapshot(storage = localStorage) {
+  try {
+    const raw = storage.getItem(ACTIVE_SNAPSHOT_KEY);
+    if (!raw) return null;
+    const set = JSON.parse(raw);
+    if (set?.id !== getActiveDiceSetId(storage) || !validateDiceSet(set).ok) return null;
+    return set;
+  } catch (error) {
+    console.error('Failed to read active dice-set snapshot:', error);
+    return null;
+  }
+}
+
+export function setActiveDiceSet(set, storage = localStorage) {
+  assertValidDiceSet(set);
+  if (set.id === SYSTEM_DEFAULT_DICE_SET_ID) return resetActiveToDefault(storage);
+  storage.setItem(ACTIVE_SET_KEY, set.id);
+  storage.setItem(ACTIVE_SNAPSHOT_KEY, JSON.stringify(set));
+  return set.id;
+}
+
 export function setActiveDiceSetId(setId, storage = localStorage) {
   const id = String(setId || SYSTEM_DEFAULT_DICE_SET_ID);
   storage.setItem(ACTIVE_SET_KEY, id);
+  if (id === SYSTEM_DEFAULT_DICE_SET_ID) storage.removeItem(ACTIVE_SNAPSHOT_KEY);
   return id;
 }
 
 export function resetActiveToDefault(storage = localStorage) {
-  return setActiveDiceSetId(SYSTEM_DEFAULT_DICE_SET.id, storage);
+  storage.setItem(ACTIVE_SET_KEY, SYSTEM_DEFAULT_DICE_SET.id);
+  storage.removeItem(ACTIVE_SNAPSHOT_KEY);
+  return SYSTEM_DEFAULT_DICE_SET.id;
 }
