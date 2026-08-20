@@ -9,8 +9,10 @@ const dist = resolve(root, 'dist');
 
 const files = [
   'index.html',
+  'customize.html',
   'rolls.html',
   'styles.css',
+  'customize.css',
   'themes.css',
   'account.css',
   'community.css',
@@ -79,6 +81,9 @@ async function validateBuild() {
       'js/theme-community.js',
       'js/tray-controls.js',
       'js/shortcut-harness.js',
+      'js/appearance/studio.js',
+      'js/appearance/studio-persistence.mjs',
+      'js/appearance/studio-render.mjs',
       'js/shortcuts/icons.mjs',
       'js/shortcuts/manager-state.mjs',
       'js/shortcuts/persistence.mjs',
@@ -88,6 +93,7 @@ async function validateBuild() {
     await Promise.all(required.map(path => access(resolve(dist, path))));
 
     const html = await readFile(resolve(dist, 'index.html'), 'utf8');
+    const studioHtml = await readFile(resolve(dist, 'customize.html'), 'utf8');
     const rollsHtml = await readFile(resolve(dist, 'rolls.html'), 'utf8');
     const harnessHtml = await readFile(resolve(dist, 'shortcut-harness.html'), 'utf8');
     const browserApp = await readFile(resolve(dist, 'js/app.js'), 'utf8');
@@ -117,9 +123,21 @@ async function validateBuild() {
       'SECURE RANDOMIZATION ENGINE',
       'Physics-resolved dice • Cryptographic custom rolls',
     ];
-
     for (const reference of expectedHtml) {
       if (!html.includes(reference)) throw new Error(`Missing completed UI reference: ${reference}`);
+    }
+
+    const expectedStudio = [
+      'DICE & TRAY STUDIO',
+      'id="studio-library"',
+      'id="studio-preview-tray"',
+      'id="reset-default"',
+      'id="lock-set"',
+      'RAW — standard numbers',
+      'src="/js/appearance/studio.js"',
+    ];
+    for (const reference of expectedStudio) {
+      if (!studioHtml.includes(reference)) throw new Error(`Missing Dice Studio reference: ${reference}`);
     }
 
     const expectedManager = [
@@ -153,6 +171,9 @@ async function validateBuild() {
     }
     if (html.includes('shortcut-toolbar.css') || html.includes('shortcut-toolbar-harness')) {
       throw new Error('Base HTML must keep shortcut UI as progressive enhancement.');
+    }
+    if (html.includes('studio-preview-tray') || html.includes('DICE & TRAY STUDIO')) {
+      throw new Error('Advanced Dice Studio must remain off the landing page.');
     }
 
     const expectedCustomControls = ['supportsNativePopover', 'showPopover()', 'hidePopover()', "addEventListener('toggle'"];
