@@ -10,6 +10,7 @@ import { initAccount } from './account.js';
 import { closeCustomDieControls, initCustomDieControls } from './custom-controls.js';
 import { closeDrawers, initDrawerControls } from './drawer-controls.js';
 import { canRollFromTray, initTrayControls } from './tray-controls.js';
+import { ensureShortcutRuntimeMarkup } from './shortcuts/runtime-markup.js';
 import {
   canRollPreparedShortcutFromTray,
   clearPreparedShortcut,
@@ -143,6 +144,7 @@ async function boot() {
     ensureStylesheet('community-styles', '/community.css');
     ensureStylesheet('custom-controls-styles', '/custom.css');
     ensureStylesheet('shortcut-toolbar-styles', '/shortcut-toolbar.css');
+    ensureShortcutRuntimeMarkup();
     loadPreferences();
     syncControls();
     renderPool();
