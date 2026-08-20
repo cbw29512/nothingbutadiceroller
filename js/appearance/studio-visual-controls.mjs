@@ -2,6 +2,12 @@ import { canEditDiceSet } from './authorization.mjs';
 import { replaceVisualFace, removeVisualFace, useRawFaces } from './face-customization.mjs';
 import { buildAppearanceRenderPlan } from './render-plan.mjs';
 
+function ensureDieGlow(set, type) {
+  const overrides = set.appearance.diceSet.dice[type].styleOverrides;
+  if (!overrides.glow) overrides.glow = structuredClone(buildAppearanceRenderPlan(set).dice[type].style.glow);
+  return overrides.glow;
+}
+
 export function bindStudioVisualControls(context) {
   const { q, updateDraft, getDraft, setDraft, getSelectedDie, getOwnerId, refresh, setStatus } = context;
   [['dice-body-color', 'bodyColor'], ['dice-face-color', 'faceColor']].forEach(([id, key]) => {
@@ -29,10 +35,11 @@ export function bindStudioVisualControls(context) {
     }));
   });
   q('die-glow-enabled').addEventListener('change', () => updateDraft((set) => {
-    set.appearance.diceSet.dice[getSelectedDie()].styleOverrides.glow.enabled = q('die-glow-enabled').checked;
+    const glow = ensureDieGlow(set, getSelectedDie());
+    glow.enabled = q('die-glow-enabled').checked;
   }));
   q('die-glow-color').addEventListener('input', () => updateDraft((set) => {
-    const glow = set.appearance.diceSet.dice[getSelectedDie()].styleOverrides.glow;
+    const glow = ensureDieGlow(set, getSelectedDie());
     glow.color = q('die-glow-color').value;
     glow.intensity = 0.75;
   }));
