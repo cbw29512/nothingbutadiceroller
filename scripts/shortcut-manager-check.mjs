@@ -92,7 +92,11 @@ for (const required of [
   '<option value="custom">Custom</option>', 'id="preferred-ruleset"', 'id="add-homebrew-group"',
   'id="save-workspace"',
   '<summary>How to use shortcuts</summary>', 'Damage-only examples are locked', 'id="homebrew-dice-budget"',
+  'Build Your Own Shortcut', 'Attack: 1d20 + 7', 'Add Custom Shortcut to Toolbar',
 ]) assert.ok(html.includes(required), `Manager HTML contract missing: ${required}`);
+for (const label of ['Group name', 'Roll type', 'Number of dice', 'Die type', 'Bonus / Modifier', 'Attacks / Targets']) {
+  assert.ok(managerModules.some((source) => source.includes(label)), `Homebrew field label missing: ${label}`);
+}
 assert.ok(css.includes('.manager-help'));
 assert.ok(
   html.indexOf('data-tab="2014"') < html.indexOf('data-tab="2024"'),
