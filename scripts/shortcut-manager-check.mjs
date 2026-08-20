@@ -79,6 +79,10 @@ for (const required of [
   '<option value="custom">Custom</option>', 'id="preferred-ruleset"', 'id="add-homebrew-group"',
   'id="save-workspace"',
 ]) assert.ok(html.includes(required), `Manager HTML contract missing: ${required}`);
+assert.ok(
+  html.indexOf('data-tab="2014"') < html.indexOf('data-tab="2024"'),
+  '2014 RAW must appear before 2024 RAW in the manager tabs.',
+);
 assert.ok(html.includes('safely falls back to RAW critical dice'));
 for (const required of ['renderShortcutToolbar(', 'createRawManagerSlot(', 'createFlexManagerSlot(', 'saveShortcutWorkspace(']) {
   assert.ok(managerSource.includes(required), `Manager behavior missing after modular split: ${required}`);
