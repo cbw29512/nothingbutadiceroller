@@ -1,6 +1,7 @@
 import { access, cp, mkdir, readFile, rm, copyFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { build } from 'esbuild';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, '..');
@@ -8,12 +9,17 @@ const dist = resolve(root, 'dist');
 
 const files = [
   'index.html',
+  'rolls.html',
   'styles.css',
   'themes.css',
   'account.css',
   'community.css',
   'mobile.css',
   'custom.css',
+  'rolls.css',
+  'shortcut-harness.html',
+  'shortcut-toolbar.css',
+  'shortcut-harness.css',
 ];
 const directories = ['js'];
 
@@ -31,11 +37,33 @@ async function copySite() {
   }
 }
 
+async function bundleBrowserApps() {
+  try {
+    await build({
+      entryPoints: {
+        app: resolve(root, 'js/app.js'),
+        rolls: resolve(root, 'js/rolls.js'),
+      },
+      bundle: true,
+      format: 'esm',
+      platform: 'browser',
+      target: ['es2022'],
+      outdir: resolve(dist, 'js'),
+      entryNames: '[name]',
+      logLevel: 'warning',
+    });
+  } catch (error) {
+    console.error('Browser app bundle failed:', error);
+    throw error;
+  }
+}
+
 async function validateBuild() {
   try {
     const required = [
       ...files,
       'js/app.js',
+      'js/rolls.js',
       'js/account.js',
       'js/account-api.js',
       'js/account-ui.js',
@@ -50,11 +78,22 @@ async function validateBuild() {
       'js/style-picker.js',
       'js/theme-community.js',
       'js/tray-controls.js',
+      'js/shortcut-harness.js',
+      'js/shortcuts/icons.mjs',
+      'js/shortcuts/manager-state.mjs',
+      'js/shortcuts/persistence.mjs',
+      'js/shortcuts/toolbar.mjs',
     ];
 
     await Promise.all(required.map(path => access(resolve(dist, path))));
 
     const html = await readFile(resolve(dist, 'index.html'), 'utf8');
+    const rollsHtml = await readFile(resolve(dist, 'rolls.html'), 'utf8');
+    const harnessHtml = await readFile(resolve(dist, 'shortcut-harness.html'), 'utf8');
+    const browserApp = await readFile(resolve(dist, 'js/app.js'), 'utf8');
+    const browserRolls = await readFile(resolve(dist, 'js/rolls.js'), 'utf8');
+    const accountApi = await readFile(resolve(dist, 'js/account-api.js'), 'utf8');
+    const authUi = await readFile(resolve(dist, 'js/auth-ui.js'), 'utf8');
     const customControls = await readFile(resolve(dist, 'js/custom-controls.js'), 'utf8');
     const customRoll = await readFile(resolve(dist, 'js/custom-roll.js'), 'utf8');
     const trayControls = await readFile(resolve(dist, 'js/tray-controls.js'), 'utf8');
@@ -80,48 +119,67 @@ async function validateBuild() {
     ];
 
     for (const reference of expectedHtml) {
-      if (!html.includes(reference)) {
-        throw new Error(`Missing completed UI reference: ${reference}`);
-      }
+      if (!html.includes(reference)) throw new Error(`Missing completed UI reference: ${reference}`);
     }
 
-    const expectedCustomControls = [
-      'supportsNativePopover',
-      'showPopover()',
-      'hidePopover()',
-      "addEventListener('toggle'",
+    const expectedManager = [
+      'name="robots" content="noindex,nofollow"',
+      'href="/rolls.css"',
+      'href="/shortcut-toolbar.css"',
+      'id="manager-toolbar"',
+      'data-tab="2024"',
+      'data-tab="2014"',
+      'data-tab="homebrew"',
+      'data-tab="options"',
+      'id="critical-mode"',
+      'id="preferred-ruleset"',
+      'src="/js/rolls.js"',
     ];
+    for (const reference of expectedManager) {
+      if (!rollsHtml.includes(reference)) throw new Error(`Missing Phase 7 manager reference: ${reference}`);
+    }
+
+    const expectedHarness = [
+      'name="robots" content="noindex,nofollow"',
+      'href="/shortcut-toolbar.css"',
+      'href="/shortcut-harness.css"',
+      'id="shortcut-toolbar-harness"',
+      'src="/js/shortcut-harness.js"',
+    ];
+    for (const reference of expectedHarness) {
+      if (!harnessHtml.includes(reference)) throw new Error(`Missing Phase 4 harness reference: ${reference}`);
+    }
+    if (html.includes('shortcut-toolbar.css') || html.includes('shortcut-toolbar-harness')) {
+      throw new Error('Base HTML must keep shortcut UI as progressive enhancement.');
+    }
+
+    const expectedCustomControls = ['supportsNativePopover', 'showPopover()', 'hidePopover()', "addEventListener('toggle'"];
     for (const reference of expectedCustomControls) {
-      if (!customControls.includes(reference)) {
-        throw new Error(`Missing resilient custom-control behavior: ${reference}`);
-      }
+      if (!customControls.includes(reference)) throw new Error(`Missing resilient custom-control behavior: ${reference}`);
     }
 
-    const expectedCustomRoll = [
-      'crypto.getRandomValues',
-      'SECURE CUSTOM ROLL',
-      'Web Crypto CSPRNG',
-      'MAX_CUSTOM_SIDES = 1_000_000',
-    ];
+    const expectedCustomRoll = ['crypto.getRandomValues', 'SECURE CUSTOM ROLL', 'Web Crypto CSPRNG', 'MAX_CUSTOM_SIDES = 1_000_000'];
     for (const reference of expectedCustomRoll) {
-      if (!customRoll.includes(reference)) {
-        throw new Error(`Missing secure custom-roll feature: ${reference}`);
-      }
+      if (!customRoll.includes(reference)) throw new Error(`Missing secure custom-roll feature: ${reference}`);
     }
 
-    const expectedTrayControls = [
-      "tray.addEventListener('click'",
-      "['Enter', ' ']",
-      'canRollFromTray',
-    ];
+    const expectedTrayControls = ["tray.addEventListener('click'", "['Enter', ' ']", 'canRollFromTray'];
     for (const reference of expectedTrayControls) {
-      if (!trayControls.includes(reference)) {
-        throw new Error(`Missing tray-roll feature: ${reference}`);
+      if (!trayControls.includes(reference)) throw new Error(`Missing tray-roll feature: ${reference}`);
+    }
+
+    const expectedIdentitySource = ['handleAuthCallback', 'processIdentityCallback', 'onAuthChange'];
+    for (const reference of expectedIdentitySource) {
+      if (!accountApi.includes(reference) && !authUi.includes(reference)) {
+        throw new Error(`Missing browser Identity callback behavior: ${reference}`);
       }
     }
 
-    if (html.includes('netlify-identity-widget')) {
-      throw new Error('Legacy Netlify Identity widget must not ship in production.');
+    if (browserApp.includes("from '@netlify/identity'") || browserRolls.includes("from '@netlify/identity'")) {
+      throw new Error('Browser bundles must not ship an unresolved @netlify/identity import.');
+    }
+    if (html.includes('netlify-identity-widget') || rollsHtml.includes('netlify-identity-widget')) {
+      throw new Error('Legacy Netlify Identity widget must not ship.');
     }
 
     console.log('Build validation passed:', required.join(', '));
@@ -133,6 +191,7 @@ async function validateBuild() {
 
 try {
   await copySite();
+  await bundleBrowserApps();
   await validateBuild();
   console.log(`Static site ready at ${dist}`);
 } catch (error) {

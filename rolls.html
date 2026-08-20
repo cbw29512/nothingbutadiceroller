@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#090c12">
+  <meta name="robots" content="noindex,nofollow">
+  <title>My Roll Shortcuts — Nothing But A Dice Roller</title>
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/shortcut-toolbar.css">
+  <link rel="stylesheet" href="/rolls.css">
+</head>
+<body class="rolls-page">
+  <header class="rolls-header">
+    <div>
+      <p class="eyebrow">CUSTOM ROLL SETUP</p>
+      <h1>My Roll Shortcuts</h1>
+      <p class="rolls-subtitle">Build up to 24 compact shortcuts without changing the core roller.</p>
+    </div>
+    <a class="btn secondary" href="/" id="back-to-roller">Back to Roller</a>
+  </header>
+
+  <main class="rolls-shell">
+    <p id="manager-status" class="status-line manager-status" role="status">Checking account…</p>
+
+    <details class="manager-help">
+      <summary>How to use shortcuts</summary>
+      <ol>
+        <li><strong>Choose examples:</strong> 2014 RAW and 2024 RAW each contain the same 3 cantrips plus 1 damaging spell per spell level. Pick the version your table uses.</li>
+        <li><strong>Keep RAW damage locked:</strong> these cards contain official spell damage only. They never include your character's attack bonus or other modifiers.</li>
+        <li><strong>Build your character's roll:</strong> make a separate Homebrew card with an icon and name, then add an optional attack roll, one or more damage groups, and any static damage modifier.</li>
+        <li><strong>Roll it:</strong> save your toolbar, return to the roller, press a shortcut, then press Roll Dice.</li>
+      </ol>
+      <p>Use the RAW cards as examples when building your own combinations. You can remove every shortcut and keep using only the standard dice roller.</p>
+    </details>
+
+    <section class="manager-panel toolbar-organizer" aria-labelledby="toolbar-heading">
+      <div class="manager-section-heading">
+        <div>
+          <span class="section-label">Your toolbar</span>
+          <h2 id="toolbar-heading">Saved shortcuts</h2>
+        </div>
+        <strong id="shortcut-count" class="shortcut-count">0 / 24</strong>
+      </div>
+      <div id="manager-toolbar" class="shortcut-toolbar manager-toolbar" aria-label="Saved roll shortcuts"></div>
+      <p id="empty-toolbar-note" class="manager-note">No shortcuts yet. Add a RAW roll or build a Homebrew card below.</p>
+      <div class="organizer-controls" aria-label="Selected shortcut controls">
+        <span id="selected-shortcut-name" class="selected-shortcut-name">Select a shortcut to manage it.</span>
+        <button id="move-shortcut-left" class="btn secondary" type="button" disabled>Move Left</button>
+        <button id="move-shortcut-right" class="btn secondary" type="button" disabled>Move Right</button>
+        <button id="remove-shortcut" class="btn danger" type="button" disabled>Remove</button>
+      </div>
+    </section>
+
+    <nav class="manager-tabs" aria-label="Shortcut manager sections">
+      <button class="manager-tab" type="button" data-tab="2014" aria-selected="false">2014 RAW</button>
+      <button class="manager-tab active" type="button" data-tab="2024" aria-selected="true">2024 RAW</button>
+      <button class="manager-tab" type="button" data-tab="homebrew" aria-selected="false">Homebrew</button>
+      <button class="manager-tab" type="button" data-tab="options" aria-selected="false">Options</button>
+    </nav>
+
+    <section id="tab-2024" class="manager-tab-panel" data-panel="2024">
+      <div class="manager-panel">
+        <div class="manager-section-heading">
+          <div><span class="section-label">SRD 5.2.1</span><h2>2024 RAW</h2></div>
+          <input id="search-2024" class="manager-input raw-search" type="search" placeholder="Search verified rolls…" aria-label="Search 2024 RAW shortcuts">
+        </div>
+        <p class="manager-note">Damage-only examples are locked to the verified RAW catalog. Add character-specific attack rolls and bonuses on a separate Homebrew card.</p>
+        <div id="raw-list-2024" class="raw-list"></div>
+      </div>
+    </section>
+
+    <section id="tab-2014" class="manager-tab-panel hidden" data-panel="2014">
+      <div class="manager-panel">
+        <div class="manager-section-heading">
+          <div><span class="section-label">SRD 5.1</span><h2>2014 RAW</h2></div>
+          <input id="search-2014" class="manager-input raw-search" type="search" placeholder="Search verified rolls…" aria-label="Search 2014 RAW shortcuts">
+        </div>
+        <p class="manager-note">2014 damage-only examples are separate catalog references. RAW mechanics remain immutable.</p>
+        <div id="raw-list-2014" class="raw-list"></div>
+      </div>
+    </section>
+
+    <section id="tab-homebrew" class="manager-tab-panel hidden" data-panel="homebrew">
+      <div class="homebrew-grid">
+        <form id="homebrew-form" class="manager-panel" novalidate>
+          <div class="manager-section-heading">
+            <div><span class="section-label">Flex Card</span><h2>Homebrew / Custom Roll</h2></div>
+          </div>
+          <div class="manager-form-grid">
+            <label>Name
+              <input id="homebrew-name" class="manager-input" type="text" maxlength="80" placeholder="Flaming Greatsword" required>
+            </label>
+            <label>Icon
+              <select id="homebrew-icon" class="manager-select"></select>
+            </label>
+            <label>Category
+              <select id="homebrew-category" class="manager-select"></select>
+            </label>
+          </div>
+          <div class="group-builder-heading">
+            <div><span class="section-label">Roll groups</span><p class="manager-note">Each group stays separate in results. Add AND groups for mixed damage or multiple actions.</p></div>
+            <button id="add-homebrew-group" class="btn secondary" type="button">+ AND Group</button>
+          </div>
+          <div id="homebrew-groups" class="homebrew-groups"></div>
+          <p id="homebrew-dice-budget" class="manager-note" role="status">Physical dice: 1 / 40. Each d100 counts as two.</p>
+          <button id="save-homebrew" class="btn primary" type="submit">Add Homebrew to Toolbar</button>
+        </form>
+
+        <aside class="manager-panel preview-panel" aria-labelledby="preview-heading">
+          <span class="section-label">Compiled preview</span>
+          <h2 id="preview-heading">What the roller will execute</h2>
+          <div id="homebrew-preview" class="homebrew-preview">Add or edit groups to preview the structured roll.</div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="tab-options" class="manager-tab-panel hidden" data-panel="options">
+      <div class="manager-panel">
+        <span class="section-label">Global shortcut options</span>
+        <h2>Options</h2>
+        <div class="option-row">
+          <div>
+            <strong>Critical Rule</strong>
+            <p class="manager-note">RAW is the default. Custom is stored as a table override, never as an edit to RAW cards.</p>
+          </div>
+          <select id="critical-mode" class="manager-select">
+            <option value="raw">RAW</option>
+            <option value="custom">Custom</option>
+          </select>
+        </div>
+        <p id="custom-crit-note" class="manager-warning hidden">No custom critical method is defined yet. Until one is explicitly supported, the roller safely falls back to RAW critical dice.</p>
+        <div class="option-row">
+          <div>
+            <strong>Ruleset preference</strong>
+            <p class="manager-note">Choose which RAW library opens first when you return to this page.</p>
+          </div>
+          <select id="preferred-ruleset" class="manager-select">
+            <option value="dnd5e-2024">2024 RAW</option>
+            <option value="dnd5e-2014">2014 RAW</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <footer class="manager-save-bar">
+      <div>
+        <strong id="save-state-label">No unsaved changes</strong>
+        <span id="workspace-revision" class="manager-note">Revision 0</span>
+      </div>
+      <div class="manager-save-actions">
+        <button id="reload-workspace" class="btn secondary" type="button">Reload</button>
+        <button id="save-workspace" class="btn primary" type="button" disabled>Save Changes</button>
+      </div>
+    </footer>
+  </main>
+
+  <script type="module" src="/js/rolls.js"></script>
+</body>
+</html>
+

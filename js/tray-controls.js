@@ -25,35 +25,37 @@ function moveTrayInfoOutOfRollingSurface() {
   tray?.removeAttribute('aria-describedby');
 }
 
-function syncTrayState() {
-  const tray = document.getElementById('dice-tray');
-  if (!tray) return;
-
-  const ready = canRollFromTray();
-  tray.classList.toggle('tray-roll-ready', ready);
-  tray.setAttribute('aria-disabled', String(!ready));
+function defaultCanRoll() {
+  return canRollFromTray();
 }
 
-export function initTrayControls(onRoll) {
+export function initTrayControls(onRoll, canRoll = defaultCanRoll) {
   try {
     const tray = document.getElementById('dice-tray');
-    if (!tray || typeof onRoll !== 'function') return;
+    if (!tray || typeof onRoll !== 'function' || typeof canRoll !== 'function') return;
 
     moveTrayInfoOutOfRollingSurface();
 
+    const syncTrayState = () => {
+      const ready = Boolean(canRoll());
+      tray.classList.toggle('tray-roll-ready', ready);
+      tray.setAttribute('aria-disabled', String(!ready));
+    };
+
     const activate = () => {
-      if (!canRollFromTray()) return;
+      if (!canRoll()) return;
       onRoll('normal');
     };
 
     tray.addEventListener('click', activate);
     tray.addEventListener('keydown', (event) => {
-      if (!['Enter', ' '].includes(event.key) || !canRollFromTray()) return;
+      if (!['Enter', ' '].includes(event.key) || !canRoll()) return;
       event.preventDefault();
       activate();
     });
 
     document.addEventListener('rollstatechange', syncTrayState);
+    document.addEventListener('shortcutstatechange', syncTrayState);
     document.addEventListener('configurationloaded', syncTrayState);
     syncTrayState();
   } catch (error) {
