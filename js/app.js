@@ -9,7 +9,15 @@ import { assertStylesLoaded } from './deployment.js';
 import { initAccount } from './account.js';
 import { closeCustomDieControls, initCustomDieControls } from './custom-controls.js';
 import { closeDrawers, initDrawerControls } from './drawer-controls.js';
-import { initTrayControls } from './tray-controls.js';
+import { canRollFromTray, initTrayControls } from './tray-controls.js';
+import {
+  canRollPreparedShortcutFromTray,
+  clearPreparedShortcut,
+  initShortcutRuntime,
+  isShortcutPrepared,
+  performPreparedShortcutRoll,
+  syncShortcutRuntimeUI,
+} from './shortcuts/runtime.js';
 
 function ensureStylesheet(id, href) {
   try {
@@ -24,15 +32,32 @@ function ensureStylesheet(id, href) {
   }
 }
 
+async function performActiveRoll(requestedMode = 'normal', options = {}) {
+  const shortcutEligible = requestedMode === 'normal' && !options.quickD20 && isShortcutPrepared();
+  if (shortcutEligible) return performPreparedShortcutRoll();
+  return performRoll(requestedMode, options);
+}
+
+async function clearActiveRoll() {
+  closeCustomDieControls();
+  if (isShortcutPrepared()) await clearPreparedShortcut();
+  return clearPool();
+}
+
+function canRollActiveFromTray() {
+  return isShortcutPrepared() ? canRollPreparedShortcutFromTray() : canRollFromTray();
+}
+
 function syncControls() {
   try {
+    const shortcutPrepared = isShortcutPrepared();
     document.querySelectorAll('[data-quick-roll]').forEach(button => {
       const active = state.rolling && button.dataset.quickRoll === state.d20Mode;
       button.classList.toggle('active', active);
-      button.disabled = state.rolling;
+      button.disabled = state.rolling || shortcutPrepared;
     });
     document.querySelectorAll('.die-btn, .mobile-die-btn, .pool-chip').forEach(button => {
-      button.disabled = state.rolling;
+      button.disabled = state.rolling || shortcutPrepared;
     });
     ['roll-btn', 'mobile-roll-btn', 'clear-btn', 'mobile-clear-btn', 'keep-btn'].forEach(id => {
       const button = document.getElementById(id);
@@ -48,6 +73,7 @@ function syncControls() {
       soundBtn.textContent = `🔊 ${state.soundEnabled ? 'ON' : 'OFF'}`;
       soundBtn.setAttribute('aria-pressed', String(state.soundEnabled));
     }
+    syncShortcutRuntimeUI();
   } catch (error) {
     console.error('Failed to synchronize controls:', error);
   }
@@ -64,7 +90,7 @@ function bindDiceButtons(selector) {
 function bindQuickRollButtons() {
   document.querySelectorAll('[data-quick-roll]').forEach(button => {
     button.addEventListener('click', () => {
-      performRoll(button.dataset.quickRoll, { quickD20: true });
+      performActiveRoll(button.dataset.quickRoll, { quickD20: true });
     });
   });
 }
@@ -76,8 +102,9 @@ function bindEvents() {
     bindQuickRollButtons();
     initCustomDieControls();
     initDrawerControls();
-    initTrayControls(performRoll);
+    initTrayControls(performActiveRoll, canRollActiveFromTray);
     document.addEventListener('rollstatechange', syncControls);
+    document.addEventListener('shortcutstatechange', syncControls);
     document.addEventListener('configurationloaded', () => {
       syncControls();
       initStylePicker();
@@ -93,17 +120,17 @@ function bindEvents() {
       savePreferences();
       syncControls();
     });
-    document.getElementById('roll-btn')?.addEventListener('click', () => performRoll('normal'));
-    document.getElementById('mobile-roll-btn')?.addEventListener('click', () => performRoll('normal'));
-    document.getElementById('clear-btn')?.addEventListener('click', clearPool);
-    document.getElementById('mobile-clear-btn')?.addEventListener('click', clearPool);
+    document.getElementById('roll-btn')?.addEventListener('click', () => performActiveRoll('normal'));
+    document.getElementById('mobile-roll-btn')?.addEventListener('click', () => performActiveRoll('normal'));
+    document.getElementById('clear-btn')?.addEventListener('click', clearActiveRoll);
+    document.getElementById('mobile-clear-btn')?.addEventListener('click', clearActiveRoll);
 
     document.addEventListener('keydown', event => {
       if (event.key === 'Escape') {
         closeDrawers();
         closeCustomDieControls();
       }
-      if (event.key === 'Enter' && event.ctrlKey) performRoll('normal');
+      if (event.key === 'Enter' && event.ctrlKey) performActiveRoll('normal');
     });
   } catch (error) {
     console.error('Failed to bind application events:', error);
@@ -115,6 +142,7 @@ async function boot() {
     assertStylesLoaded();
     ensureStylesheet('community-styles', '/community.css');
     ensureStylesheet('custom-controls-styles', '/custom.css');
+    ensureStylesheet('shortcut-toolbar-styles', '/shortcut-toolbar.css');
     loadPreferences();
     syncControls();
     renderPool();
@@ -122,6 +150,7 @@ async function boot() {
     bindEvents();
     initStylePicker();
     initAccount();
+    initShortcutRuntime();
     initThemeCommunity();
 
     const stylesButton = document.getElementById('open-styles-btn');
