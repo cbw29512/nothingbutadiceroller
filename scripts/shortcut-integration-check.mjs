@@ -36,6 +36,9 @@ for (const required of [
   'active = null;',
   'TOTAL DAMAGE =',
   "showCrit('nat20')",
+  "section.hidden = !accountUser && !demoMode",
+  "title.textContent = hasShortcuts ? 'My shortcuts' : 'Press ⚙ to configure shortcuts'",
+  'note.hidden = !hasShortcuts',
 ]) {
   assert.ok(runtime.includes(required), `Phase 6 runtime contract missing: ${required}`);
 }

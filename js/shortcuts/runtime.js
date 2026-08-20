@@ -137,10 +137,15 @@ function hideShortcutInfo() {
 function renderToolbar() {
   const section = document.getElementById('shortcut-toolbar-section');
   const container = document.getElementById('shortcut-toolbar');
-  if (!section || !container) return;
+  const title = document.getElementById('shortcut-toolbar-title');
+  const note = section?.querySelector('.shortcut-toolbar-note');
+  if (!section || !container || !title || !note) return;
 
   hydratedSlots = slots.map((slot) => ({ slot, hydrated: hydrateShortcutSlot(slot) }));
-  section.hidden = slots.length === 0;
+  const hasShortcuts = slots.length > 0;
+  section.hidden = !accountUser && !demoMode;
+  title.textContent = hasShortcuts ? 'My shortcuts' : 'Press ⚙ to configure shortcuts';
+  note.hidden = !hasShortcuts;
   if (!slots.length) {
     container.replaceChildren();
     container.hidden = true;
