@@ -11,12 +11,12 @@ set.appearance.diceSet.dice.d20.styleOverrides = {
   glow: { enabled: true, color: '#ffff00', intensity: 0.8 },
 };
 set.appearance.tray.color = '#050505';
-set = replaceVisualFace(set, 'd20', 20, { kind: 'icon', value: 'skull', color: '#a855f7' });
+set = replaceVisualFace(set, 'd20', 20, { kind: 'text', value: '☠', color: '#a855f7' });
 const plan = buildAppearanceRenderPlan(set);
 assert.equal(plan.dice.d4.style.bodyColor, '#f97316');
 assert.equal(plan.dice.d4.logicalDie, 'd4');
 assert.equal(plan.dice.d20.style.glow.color, '#ffff00');
-assert.equal(plan.dice.d20.faces['20'].value, 'skull');
+assert.equal(plan.dice.d20.faces['20'].value, '☠');
 assert.equal(plan.tray.color, '#050505');
 
 const forbiddenKeys = new Set(['notation', 'result', 'results', 'rng', 'random', 'advantage', 'disadvantage', 'critical', 'crit', 'roll']);

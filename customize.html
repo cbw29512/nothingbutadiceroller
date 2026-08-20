@@ -80,13 +80,17 @@
               <option value="custom">Custom appearance</option>
             </select>
           </label>
-          <div class="face-grid">
-            <label>Logical face<input id="logical-face" data-edit-control type="number" min="1" value="20"></label>
-            <label>Kind<select id="face-kind" data-edit-control><option value="text">Text / symbol</option><option value="icon">Built-in icon</option></select></label>
+          <p class="studio-note">Tap a face on the die map. Replace only what is printed there; the result underneath never changes.</p>
+          <div id="face-map" class="face-map" aria-label="Editable die faces"></div>
+          <input id="logical-face" type="hidden" value="20">
+          <div class="selected-face-readout" aria-live="polite">
+            <strong id="logical-face-label">Face 20</strong>
+            <span id="logical-result-label">Always rolls 20</span>
           </div>
-          <label class="studio-field">Face display<input id="face-value" data-edit-control type="text" maxlength="12" placeholder="☠, FIRE, ★, ?"></label>
-          <label class="studio-field">Face color<input id="custom-face-color" data-edit-control type="color" value="#ffffff"></label>
-          <div class="button-row"><button id="apply-face" class="btn secondary" data-edit-control type="button">Apply Face</button><button id="remove-face" class="btn ghost" data-edit-control type="button">Restore Number</button></div>
+          <label class="studio-field">Face display<input id="face-value" data-face-edit-control type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="☠"></label>
+          <p class="studio-note">Use a number, one character, or one symbol: 20, A, ★, ☠. Words and multi-character labels are not allowed.</p>
+          <label class="studio-field">Face color<input id="custom-face-color" data-face-edit-control type="color" value="#ffffff"></label>
+          <div class="button-row"><button id="apply-face" class="btn secondary" data-face-edit-control type="button">Apply Face</button><button id="remove-face" class="btn ghost" data-face-edit-control type="button">Restore Number</button></div>
         </fieldset>
         <fieldset class="studio-group">
           <legend>Tray</legend>

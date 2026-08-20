@@ -5,6 +5,7 @@ import {
   SYSTEM_DEFAULT_DICE_SET,
   cloneSystemDefaultAppearance,
 } from '../js/appearance/defaults.mjs';
+import { getFaceLayout, getSupportedFaceEditorDice } from '../js/appearance/face-layouts.mjs';
 import { createUserDiceSet } from '../js/appearance/schema.mjs';
 import { validateDiceSet } from '../js/appearance/validation.mjs';
 import {
@@ -27,6 +28,17 @@ for (const type of Object.keys(CANONICAL_DICE)) {
   assert.equal(die.faceMode, RAW_FACE_MODE);
   assert.deepEqual(die.faces, {});
 }
+
+for (const type of getSupportedFaceEditorDice()) {
+  const layout = getFaceLayout(type);
+  assert.equal(layout.length, CANONICAL_DICE[type], `${type} editor must expose every canonical face.`);
+  assert.deepEqual(
+    layout.map((face) => face.logicalFace),
+    Array.from({ length: CANONICAL_DICE[type] }, (_, index) => index + 1),
+    `${type} editor must preserve canonical face numbers.`,
+  );
+}
+assert.throws(() => getFaceLayout('d100'), Error, 'd100 requires a dedicated percentile editor.');
 
 assert.throws(() => {
   SYSTEM_DEFAULT_DICE_SET.appearance.tray.color = '#ffffff';
@@ -56,20 +68,40 @@ illegalRaw.appearance.diceSet.dice.d20.faces = { 20: { kind: 'text', value: '☠
 assert.equal(validateDiceSet(illegalRaw).ok, false, 'RAW dice cannot replace canonical labels.');
 
 let custom = replaceVisualFace(rawStyled, 'd20', 20, {
-  kind: 'icon', value: 'skull', color: '#a855f7',
+  kind: 'text', value: '☠', color: '#a855f7',
 });
 custom = replaceVisualFace(custom, 'd20', 1, {
-  kind: 'text', value: 'NO', color: '#ffffff', fontId: 'fantasy',
+  kind: 'text', value: 'A', color: '#ffffff', fontId: 'fantasy',
 });
 custom = replaceVisualFace(custom, 'd4', 1, {
   kind: 'text', value: 'ᚱ', color: '#ffffff', fontId: 'runic',
 });
 assert.equal(validateDiceSet(custom).ok, true);
+const legacyIcon = replaceVisualFace(custom, 'd6', 6, { kind: 'icon', value: 'skull', color: '#ffffff' });
+assert.equal(validateDiceSet(legacyIcon).ok, true, 'Existing built-in icon faces remain readable.');
 assert.equal(custom.appearance.diceSet.dice.d20.logicalDie, 'd20');
 assert.equal(custom.appearance.diceSet.dice.d20.shapeId, 'canonical:d20');
-assert.equal(getVisualFace(custom, 'd20', 20).value, 'skull');
+assert.equal(getVisualFace(custom, 'd20', 20).value, '☠');
 assert.equal(getVisualFace(custom, 'd20', 17).value, '17');
 assert.equal(getVisualFace(custom, 'd20', 17).canonical, true);
+
+const numericVisual = replaceVisualFace(custom, 'd20', 2, { kind: 'text', value: '20' });
+assert.equal(validateDiceSet(numericVisual).ok, true, 'Numeric visual labels may contain multiple digits.');
+const emojiVisual = replaceVisualFace(custom, 'd20', 3, { kind: 'text', value: '☠️' });
+assert.equal(validateDiceSet(emojiVisual).ok, true, 'One rendered Unicode symbol is allowed.');
+
+for (const badValue of ['CRIT', 'AB', '🔥🔥', '']) {
+  assert.throws(
+    () => replaceVisualFace(custom, 'd20', 20, { kind: 'text', value: badValue }),
+    Error,
+    `Custom face value ${JSON.stringify(badValue)} must be rejected.`,
+  );
+}
+assert.throws(
+  () => replaceVisualFace(custom, 'd20', 20, { kind: 'image', assetId: 'skull.png' }),
+  Error,
+  'Image faces are not allowed.',
+);
 
 custom = removeVisualFace(custom, 'd20', 20);
 assert.equal(getVisualFace(custom, 'd20', 20).value, '20');

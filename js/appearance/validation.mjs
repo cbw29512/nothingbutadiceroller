@@ -8,7 +8,8 @@ import {
 } from './defaults.mjs';
 
 const HEX = /^#[0-9a-f]{6}$/i;
-const FACE_KINDS = new Set(['text', 'icon', 'image']);
+const FACE_KINDS = new Set(['text', 'icon']);
+const LEGACY_ICON_IDS = new Set(['skull', 'star', 'flame', 'shield', 'heart', 'sword']);
 const FACE_MODES = new Set([RAW_FACE_MODE, CUSTOM_FACE_MODE]);
 const VISIBILITIES = new Set(['private', 'public', 'system']);
 const STYLE_OVERRIDE_KEYS = new Set(['bodyColor', 'faceColor', 'opacity', 'glow']);
@@ -37,6 +38,21 @@ function checkStyleOverrides(overrides, path, errors) {
   if (overrides.glow != null) checkGlow(overrides.glow, `${path}.glow`, errors);
 }
 
+function countGraphemes(value) {
+  const text = String(value || '').trim();
+  if (!text) return 0;
+  try {
+    return [...new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(text)].length;
+  } catch (error) {
+    console.warn('Falling back to code-point face validation:', error);
+    return Array.from(text).length;
+  }
+}
+
+function isNumericFaceValue(value) {
+  return /^-?\d+$/.test(String(value || '').trim());
+}
+
 function checkFace(face, path, errors) {
   if (!face || typeof face !== 'object') return errors.push(`${path} must be an object.`);
   if (!FACE_KINDS.has(face.kind)) errors.push(`${path}.kind is unsupported.`);
@@ -45,14 +61,16 @@ function checkFace(face, path, errors) {
     errors.push(`${path}.fontId must reference a supported font.`);
   }
   if (face.kind === 'text') {
-    const value = typeof face.value === 'string' ? face.value : '';
-    if (!value.trim() || Array.from(value).length > 12) errors.push(`${path}.value must contain 1-12 characters.`);
+    const value = typeof face.value === 'string' ? face.value.trim() : '';
+    if (!isNumericFaceValue(value) && countGraphemes(value) !== 1) {
+      errors.push(`${path}.value must be a number or one visible character/symbol.`);
+    }
   }
-  if (face.kind === 'icon' && (typeof face.value !== 'string' || !face.value || face.value.length > 80)) {
-    errors.push(`${path}.value must name a built-in icon.`);
-  }
-  if (face.kind === 'image' && (typeof face.assetId !== 'string' || !face.assetId || face.assetId.length > 160)) {
-    errors.push(`${path}.assetId must reference a stored image asset.`);
+  if (face.kind === 'icon') {
+    const value = typeof face.value === 'string' ? face.value.trim() : '';
+    if (!LEGACY_ICON_IDS.has(value) && countGraphemes(value) !== 1) {
+      errors.push(`${path}.value must be one visible symbol or a supported legacy icon.`);
+    }
   }
 }
 
@@ -62,7 +80,6 @@ function checkDie(type, sides, die, errors) {
   if (die.logicalDie !== type) errors.push(`${type} logicalDie must remain ${type}.`);
   if (!FACE_MODES.has(die.faceMode)) errors.push(`${type} faceMode must be raw or custom.`);
   checkStyleOverrides(die.styleOverrides, `appearance.diceSet.dice.${type}.styleOverrides`, errors);
-
   const faces = die.faces && typeof die.faces === 'object' ? die.faces : {};
   const faceEntries = Object.entries(faces);
   if (die.faceMode === RAW_FACE_MODE && faceEntries.length) {
@@ -85,7 +102,6 @@ function checkAppearance(appearance, errors) {
   if (!HEX.test(String(style.faceColor || ''))) errors.push('Default dice faceColor is invalid.');
   if (!Number.isFinite(style.opacity) || style.opacity < 0.25 || style.opacity > 1) errors.push('Default dice opacity must be between 0.25 and 1.');
   checkGlow(style.glow, 'appearance.diceSet.defaultStyle.glow', errors);
-
   const dice = appearance?.diceSet?.dice;
   if (!dice || typeof dice !== 'object') return errors.push('appearance.diceSet.dice is required.');
   const unsupportedDice = Object.keys(dice).filter((type) => !Object.hasOwn(CANONICAL_DICE, type));
@@ -106,7 +122,6 @@ export function validateDiceSet(set) {
     if (typeof set.systemOwned !== 'boolean') errors.push('systemOwned must be boolean.');
     if (typeof set.locked !== 'boolean') errors.push('locked must be boolean.');
     if (set.visibility === 'public' && !set.locked) errors.push('Public dice sets must be locked.');
-
     if (set.systemOwned) {
       if (set.id !== SYSTEM_DEFAULT_DICE_SET_ID) errors.push('System dice set id is invalid.');
       if (set.ownerId !== null) errors.push('System dice set cannot have an owner.');
