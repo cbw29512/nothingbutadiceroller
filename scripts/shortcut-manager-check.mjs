@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { createFlexManagerSlot } from '../js/shortcuts/manager-flex-state.mjs';
 import { MAX_SHORTCUT_PHYSICAL_DICE, variantPhysicalDiceBudget } from '../js/shortcuts/dice-budget.mjs';
 import {
-  createRawManagerSlot, moveShortcutSlot, removeShortcutSlot, updateManagerOptions,
+  createRawManagerSlot, duplicateFlexShortcutSlot, moveShortcutSlot, removeShortcutSlot, updateManagerOptions,
 } from '../js/shortcuts/manager-state.mjs';
 import { getRawSpell } from '../js/shortcuts/raw/index.mjs';
 
@@ -54,6 +54,12 @@ assert.equal(removed.length, 2);
 assert.equal(removed.some((slot) => slot.id === fireballSlot.id), false);
 const removeAll = removed.reduce((slots, slot) => removeShortcutSlot(slots, slot.id), removed);
 assert.deepEqual(removeAll, []);
+const duplicated = duplicateFlexShortcutSlot([flexSlot], flexSlot.id);
+assert.equal(duplicated.length, 2);
+assert.equal(duplicated[1].source, 'flex');
+assert.equal(duplicated[1].definition.name, 'Flaming Greatsword Copy');
+assert.notEqual(duplicated[1].id, flexSlot.id);
+assert.throws(() => duplicateFlexShortcutSlot([fireballSlot], fireballSlot.id), /Only custom shortcuts/);
 
 const customOptions = updateManagerOptions(
   { criticalMode: 'raw', preferredRuleset: 'dnd5e-2024' },
@@ -88,12 +94,13 @@ const runtime = await readFile(new URL('../js/shortcuts/runtime.js', import.meta
 const buildSource = await readFile(new URL('./build.mjs', import.meta.url), 'utf8');
 for (const required of [
   'id="manager-toolbar"', 'data-tab="2024"', 'data-tab="2014"', 'data-tab="homebrew"',
-  'data-tab="options"', 'id="critical-mode"', '<option value="raw">RAW</option>',
-  '<option value="custom">Custom</option>', 'id="preferred-ruleset"', 'id="add-homebrew-group"',
+  'data-tab="options"', 'id="preferred-ruleset"', 'id="add-homebrew-group"',
   'id="save-workspace"',
   '<summary>How to use shortcuts</summary>', 'Damage-only examples are locked', 'id="homebrew-dice-budget"',
   'Build Your Own Shortcut', 'Attack: 1d20 + 7', 'Add Custom Shortcut to Toolbar',
+  'id="validate-homebrew"', 'id="duplicate-shortcut"', 'id="reset-shortcuts"',
 ]) assert.ok(html.includes(required), `Manager HTML contract missing: ${required}`);
+assert.equal(html.includes('<option value="custom">Custom</option>'), false, 'Undefined Custom Critical option must stay hidden.');
 for (const label of ['Group name', 'Roll type', 'Number of dice', 'Die type', 'Bonus / Modifier', 'Attacks / Targets']) {
   assert.ok(managerModules.some((source) => source.includes(label)), `Homebrew field label missing: ${label}`);
 }
@@ -102,7 +109,6 @@ assert.ok(
   html.indexOf('data-tab="2014"') < html.indexOf('data-tab="2024"'),
   '2014 RAW must appear before 2024 RAW in the manager tabs.',
 );
-assert.ok(html.includes('safely falls back to RAW critical dice'));
 for (const required of ['renderShortcutToolbar(', 'createRawManagerSlot(', 'createFlexManagerSlot(', 'saveShortcutWorkspace(']) {
   assert.ok(managerSource.includes(required), `Manager behavior missing after modular split: ${required}`);
 }

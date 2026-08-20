@@ -1,7 +1,7 @@
 import { MAX_SHORTCUTS } from './constants.mjs';
 import { managerContext, canEdit, slotName } from './manager-context.mjs';
 import { markDirty, setStatus } from './manager-ui.mjs';
-import { moveShortcutSlot, removeShortcutSlot } from './manager-state.mjs';
+import { duplicateFlexShortcutSlot, moveShortcutSlot, removeShortcutSlot } from './manager-state.mjs';
 import { renderShortcutToolbar } from './toolbar.mjs';
 
 export function renderOrganizer() {
@@ -38,10 +38,14 @@ export function renderOrganizer() {
   const left = document.getElementById('move-shortcut-left');
   const right = document.getElementById('move-shortcut-right');
   const remove = document.getElementById('remove-shortcut');
-  if (name) name.textContent = selected ? slotName(selected) : 'Select a shortcut to manage it.';
+  const duplicate = document.getElementById('duplicate-shortcut');
+  if (name) name.textContent = selected
+    ? `${selected.source === 'flex' ? 'CUSTOM' : selected.ruleset.endsWith('2014') ? 'RAW 2014' : 'RAW 2024'} • ${slotName(selected)}`
+    : 'Select a shortcut to manage it.';
   if (left) left.disabled = !selected || index <= 0 || !canEdit();
   if (right) right.disabled = !selected || index < 0 || index >= managerContext.shortcuts.length - 1 || !canEdit();
   if (remove) remove.disabled = !selected || !canEdit();
+  if (duplicate) duplicate.disabled = !selected || selected.source !== 'flex' || !canEdit();
 }
 
 export function bindOrganizerEvents(onChanged) {
@@ -78,4 +82,19 @@ export function bindOrganizerEvents(onChanged) {
       setStatus(error.message || 'Unable to remove shortcut.', 'error');
     }
   });
+  document.getElementById('duplicate-shortcut')?.addEventListener('click', () => {
+    try {
+      const before = managerContext.shortcuts.length;
+      managerContext.shortcuts = duplicateFlexShortcutSlot(managerContext.shortcuts, managerContext.selectedSlotId);
+      const copy = managerContext.shortcuts[before];
+      managerContext.selectedSlotId = copy.id;
+      markDirty();
+      onChanged();
+      setStatus(`${slotName(copy)} duplicated. Save Changes to keep it.`, 'ready');
+    } catch (error) {
+      console.error('Failed to duplicate shortcut:', error);
+      setStatus(error.message || 'Unable to duplicate shortcut.', 'error');
+    }
+  });
 }
+

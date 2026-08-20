@@ -28,16 +28,6 @@ function bindTabsAndOptions() {
       renderTabs();
     });
   });
-  document.getElementById('critical-mode')?.addEventListener('change', (event) => {
-    try {
-      managerContext.options = updateManagerOptions(managerContext.options, { criticalMode: event.target.value });
-      markDirty();
-      renderOptions();
-    } catch (error) {
-      console.error('Failed to update critical mode:', error);
-      setStatus(error.message || 'Unable to update critical mode.', 'error');
-    }
-  });
   document.getElementById('preferred-ruleset')?.addEventListener('change', (event) => {
     try {
       managerContext.options = updateManagerOptions(managerContext.options, { preferredRuleset: event.target.value });
@@ -47,6 +37,22 @@ function bindTabsAndOptions() {
       console.error('Failed to update preferred ruleset:', error);
       setStatus(error.message || 'Unable to update ruleset preference.', 'error');
     }
+  });
+  let resetArmed = false;
+  document.getElementById('reset-shortcuts')?.addEventListener('click', (event) => {
+    if (!resetArmed) {
+      resetArmed = true;
+      event.currentTarget.textContent = 'Confirm Reset';
+      setStatus('Press Confirm Reset to remove every shortcut. Nothing is saved yet.', 'error');
+      return;
+    }
+    managerContext.shortcuts = [];
+    managerContext.selectedSlotId = null;
+    resetArmed = false;
+    event.currentTarget.textContent = 'Reset Shortcuts';
+    markDirty();
+    renderAll();
+    setStatus('All shortcuts removed. Save Changes to keep the reset.', 'ready');
   });
 }
 
@@ -86,3 +92,4 @@ if (document.readyState === 'loading') {
 } else {
   boot();
 }
+

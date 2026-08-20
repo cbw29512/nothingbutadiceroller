@@ -20,6 +20,16 @@ function renderDiceBudget() {
   if (save) save.disabled = over;
 }
 
+function readableFormula(groups) {
+  return groups.map((group) => {
+    const dice = group.terms.map((term) => `${term.count}d${term.sides}`).join(' + ');
+    const modifier = group.modifier ? ` ${group.modifier > 0 ? '+' : '−'} ${Math.abs(group.modifier)}` : '';
+    const type = group.damageType ? ` ${group.damageType}` : '';
+    const repeat = group.repeat > 1 ? ` × ${group.repeat} attacks/targets` : '';
+    return `${group.label}: ${dice}${modifier}${type}${repeat}`;
+  }).join(' AND ');
+}
+
 export function renderHomebrewPreview() {
   renderDiceBudget();
   const host = document.getElementById('homebrew-preview');
@@ -51,6 +61,24 @@ export function renderHomebrew() {
 }
 
 export function bindHomebrewEvents(onChanged) {
+  document.getElementById('validate-homebrew')?.addEventListener('click', () => {
+    const host = document.getElementById('homebrew-validation');
+    try {
+      const slot = createFlexManagerSlot([], homebrewPayload());
+      const formula = readableFormula(slot.definition.variants[0].groups);
+      if (host) {
+        host.textContent = `Valid shortcut: ${formula}`;
+        host.className = 'status-line ready';
+      }
+      setStatus('Shortcut formula is valid and within the physical dice limit.', 'ready');
+    } catch (error) {
+      if (host) {
+        host.textContent = error.message || 'Shortcut validation failed.';
+        host.className = 'manager-warning';
+      }
+      setStatus(error.message || 'Shortcut validation failed.', 'error');
+    }
+  });
   document.getElementById('add-homebrew-group')?.addEventListener('click', () => {
     try {
       if (managerContext.builderGroups.length >= 16) {
