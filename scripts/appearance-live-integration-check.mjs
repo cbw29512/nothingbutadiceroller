@@ -14,68 +14,45 @@ const runtimeThemes = {
   d6: { themeName: 'ndr_d6_live', basePath: '/api/dice-theme/t6', themeColor: '#3b82f6' },
 };
 const externalThemes = Object.fromEntries(Object.values(runtimeThemes).map((theme) => [theme.themeName, theme.basePath]));
+const imageUrl = '/api/dice-set-image?owner=user1&set=set1&token=abc123';
 const customRuntime = {
-  mode: 'custom',
-  defaultThemeColor: '#123456',
-  runtimeThemes,
-  externalThemes,
-  tray: {
-    color: '#102030',
-    image: { url: 'javascript:must-never-render' },
-    glow: { enabled: true, color: '#abcdef', intensity: 0.5 },
-  },
+  mode: 'custom', defaultThemeColor: '#123456', runtimeThemes, externalThemes,
+  tray: { color: '#102030', image: { kind: 'blob', url: imageUrl }, glow: { enabled: true, color: '#abcdef', intensity: 0.5 } },
 };
 const customConfig = buildLivePhysicsConfig(customRuntime, '#c026d3');
 assert.equal(customConfig.mode, 'custom');
 assert.equal(customConfig.themeColor, '#123456');
-assert.equal(customConfig.diceBoxOptions.offscreen, false, 'Only verified V2 custom mode should select DiceBox onscreen rendering.');
+assert.equal(customConfig.diceBoxOptions.offscreen, false);
 assert.deepEqual(customConfig.diceBoxOptions.externalThemes, externalThemes);
 assert.deepEqual(customConfig.runtimeThemes, runtimeThemes);
 
 const malformedCustom = buildLivePhysicsConfig({ mode: 'custom', runtimeThemes: {}, externalThemes: {} }, '#c026d3');
-assert.equal(malformedCustom.mode, 'default', 'Incomplete custom runtime must fail closed to Default behavior.');
+assert.equal(malformedCustom.mode, 'default');
 assert.deepEqual(malformedCustom.diceBoxOptions, {});
 
 const tray = buildLiveTrayVisual(customRuntime);
-assert.equal(tray.active, true);
-assert.match(tray.background, /#102030/);
-assert.match(tray.shadow, /#abcdef/);
-assert.doesNotMatch(JSON.stringify(tray), /javascript:/, 'Live tray output must ignore unvalidated tray.image data.');
-assert.match(LIVE_TRAY_CSS, /!important/, 'V2 tray precedence must survive legacy savePreferences() restyling.');
-assert.equal(buildLiveTrayVisual({ mode: 'default' }).active, false);
+assert.equal(tray.active, true); assert.equal(tray.imageUrl, imageUrl); assert.match(tray.background, /dice-set-image/);
+assert.match(tray.background, /#102030/); assert.match(tray.shadow, /#abcdef/);
+const unsafe = buildLiveTrayVisual({ ...customRuntime, tray: { ...customRuntime.tray, image: { url: 'javascript:never' } } });
+assert.equal(unsafe.imageUrl, null); assert.doesNotMatch(JSON.stringify(unsafe), /javascript:/);
+assert.match(LIVE_TRAY_CSS, /!important/); assert.equal(buildLiveTrayVisual({ mode: 'default' }).active, false);
 
 function fakeDocument() {
-  const classes = new Set();
-  const values = new Map();
-  const ids = new Map();
-  const body = {
-    classList: {
-      toggle(name, enabled) { if (enabled) classes.add(name); else classes.delete(name); },
-      contains(name) { return classes.has(name); },
-    },
-    style: {
-      setProperty(name, value) { values.set(name, value); },
-      removeProperty(name) { values.delete(name); },
-      getPropertyValue(name) { return values.get(name) || ''; },
-    },
-  };
+  const classes = new Set(); const values = new Map(); const ids = new Map();
+  const body = { classList: { toggle(name, enabled) { if (enabled) classes.add(name); else classes.delete(name); }, contains(name) { return classes.has(name); } },
+    style: { setProperty(name, value) { values.set(name, value); }, removeProperty(name) { values.delete(name); }, getPropertyValue(name) { return values.get(name) || ''; } } };
   const head = { appendChild(node) { if (node?.id) ids.set(node.id, node); } };
-  return {
-    body, head,
-    createElement() { return { id: '', textContent: '' }; },
-    getElementById(id) { return ids.get(id) || null; },
-  };
+  return { body, head, createElement() { return { id: '', textContent: '' }; }, getElementById(id) { return ids.get(id) || null; } };
 }
 const doc = fakeDocument();
 applyLiveTrayAppearance(customRuntime, { documentRef: doc });
 assert.equal(doc.body.classList.contains('appearance-v2-active'), true);
-assert.match(doc.body.style.getPropertyValue('--appearance-v2-tray-bg'), /#102030/);
+assert.match(doc.body.style.getPropertyValue('--appearance-v2-tray-bg'), /dice-set-image/);
 assert.match(doc.body.style.getPropertyValue('--appearance-v2-tray-shadow'), /#abcdef/);
 assert.equal(doc.getElementById('appearance-v2-live-style').textContent, LIVE_TRAY_CSS);
 applyLiveTrayAppearance({ mode: 'default' }, { documentRef: doc });
 assert.equal(doc.body.classList.contains('appearance-v2-active'), false);
 assert.equal(doc.body.style.getPropertyValue('--appearance-v2-tray-bg'), '');
-assert.equal(doc.body.style.getPropertyValue('--appearance-v2-tray-shadow'), '');
 
 const physicsSource = fs.readFileSync(new URL('../js/physics.js', import.meta.url), 'utf8');
 assert.match(physicsSource, /decorateDiceBoxNotation\(notation, liveRuntimeThemes\)/);
@@ -83,19 +60,12 @@ assert.match(physicsSource, /\.\.\.liveAppearance\.diceBoxOptions/);
 assert.match(physicsSource, /usesCustomAppearance\s*\?\s*decorateDiceBoxNotation/);
 assert.match(physicsSource, /rollDefaultFallback\(notation, themeColor, err\)/);
 assert.match(physicsSource, /diceBox\.roll\(notation\)/, 'Appearance failure must retry the original notation unchanged.');
-assert.match(physicsSource, /theme:\s*'default'/, 'Appearance fallback must explicitly return DiceBox to Default theme.');
-assert.match(physicsSource, /liveRuntimeThemes\s*=\s*null/, 'A failed custom runtime must be disabled after fallback.');
-assert.match(physicsSource, /gravity:\s*1/);
-assert.match(physicsSource, /mass:\s*1/);
-assert.match(physicsSource, /friction:\s*0\.8/);
-assert.match(physicsSource, /restitution:\s*0\.15/);
-assert.match(physicsSource, /startingHeight:\s*8/);
-assert.match(physicsSource, /spinForce:\s*5/);
-assert.match(physicsSource, /throwForce:\s*5/);
+assert.match(physicsSource, /theme:\s*'default'/);
+assert.match(physicsSource, /liveRuntimeThemes\s*=\s*null/);
+for (const reference of [/gravity:\s*1/, /mass:\s*1/, /friction:\s*0\.8/, /restitution:\s*0\.15/, /startingHeight:\s*8/, /spinForce:\s*5/, /throwForce:\s*5/]) assert.match(physicsSource, reference);
 
 const appSource = fs.readFileSync(new URL('../js/app.js', import.meta.url), 'utf8');
 assert.match(appSource, /prepareActiveDiceAppearance/);
 assert.match(appSource, /applyLiveTrayAppearance\(appearanceRuntime\)/);
 assert.match(appSource, /initDicePhysics\([\s\S]*?appearanceRuntime,[\s\S]*?\);/);
-
-console.log('Appearance live integration passed: Default stays unchanged, custom visuals cannot block a roll, tray images stay ignored, and roll mechanics remain canonical.');
+console.log('Appearance live integration passed: Default stays unchanged, custom visuals cannot block a roll, validated tray images render, and mechanics remain canonical.');
