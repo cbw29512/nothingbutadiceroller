@@ -1,5 +1,7 @@
 export const MAX_FACE_NUMBER_CHARACTERS = 16;
+export const MAX_FACE_LABEL_GRAPHEMES = 12;
 const FACE_NUMBER = /^[+-]?(?:\d+(?:\.\d+)?|\.\d+)$/;
+const CONTROL_OR_LINEBREAK = /[\u0000-\u001f\u007f\r\n]/;
 
 export function countFaceDisplayGraphemes(value) {
   const text = String(value ?? '').trim();
@@ -14,7 +16,8 @@ export function countFaceDisplayGraphemes(value) {
 
 export function isValidFaceDisplayValue(value) {
   const text = String(value ?? '').trim();
-  if (!text) return false;
+  if (!text || CONTROL_OR_LINEBREAK.test(text)) return false;
   if (text.length <= MAX_FACE_NUMBER_CHARACTERS && FACE_NUMBER.test(text)) return true;
-  return countFaceDisplayGraphemes(text) === 1;
+  const graphemes = countFaceDisplayGraphemes(text);
+  return graphemes >= 1 && graphemes <= MAX_FACE_LABEL_GRAPHEMES;
 }
