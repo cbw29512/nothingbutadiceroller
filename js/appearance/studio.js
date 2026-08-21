@@ -16,6 +16,7 @@ const browserOwnerId = getOrCreateLocalOwnerId();
 const browserSavedSets = loadSavedDiceSets(localStorage, browserOwnerId);
 let ownerId = browserOwnerId;
 let cloudEnabled = false;
+let cloudUnavailable = false;
 let savedSets = [...browserSavedSets];
 let importableBrowserSets = [];
 let communitySets = [];
@@ -39,7 +40,7 @@ function selectSet(set, { force = false } = {}) {
 function refresh() {
   renderLibrary([SYSTEM_DEFAULT_DICE_SET, ...savedSets], selectedId, selectSet);
   renderCommunity(communitySets, selectedId, selectSet); renderPreview(draft, selectedDie);
-  fillEditor(draft, selectedDie, activeId, ownerId, cloudEnabled); renderStorageMode(cloudEnabled, importableBrowserSets.length);
+  fillEditor(draft, selectedDie, activeId, ownerId, cloudEnabled); renderStorageMode(cloudEnabled, importableBrowserSets.length, cloudUnavailable);
 }
 function replaceSaved(set) {
   const index = savedSets.findIndex((item) => item.id === set.id);
@@ -136,11 +137,13 @@ function bind() {
 async function initialize() {
   try {
     const [cloud, community] = await Promise.all([loadCloudDiceSets(), loadCommunityDiceSets()]); communitySets = community;
+    cloudUnavailable = Boolean(cloud.error);
     if (cloud.authenticated && cloud.userId) {
       cloudEnabled = true; ownerId = cloud.userId; savedSets = cloud.sets; importableBrowserSets = getImportableBrowserSets(browserSavedSets, savedSets);
     }
     const active = findSet(activeId) || getActiveDiceSetSnapshot() || SYSTEM_DEFAULT_DICE_SET;
-    selectedId = active.id; draft = cloneDiceSet(active); draftGuard.markClean(); bind(); refresh(); setStatus('Dice Studio ready.', 'ready');
+    selectedId = active.id; draft = cloneDiceSet(active); draftGuard.markClean(); bind(); refresh();
+    setStatus(cloudUnavailable ? 'Cloud storage is unavailable. Browser-only mode is active; cloud sets are not shown.' : 'Dice Studio ready.', cloudUnavailable ? 'error' : 'ready');
   } catch (error) {
     console.error('Dice Studio initialization failed:', error); setStatus('Studio failed to initialize.', 'error');
   }

@@ -17,12 +17,16 @@ function makeSetCard(set, selectedId, onSelect, subtitle) {
   button.querySelector('strong').textContent = set.name; button.querySelector('span').textContent = subtitle;
   button.addEventListener('click', () => onSelect(set)); return button;
 }
-export function renderStorageMode(cloudEnabled, importableCount = 0) {
+export function renderStorageMode(cloudEnabled, importableCount = 0, cloudUnavailable = false) {
   try {
     const status = q('storage-mode'); const button = q('import-browser-sets');
     if (!status || !button) return;
-    button.hidden = !cloudEnabled || importableCount === 0;
+    button.hidden = cloudUnavailable || !cloudEnabled || importableCount === 0;
     button.textContent = `Import ${importableCount} Browser Set${importableCount === 1 ? '' : 's'}`;
+    if (cloudUnavailable) {
+      status.textContent = 'Cloud unavailable • browser-only mode; cloud sets are not shown';
+      return;
+    }
     status.textContent = cloudEnabled
       ? (importableCount ? `Signed in • ${importableCount} browser set${importableCount === 1 ? '' : 's'} ready to import` : 'Signed in • sets sync to your account')
       : 'Guest • sets stay in this browser';
