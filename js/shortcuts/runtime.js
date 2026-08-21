@@ -179,10 +179,6 @@ function activeCompiled() {
   return compileSlot(active.slot, active.variantId);
 }
 
-function hasShortcutResultKind(execution, kind) {
-  return execution.result.groups.some((group) => group.kind === kind);
-}
-
 function formatInstanceRoll(instance, resolved) {
   const values = (resolved?.dice || []).flatMap((die) => die.values.map((value) => `d${die.sides} ${value}`));
   const rollText = values.join(' + ');
@@ -202,14 +198,14 @@ function formatShortcutResult(execution) {
       parts.push(`${group.label.toUpperCase()}${suffix}${damageType}: ${formatInstanceRoll(instance, resolvedById.get(instance.id))}`);
     });
   }
-  if (hasShortcutResultKind(execution, 'damage')) parts.push(`TOTAL DAMAGE = ${execution.result.damageTotal}`);
-  if (hasShortcutResultKind(execution, 'healing')) parts.push(`TOTAL HEALING = ${execution.result.healingTotal}`);
+  if (execution.result.damageTotal) parts.push(`TOTAL DAMAGE = ${execution.result.damageTotal}`);
+  if (execution.result.healingTotal) parts.push(`TOTAL HEALING = ${execution.result.healingTotal}`);
   return parts.join(' | ');
 }
 
 function shortcutDisplayTotal(execution) {
-  if (hasShortcutResultKind(execution, 'damage')) return execution.result.damageTotal;
-  if (hasShortcutResultKind(execution, 'healing')) return execution.result.healingTotal;
+  if (execution.result.damageTotal) return execution.result.damageTotal;
+  if (execution.result.healingTotal) return execution.result.healingTotal;
   return '—';
 }
 
@@ -224,9 +220,9 @@ function saveShortcutHistory(execution, breakdown) {
     time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
     formula: historyFormula(),
     breakdown,
-    total: hasShortcutResultKind(execution, 'damage')
+    total: execution.result.damageTotal
       ? `Damage ${execution.result.damageTotal}`
-      : hasShortcutResultKind(execution, 'healing')
+      : execution.result.healingTotal
         ? `Healing ${execution.result.healingTotal}`
         : 'Grouped',
   });
@@ -376,7 +372,7 @@ function bindGear() {
   document.getElementById('mobile-shortcut-settings-btn')?.addEventListener('click', openManager);
 }
 
-export function syncShortcutRuntimeURI() {
+export function syncShortcutRuntimeUI() {
   setGearState();
   if (active) setRollLabels();
 }
