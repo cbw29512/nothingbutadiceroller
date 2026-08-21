@@ -1,6 +1,9 @@
 name: Appearance V2 Validation
 
 on:
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
@@ -11,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Checkout feature branch
+      - name: Checkout PR head
         uses: actions/checkout@v4
       - name: Use Node 22
         uses: actions/setup-node@v4
