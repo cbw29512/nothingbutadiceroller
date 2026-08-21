@@ -16,7 +16,10 @@ export default async (request) => {
     const store = getStore(STORE_NAME);
     const record = await store.get(recordKey(ownerId, setId), { type: 'json' }).catch(() => null);
     if (!record?.trayImageKey) return new Response('Image not found', { status: 404 });
-    const hasCapability = Boolean(record.trayImageAccessToken) && token === record.trayImageAccessToken;
+    const publicLocked = record.set?.visibility === 'public' && record.set?.locked;
+    const hasCapability = publicLocked
+      && Boolean(record.trayImageAccessToken)
+      && token === record.trayImageAccessToken;
     if (!hasCapability) {
       const user = await getUser();
       if (!user || user.id !== ownerId) return new Response('Unauthorized', { status: 401 });
@@ -26,7 +29,7 @@ export default async (request) => {
     return new Response(entry.data, {
       headers: {
         'Content-Type': entry.metadata?.contentType || 'image/png',
-        'Cache-Control': record.set?.visibility === 'public' && record.set?.locked ? 'public, max-age=86400' : 'private, max-age=3600',
+        'Cache-Control': publicLocked ? 'public, max-age=86400' : 'private, max-age=3600',
         'X-Content-Type-Options': 'nosniff',
       },
     });
