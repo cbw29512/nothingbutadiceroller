@@ -31,12 +31,14 @@ assert.equal(serialized.includes('internal_user_123'), false);
 assert.equal(serialized.includes('private@example.com'), false);
 assert.equal(validateTrayImage({ kind: 'legacy', url: projected.imageUrl }).ok, true);
 
-const [configs, shortcuts, saveTheme, themes, themeImage] = await Promise.all([
+const [configs, shortcuts, saveTheme, themes, themeImage, authApi, netlifyConfig] = await Promise.all([
   read('netlify/functions/configurations.mjs'),
   read('netlify/functions/shortcuts.mjs'),
   read('netlify/functions/save-theme.mjs'),
   read('netlify/functions/themes.mjs'),
   read('netlify/functions/theme-image.mjs'),
+  read('netlify/functions/auth.mjs'),
+  read('netlify.toml'),
 ]);
 for (const source of [configs, themes, themeImage]) {
   assert.match(source, /context/, 'Scoped APIs must receive Netlify function context.');
@@ -56,5 +58,14 @@ assert.match(themeImage, /searchParams\.get\('public'\)/);
 assert.match(themeImage, /theme\.isPublic/);
 assert.match(themeImage, /'Cache-Control': 'no-store'/);
 assert.doesNotMatch(themeImage, /max-age/);
+assert.match(authApi, /legacy-auth-retired/);
+assert.match(authApi, /410/);
+assert.doesNotMatch(authApi, /login\(|signup\(|confirmEmail|recoverPassword|password/);
+for (const required of [
+  'X-Content-Type-Options = "nosniff"',
+  'Referrer-Policy = "strict-origin-when-cross-origin"',
+  'Permissions-Policy = "camera=(), microphone=(), geolocation=()"',
+  'Content-Security-Policy = "object-src \'none\'; base-uri \'self\'"',
+]) assert.ok(netlifyConfig.includes(required), `Missing static security header: ${required}`);
 
-console.log('Storage isolation passed: previews cannot use production configuration/shortcut/legacy-theme stores, legacy writes are retired, public legacy output is opaque, and old image capabilities are public-only/no-store.');
+console.log('Release storage/surface checks passed: previews are isolated, retired legacy writers/auth cannot handle credentials, public legacy output is opaque/no-store, and safe static security headers are enforced.');
