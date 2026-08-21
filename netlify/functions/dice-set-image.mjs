@@ -1,9 +1,5 @@
-import { getStore } from '@netlify/blobs';
 import { getUser } from '@netlify/identity';
-
-const STORE_NAME = 'dice-trays-store';
-function keyPart(value) { return encodeURIComponent(String(value)); }
-function recordKey(ownerId, setId) { return `users/${keyPart(ownerId)}/dice-sets/${keyPart(setId)}.json`; }
+import { openDiceSetStore, recordKey } from './dice-set-store.mjs';
 
 export default async (request) => {
   try {
@@ -14,7 +10,7 @@ export default async (request) => {
     const token = String(url.searchParams.get('token') || '');
     if (!ownerId || !setId) return new Response('Missing dice set', { status: 400 });
 
-    const store = getStore(STORE_NAME);
+    const store = openDiceSetStore();
     const record = await store.get(recordKey(ownerId, setId), { type: 'json' }).catch(() => null);
     if (!record?.trayImageKey) return new Response('Image not found', { status: 404 });
     const publicLocked = record.set?.visibility === 'public' && record.set?.locked;

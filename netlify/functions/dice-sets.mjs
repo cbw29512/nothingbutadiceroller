@@ -1,41 +1,51 @@
-import { getStore } from '@netlify/blobs';
 import { getUser } from '@netlify/identity';
+import {
+  LEGACY_COMMUNITY_INDEX, listPublicRecords, listUserRecords, openDiceSetStore,
+  publicRecordKey, recordKey, toPublicRecord,
+} from './dice-set-store.mjs';
 
-const STORE_NAME = 'dice-trays-store';
-const COMMUNITY_INDEX = 'community/dice-sets/index.json';
 function json(body, status = 200) { return Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } }); }
-function keyPart(value) { return encodeURIComponent(String(value)); }
-function recordKey(userId, setId) { return `users/${keyPart(userId)}/dice-sets/${keyPart(setId)}.json`; }
-function indexKey(userId) { return `users/${keyPart(userId)}/dice-sets/index.json`; }
-function publicCreator(value) {
-  const text = String(value || '').trim();
-  return text && !text.includes('@') ? text : 'Adventurer';
-}
-function toPublicRecord(record) {
-  return {
-    set: record?.set || null,
-    creator: publicCreator(record?.creator),
-    createdAt: record?.createdAt || null,
-    updatedAt: record?.updatedAt || null,
-  };
-}
 async function readArray(store, key) {
   const value = await store.get(key, { type: 'json' }).catch(() => []);
   return Array.isArray(value) ? value : [];
 }
+async function loadLegacyCommunityRecords(store) {
+  try {
+    const index = await readArray(store, LEGACY_COMMUNITY_INDEX);
+    return (await Promise.all(index.map((item) => store.get(recordKey(item.ownerId, item.setId), { type: 'json' }).catch(() => null))))
+      .filter((record) => record?.set?.locked && record?.set?.visibility === 'public')
+      .map(toPublicRecord);
+  } catch (error) {
+    console.error('Failed to load legacy community dice-set records:', error);
+    return [];
+  }
+}
+function mergeCommunityRecords(legacy, current) {
+  try {
+    const records = new Map();
+    for (const record of [...legacy, ...current]) {
+      if (!record?.set?.locked || record?.set?.visibility !== 'public') continue;
+      const key = JSON.stringify([record.set.ownerId, record.set.id]);
+      records.set(key, toPublicRecord(record));
+    }
+    return [...records.values()]
+      .sort((a, b) => Date.parse(b.updatedAt || 0) - Date.parse(a.updatedAt || 0))
+      .slice(0, 500);
+  } catch (error) {
+    console.error('Failed to merge community dice-set records:', error);
+    return [];
+  }
+}
 
 export default async (request) => {
   try {
-    const store = getStore(STORE_NAME);
+    const store = openDiceSetStore();
     const url = new URL(request.url);
     const scope = url.searchParams.get('scope') || 'mine';
     const user = await getUser();
     if (request.method === 'GET' && scope === 'community') {
-      const index = await readArray(store, COMMUNITY_INDEX);
-      const records = (await Promise.all(index.map((item) => store.get(recordKey(item.ownerId, item.setId), { type: 'json' }).catch(() => null))))
-        .filter((record) => record?.set?.locked && record?.set?.visibility === 'public')
-        .map(toPublicRecord);
-      return json({ records });
+      const [current, legacy] = await Promise.all([listPublicRecords(store), loadLegacyCommunityRecords(store)]);
+      return json({ records: mergeCommunityRecords(legacy, current) });
     }
     if (!user) return json({ error: 'Authentication required.' }, 401);
     if (request.method === 'GET') {
@@ -48,10 +58,7 @@ export default async (request) => {
         if (ownerId !== user.id && !publicLocked) return json({ error: 'Dice set is private.' }, 403);
         return json({ record: ownerId === user.id ? record : toPublicRecord(record), userId: user.id });
       }
-      const index = await readArray(store, indexKey(user.id));
-      const records = (await Promise.all(index.map((item) => store.get(recordKey(user.id, item.setId), { type: 'json' }).catch(() => null))))
-        .filter(Boolean);
-      return json({ records, userId: user.id });
+      return json({ records: await listUserRecords(store, user.id), userId: user.id });
     }
     if (request.method === 'DELETE') {
       const setId = url.searchParams.get('id');
@@ -59,12 +66,9 @@ export default async (request) => {
       const key = recordKey(user.id, setId);
       const existing = await store.get(key, { type: 'json' }).catch(() => null);
       if (!existing) return json({ error: 'Dice set not found.' }, 404);
-      if (existing.trayImageKey) await store.delete(existing.trayImageKey).catch((error) => console.warn('Tray image cleanup failed:', error));
+      await store.delete(publicRecordKey(user.id, setId));
+      if (existing.trayImageKey) await store.delete(existing.trayImageKey);
       await store.delete(key);
-      const mine = await readArray(store, indexKey(user.id));
-      await store.setJSON(indexKey(user.id), mine.filter((item) => item.setId !== setId));
-      const community = await readArray(store, COMMUNITY_INDEX);
-      await store.setJSON(COMMUNITY_INDEX, community.filter((item) => !(item.ownerId === user.id && item.setId === setId)));
       return json({ success: true });
     }
     return json({ error: 'Method Not Allowed' }, 405);

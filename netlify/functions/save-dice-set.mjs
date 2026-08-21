@@ -1,22 +1,12 @@
 import { randomUUID } from 'node:crypto';
-import { getStore } from '@netlify/blobs';
 import { getUser } from '@netlify/identity';
 import { RegExpMatcher, englishDataset, englishRecommendedTransformers } from 'obscenity';
 import { assertLockedUpdateAllowed, collectModerationText, prepareCloudDiceSet } from '../../js/appearance/cloud-rules.mjs';
 import { extractTrayImageDataUrl, MAX_TRAY_IMAGE_BYTES } from '../../js/appearance/tray-image.mjs';
+import { imageKey, openDiceSetStore, publicRecordKey, recordKey, toPublicRecord } from './dice-set-store.mjs';
 
-const STORE_NAME = 'dice-trays-store';
-const COMMUNITY_INDEX = 'community/dice-sets/index.json';
 const matcher = new RegExpMatcher({ ...englishDataset.build(), ...englishRecommendedTransformers });
 function json(body, status = 200) { return Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } }); }
-function keyPart(value) { return encodeURIComponent(String(value)); }
-function recordKey(userId, setId) { return `users/${keyPart(userId)}/dice-sets/${keyPart(setId)}.json`; }
-function indexKey(userId) { return `users/${keyPart(userId)}/dice-sets/index.json`; }
-function imageKey(userId, setId) { return `users/${keyPart(userId)}/dice-sets/${keyPart(setId)}_tray`; }
-async function readArray(store, key) {
-  const value = await store.get(key, { type: 'json' }).catch(() => []);
-  return Array.isArray(value) ? value : [];
-}
 function parseImage(dataUrl) {
   if (!dataUrl) return null;
   const match = dataUrl.match(/^data:(image\/(?:png|jpeg|webp));base64,(.+)$/i);
@@ -35,7 +25,7 @@ export default async (request) => {
     const rawSet = structuredClone(body?.set || {});
     const incomingImage = rawSet?.appearance?.tray?.image ?? null;
     const incomingDataUrl = extractTrayImageDataUrl(incomingImage);
-    const store = getStore(STORE_NAME);
+    const store = openDiceSetStore();
     const key = recordKey(user.id, rawSet.id);
     const existing = await store.get(key, { type: 'json' }).catch(() => null);
     if (existing?.set?.locked && incomingDataUrl) throw new Error('Unlock the dice set before changing its tray image.');
@@ -58,7 +48,7 @@ export default async (request) => {
       };
       set = prepareCloudDiceSet(set, user.id);
     } else if (incomingImage == null && trayImageKey) {
-      await store.delete(trayImageKey).catch((error) => console.warn('Tray image cleanup failed:', error));
+      await store.delete(trayImageKey);
       trayImageKey = null; trayImageAccessToken = null;
       set.appearance.tray.image = null;
     }
@@ -71,15 +61,11 @@ export default async (request) => {
       createdAt: existing?.createdAt || now,
       updatedAt: now,
     };
+    const publicKey = publicRecordKey(user.id, set.id);
+    const publicLocked = set.visibility === 'public' && set.locked;
+    if (!publicLocked) await store.delete(publicKey);
     await store.setJSON(key, record);
-    const mine = await readArray(store, indexKey(user.id));
-    const mineNext = mine.filter((item) => item.setId !== set.id);
-    mineNext.unshift({ setId: set.id, name: set.name, locked: set.locked, visibility: set.visibility, updatedAt: now });
-    await store.setJSON(indexKey(user.id), mineNext.slice(0, 100));
-    const community = await readArray(store, COMMUNITY_INDEX);
-    const communityNext = community.filter((item) => !(item.ownerId === user.id && item.setId === set.id));
-    if (set.visibility === 'public' && set.locked) communityNext.unshift({ ownerId: user.id, setId: set.id, name: set.name, creator: record.creator, updatedAt: now });
-    await store.setJSON(COMMUNITY_INDEX, communityNext.slice(0, 500));
+    if (publicLocked) await store.setJSON(publicKey, toPublicRecord(record));
     return json({ success: true, record });
   } catch (error) {
     console.error('Save V2 dice set failed:', error);
