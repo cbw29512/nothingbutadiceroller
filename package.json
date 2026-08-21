@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "check": "node scripts/check.mjs",
+    "check": "node scripts/check.mjs && node scripts/appearance-mechanics-check.mjs && node scripts/tray-image-contract-check.mjs && node scripts/appearance-live-integration-check.mjs && node scripts/studio-page-check.mjs",
     "build": "npm run check && node scripts/build.mjs"
   },
   "engines": {
