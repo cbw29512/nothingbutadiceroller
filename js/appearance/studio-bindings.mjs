@@ -9,6 +9,7 @@ export function bindStudioControls(context) {
     q('new-set').addEventListener('click', actions.newSet); q('save-set').addEventListener('click', actions.saveDraft);
     q('lock-set').addEventListener('click', actions.toggleLock); q('publish-set').addEventListener('click', actions.togglePublish);
     q('use-set').addEventListener('click', actions.activateDraft); q('delete-set').addEventListener('click', actions.deleteDraft);
+    q('import-browser-sets').addEventListener('click', actions.importBrowserCollection);
     q('refresh-community').addEventListener('click', actions.reloadCommunity); q('reset-default').addEventListener('click', actions.resetDefault);
     q('set-name').addEventListener('input', () => { if (draft.canEdit()) draft.markDirty(); });
     q('set-name').addEventListener('change', () => draft.update((set) => { set.name = q('set-name').value.trim() || 'Untitled Dice Set'; }));

@@ -4,6 +4,7 @@ import { createUserDiceSet, cloneDiceSet } from './schema.mjs';
 import { lockDiceSet, makeDiceSetPrivate, publishDiceSet, unlockDiceSet } from './transitions.mjs';
 import { assertValidDiceSet } from './validation.mjs';
 import { deleteCloudDiceSet, loadCloudDiceSets, loadCommunityDiceSets, saveCloudDiceSet } from './studio-cloud.mjs';
+import { getImportableBrowserSets, importBrowserSets } from './studio-browser-import.mjs';
 import { createStudioDraftGuard } from './studio-draft-guard.mjs';
 import { bindStudioControls } from './studio-bindings.mjs';
 import {
@@ -12,9 +13,12 @@ import {
 } from './studio-persistence.mjs';
 import { fillEditor, renderCommunity, renderLibrary, renderPreview, setStatus } from './studio-render.mjs';
 
-let ownerId = getOrCreateLocalOwnerId();
+const browserOwnerId = getOrCreateLocalOwnerId();
+const browserSavedSets = loadSavedDiceSets(localStorage, browserOwnerId);
+let ownerId = browserOwnerId;
 let cloudEnabled = false;
-let savedSets = loadSavedDiceSets(localStorage, ownerId);
+let savedSets = [...browserSavedSets];
+let importableBrowserSets = [];
 let communitySets = [];
 let activeId = getActiveDiceSetId();
 let selectedId = SYSTEM_DEFAULT_DICE_SET_ID;
@@ -38,6 +42,8 @@ function refresh() {
   renderLibrary([SYSTEM_DEFAULT_DICE_SET, ...savedSets], selectedId, selectSet);
   renderCommunity(communitySets, selectedId, selectSet); renderPreview(draft, selectedDie);
   fillEditor(draft, selectedDie, activeId, ownerId, cloudEnabled);
+  const button = q('import-browser-sets'); const count = importableBrowserSets.length;
+  if (button) { button.hidden = !cloudEnabled || count === 0; button.textContent = `Import ${count} Browser Set${count === 1 ? '' : 's'}`; }
 }
 function replaceSaved(set) {
   const index = savedSets.findIndex((item) => item.id === set.id);
@@ -103,6 +109,20 @@ async function deleteDraft() {
     draftGuard.markClean(); selectSet(SYSTEM_DEFAULT_DICE_SET, { force: true }); setStatus('Dice set deleted.', 'ready');
   } catch (error) { setStatus(error.message, 'error'); }
 }
+async function importBrowserCollection() {
+  const button = q('import-browser-sets');
+  try {
+    if (!cloudEnabled) throw new Error('Sign in before importing browser dice sets.');
+    if (!importableBrowserSets.length) return setStatus('No browser dice sets need importing.', 'ready');
+    if (button) button.disabled = true;
+    const result = await importBrowserSets({ browserSets: browserSavedSets, cloudSets: savedSets, userId: ownerId, saveSet: saveCloudDiceSet });
+    savedSets = result.cloudSets; importableBrowserSets = result.pending;
+    const selected = result.imported.find((set) => set.id === selectedId); if (selected) { draft = cloneDiceSet(selected); draftGuard.markClean(); }
+    const active = result.imported.find((set) => set.id === activeId); if (active) setActiveDiceSet(active);
+    const failed = result.failures.length; setStatus(`${result.imported.length} browser set${result.imported.length === 1 ? '' : 's'} imported.${failed ? ` ${failed} failed and can be retried.` : ''}`, failed ? 'error' : 'ready'); refresh();
+  } catch (error) { console.error('Failed to import browser dice sets:', error); setStatus(error.message, 'error'); }
+  finally { if (button) button.disabled = false; }
+}
 async function reloadCommunity() { communitySets = await loadCommunityDiceSets(); refresh(); }
 function resetDefault() {
   if (!confirmDiscardDraft()) return;
@@ -111,7 +131,7 @@ function resetDefault() {
 }
 function bind() {
   bindStudioControls({
-    q, actions: { newSet, saveDraft, toggleLock, togglePublish, activateDraft, deleteDraft, reloadCommunity, resetDefault },
+    q, actions: { newSet, saveDraft, toggleLock, togglePublish, activateDraft, deleteDraft, importBrowserCollection, reloadCommunity, resetDefault },
     draft: { canEdit: () => canEditDiceSet(draft, ownerId), markDirty: markDraftDirty, update: updateDraft, get: () => draft, set: (next) => { draft = next; markDraftDirty(); } },
     dice: { get: () => selectedDie, select: (type) => { selectedDie = type; refresh(); } }, ownerId: () => ownerId,
     refresh, setStatus, draftGuard,
@@ -121,7 +141,8 @@ async function initialize() {
   try {
     const [cloud, community] = await Promise.all([loadCloudDiceSets(), loadCommunityDiceSets()]); communitySets = community;
     if (cloud.authenticated && cloud.userId) {
-      cloudEnabled = true; ownerId = cloud.userId; savedSets = cloud.sets; q('storage-mode').textContent = 'Signed in • sets sync to your account';
+      cloudEnabled = true; ownerId = cloud.userId; savedSets = cloud.sets; importableBrowserSets = getImportableBrowserSets(browserSavedSets, savedSets);
+      q('storage-mode').textContent = importableBrowserSets.length ? `Signed in • ${importableBrowserSets.length} browser set${importableBrowserSets.length === 1 ? '' : 's'} ready to import` : 'Signed in • sets sync to your account';
     } else q('storage-mode').textContent = 'Guest • sets stay in this browser';
     const active = findSet(activeId) || getActiveDiceSetSnapshot() || SYSTEM_DEFAULT_DICE_SET;
     selectedId = active.id; draft = cloneDiceSet(active); draftGuard.markClean(); bind(); refresh(); setStatus('Dice Studio ready.', 'ready');
