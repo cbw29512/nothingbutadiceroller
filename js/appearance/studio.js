@@ -54,6 +54,7 @@ async function saveDraft() {
     if (!canEditDiceSet(draft, ownerId)) throw new Error('Unlock this set before editing it.');
     draft.name = q('set-name').value.trim() || 'Untitled Dice Set';
     draft = await persist(assertValidDiceSet(draft));
+    if (activeId === draft.id) setActiveDiceSet(draft);
     setStatus('Dice set saved.', 'ready'); refresh();
   } catch (error) { setStatus(error.message, 'error'); }
 }

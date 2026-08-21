@@ -4,9 +4,9 @@ async function read(path) { return readFile(new URL(`../${path}`, import.meta.ur
 function requireText(source, text, label) { if (!source.includes(text)) throw new Error(`Missing ${label}: ${text}`); }
 
 try {
-  const [html, index, app, drawers, persistence, render, validation, cloud, visualControls] = await Promise.all([
+  const [html, index, app, drawers, studio, persistence, render, validation, cloud, visualControls] = await Promise.all([
     read('customize.html'), read('index.html'), read('js/app.js'), read('js/drawer-controls.js'),
-    read('js/appearance/studio-persistence.mjs'), read('js/appearance/studio-render.mjs'),
+    read('js/appearance/studio.js'), read('js/appearance/studio-persistence.mjs'), read('js/appearance/studio-render.mjs'),
     read('js/appearance/validation.mjs'), read('js/appearance/studio-cloud.mjs'), read('js/appearance/studio-visual-controls.mjs'),
   ]);
   [
@@ -22,6 +22,7 @@ try {
   if (index.includes('studio-preview-tray') || index.includes('DICE & TRAY STUDIO')) throw new Error('Advanced studio must not be embedded in the landing page.');
   requireText(drawers, "window.location.assign('/customize.html')", 'roller-to-studio navigation');
   if (app.includes('initThemeCommunity()')) throw new Error('Landing app must not inject the advanced Theme Studio.');
+  requireText(studio, 'if (activeId === draft.id) setActiveDiceSet(draft);', 'active appearance snapshot refresh after save');
   ['SYSTEM_DEFAULT_DICE_SET_ID', 'loadSavedDiceSets', 'saveDiceSetLocal', 'resetActiveToDefault'].forEach((text) => requireText(persistence, text, 'studio persistence contract'));
   ['loadCloudDiceSets', 'loadCommunityDiceSets', 'saveCloudDiceSet'].forEach((text) => requireText(cloud, text, 'cloud/community contract'));
   requireText(render, 'getSupportedFaceEditorDice', 'shape-based die selection');
@@ -30,7 +31,7 @@ try {
   requireText(validation, 'short visible label', 'short-label validation');
   requireText(visualControls, 'MAX_TRAY_IMAGE_BYTES', 'tray-image size limit');
   requireText(visualControls, "kind: 'text'", 'visual-only face storage');
-  console.log('Studio page contract passed: short face labels, tray images, cloud/community libraries, saved sets, and default fallback are protected.');
+  console.log('Studio page contract passed: short face labels, tray images, cloud/community libraries, active-set save sync, saved sets, and default fallback are protected.');
 } catch (error) {
   console.error('Studio page contract failed:', error);
   process.exitCode = 1;
