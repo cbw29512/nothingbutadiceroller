@@ -376,7 +376,7 @@ function bindGear() {
   document.getElementById('mobile-shortcut-settings-btn')?.addEventListener('click', openManager);
 }
 
-export function syncShortcutRuntimeUI() {
+export function syncShortcutRuntimeURI() {
   setGearState();
   if (active) setRollLabels();
 }
@@ -392,3 +392,4 @@ export function initShortcutRuntime() {
   identity.on('login', loadForSession);
   identity.on('logout', () => loadForSession(null));
 }
+
