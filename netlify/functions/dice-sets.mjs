@@ -4,8 +4,9 @@ import { getUser } from '@netlify/identity';
 const STORE_NAME = 'dice-trays-store';
 const COMMUNITY_INDEX = 'community/dice-sets/index.json';
 function json(body, status = 200) { return Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } }); }
-function recordKey(userId, setId) { return `users/${userId}/dice-sets/${setId}.json`; }
-function indexKey(userId) { return `users/${userId}/dice-sets/index.json`; }
+function keyPart(value) { return encodeURIComponent(String(value)); }
+function recordKey(userId, setId) { return `users/${keyPart(userId)}/dice-sets/${keyPart(setId)}.json`; }
+function indexKey(userId) { return `users/${keyPart(userId)}/dice-sets/index.json`; }
 function publicCreator(value) {
   const text = String(value || '').trim();
   return text && !text.includes('@') ? text : 'Adventurer';

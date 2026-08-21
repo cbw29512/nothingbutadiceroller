@@ -2,7 +2,8 @@ import { getStore } from '@netlify/blobs';
 import { getUser } from '@netlify/identity';
 
 const STORE_NAME = 'dice-trays-store';
-function recordKey(ownerId, setId) { return `users/${ownerId}/dice-sets/${setId}.json`; }
+function keyPart(value) { return encodeURIComponent(String(value)); }
+function recordKey(ownerId, setId) { return `users/${keyPart(ownerId)}/dice-sets/${keyPart(setId)}.json`; }
 
 export default async (request) => {
   try {

@@ -9,9 +9,10 @@ const STORE_NAME = 'dice-trays-store';
 const COMMUNITY_INDEX = 'community/dice-sets/index.json';
 const matcher = new RegExpMatcher({ ...englishDataset.build(), ...englishRecommendedTransformers });
 function json(body, status = 200) { return Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } }); }
-function recordKey(userId, setId) { return `users/${userId}/dice-sets/${setId}.json`; }
-function indexKey(userId) { return `users/${userId}/dice-sets/index.json`; }
-function imageKey(userId, setId) { return `users/${userId}/dice-sets/${setId}_tray`; }
+function keyPart(value) { return encodeURIComponent(String(value)); }
+function recordKey(userId, setId) { return `users/${keyPart(userId)}/dice-sets/${keyPart(setId)}.json`; }
+function indexKey(userId) { return `users/${keyPart(userId)}/dice-sets/index.json`; }
+function imageKey(userId, setId) { return `users/${keyPart(userId)}/dice-sets/${keyPart(setId)}_tray`; }
 async function readArray(store, key) {
   const value = await store.get(key, { type: 'json' }).catch(() => []);
   return Array.isArray(value) ? value : [];

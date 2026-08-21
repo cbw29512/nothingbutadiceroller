@@ -2,21 +2,22 @@ import {
   APPEARANCE_SCHEMA_VERSION,
   cloneSystemDefaultAppearance,
 } from './defaults.mjs';
+import { normalizeDiceSetId } from './identifiers.mjs';
 
-function cleanId(value, fallback) {
+function cleanOwnerId(value, fallback) {
   const cleaned = String(value || '').trim().slice(0, 120);
   return cleaned || fallback;
 }
 
 export function createUserDiceSet({ id, ownerId, name = 'Untitled Dice Set', appearance } = {}) {
   try {
-    const cleanOwnerId = cleanId(ownerId, '');
-    if (!cleanOwnerId) throw new Error('ownerId is required for a user dice set.');
+    const cleanOwnerIdValue = cleanOwnerId(ownerId, '');
+    if (!cleanOwnerIdValue) throw new Error('ownerId is required for a user dice set.');
 
     return {
       schemaVersion: APPEARANCE_SCHEMA_VERSION,
-      id: cleanId(id, `set_${Date.now()}`),
-      ownerId: cleanOwnerId,
+      id: normalizeDiceSetId(id, `set_${Date.now()}`),
+      ownerId: cleanOwnerIdValue,
       name: String(name || 'Untitled Dice Set').trim().slice(0, 80) || 'Untitled Dice Set',
       systemOwned: false,
       locked: false,
