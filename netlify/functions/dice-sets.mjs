@@ -17,16 +17,13 @@ export default async (request) => {
     const url = new URL(request.url);
     const scope = url.searchParams.get('scope') || 'mine';
     const user = await getUser();
-
     if (request.method === 'GET' && scope === 'community') {
       const index = await readArray(store, COMMUNITY_INDEX);
       const records = (await Promise.all(index.map((item) => store.get(recordKey(item.ownerId, item.setId), { type: 'json' }).catch(() => null))))
         .filter((record) => record?.set?.locked && record?.set?.visibility === 'public');
       return json({ records });
     }
-
     if (!user) return json({ error: 'Authentication required.' }, 401);
-
     if (request.method === 'GET') {
       const setId = url.searchParams.get('id');
       const ownerId = url.searchParams.get('owner') || user.id;
@@ -42,13 +39,13 @@ export default async (request) => {
         .filter(Boolean);
       return json({ records, userId: user.id });
     }
-
     if (request.method === 'DELETE') {
       const setId = url.searchParams.get('id');
       if (!setId) return json({ error: 'Dice set id is required.' }, 400);
       const key = recordKey(user.id, setId);
       const existing = await store.get(key, { type: 'json' }).catch(() => null);
       if (!existing) return json({ error: 'Dice set not found.' }, 404);
+      if (existing.trayImageKey) await store.delete(existing.trayImageKey).catch((error) => console.warn('Tray image cleanup failed:', error));
       await store.delete(key);
       const mine = await readArray(store, indexKey(user.id));
       await store.setJSON(indexKey(user.id), mine.filter((item) => item.setId !== setId));
@@ -56,12 +53,10 @@ export default async (request) => {
       await store.setJSON(COMMUNITY_INDEX, community.filter((item) => !(item.ownerId === user.id && item.setId === setId)));
       return json({ success: true });
     }
-
     return json({ error: 'Method Not Allowed' }, 405);
   } catch (error) {
     console.error('V2 dice-set API failed:', error);
     return json({ error: error?.message || 'Dice-set request failed.' }, 500);
   }
 };
-
 export const config = { path: '/api/dice-sets' };
