@@ -31,12 +31,36 @@ function uniquePoints(points) {
   });
 }
 
-function regionMetrics(points) {
+function triangleAreaAndCentroid(points) {
+  const [[u1, v1], [u2, v2], [u3, v3]] = points;
+  const twiceArea = Math.abs(((u2 - u1) * (v3 - v1)) - ((u3 - u1) * (v2 - v1)));
+  return {
+    area: twiceArea / 2,
+    centerU: (u1 + u2 + u3) / 3,
+    centerV: (v1 + v2 + v3) / 3,
+  };
+}
+
+function regionMetrics(points, triangles) {
   const us = points.map(([u]) => u);
   const vs = points.map(([, v]) => v);
   const minU = Math.min(...us); const maxU = Math.max(...us);
   const minV = Math.min(...vs); const maxV = Math.max(...vs);
-  return { minU, maxU, minV, maxV, centerU: (minU + maxU) / 2, centerV: (minV + maxV) / 2 };
+
+  let totalArea = 0;
+  let weightedU = 0;
+  let weightedV = 0;
+  for (const triangle of triangles) {
+    const metrics = triangleAreaAndCentroid(triangle);
+    if (metrics.area <= Number.EPSILON) continue;
+    totalArea += metrics.area;
+    weightedU += metrics.centerU * metrics.area;
+    weightedV += metrics.centerV * metrics.area;
+  }
+
+  const centerU = totalArea > Number.EPSILON ? weightedU / totalArea : (minU + maxU) / 2;
+  const centerV = totalArea > Number.EPSILON ? weightedV / totalArea : (minV + maxV) / 2;
+  return { minU, maxU, minV, maxV, centerU, centerV };
 }
 
 export function extractDiceBoxFaceRegions(modelData, dieType) {
@@ -51,17 +75,18 @@ export function extractDiceBoxFaceRegions(modelData, dieType) {
       if (!Number.isInteger(faceId) || !isCanonicalFaceResult(dieType, logicalResult)) {
         throw new Error(`${dieType} collider mapping contains an invalid face.`);
       }
-      const points = grouped.get(logicalResult) || [];
-      points.push(...triangleUv(mesh, faceId));
-      grouped.set(logicalResult, points);
+      const triangles = grouped.get(logicalResult) || [];
+      triangles.push(triangleUv(mesh, faceId));
+      grouped.set(logicalResult, triangles);
     }
     const expected = getCanonicalFaceResults(dieType);
     if (grouped.size !== expected.length || expected.some((result) => !grouped.has(result))) {
       throw new Error(`${dieType} collider mapping does not cover every physical result.`);
     }
     return Object.fromEntries(expected.map((logicalResult) => {
-      const points = uniquePoints(grouped.get(logicalResult));
-      return [String(logicalResult), { logicalResult, points, ...regionMetrics(points) }];
+      const triangles = grouped.get(logicalResult);
+      const points = uniquePoints(triangles.flat());
+      return [String(logicalResult), { logicalResult, points, ...regionMetrics(points, triangles) }];
     }));
   } catch (error) {
     console.error('Failed to extract DiceBox face UV regions:', error);
