@@ -1,9 +1,6 @@
 name: Appearance V2 Validation
 
 on:
-  push:
-    branches:
-      - feature/dice-appearance-v2
   workflow_dispatch:
 
 permissions:
