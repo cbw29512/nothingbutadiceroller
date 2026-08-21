@@ -15,8 +15,7 @@ import { fillEditor, renderCommunity, renderLibrary, renderPreview, renderStorag
 const browserOwnerId = getOrCreateLocalOwnerId();
 const browserSavedSets = loadSavedDiceSets(localStorage, browserOwnerId);
 let ownerId = browserOwnerId;
-let cloudEnabled = false;
-let cloudUnavailable = false;
+let cloudEnabled = false; let cloudUnavailable = false;
 let savedSets = [...browserSavedSets];
 let importableBrowserSets = [];
 let communitySets = [];
