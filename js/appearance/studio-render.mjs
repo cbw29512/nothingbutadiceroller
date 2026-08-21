@@ -17,6 +17,19 @@ function makeSetCard(set, selectedId, onSelect, subtitle) {
   button.querySelector('strong').textContent = set.name; button.querySelector('span').textContent = subtitle;
   button.addEventListener('click', () => onSelect(set)); return button;
 }
+export function renderStorageMode(cloudEnabled, importableCount = 0) {
+  try {
+    const status = q('storage-mode'); const button = q('import-browser-sets');
+    if (!status || !button) return;
+    button.hidden = !cloudEnabled || importableCount === 0;
+    button.textContent = `Import ${importableCount} Browser Set${importableCount === 1 ? '' : 's'}`;
+    status.textContent = cloudEnabled
+      ? (importableCount ? `Signed in • ${importableCount} browser set${importableCount === 1 ? '' : 's'} ready to import` : 'Signed in • sets sync to your account')
+      : 'Guest • sets stay in this browser';
+  } catch (error) {
+    console.error('Failed to render Dice Studio storage mode:', error);
+  }
+}
 export function renderLibrary(sets, selectedId, onSelect) {
   const host = q('studio-library'); if (!host) return;
   host.replaceChildren(...sets.map((set) => makeSetCard(set, selectedId, onSelect, set.systemOwned ? 'Immutable Default' : `${set.locked ? 'Locked' : 'Editable'} • ${set.visibility}`)));

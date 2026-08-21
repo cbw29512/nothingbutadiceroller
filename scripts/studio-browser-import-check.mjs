@@ -47,14 +47,16 @@ assert.deepEqual(partial.imported.map((set) => set.id), ['set_alpha']);
 assert.deepEqual(partial.pending.map((set) => set.id), ['set_gamma']);
 assert.equal(partial.failures.length, 1, 'Failed imports must stay retryable instead of disappearing.');
 
-const [studio, bindings, html] = await Promise.all([
+const [studio, bindings, render, html] = await Promise.all([
   readFile(new URL('../js/appearance/studio.js', import.meta.url), 'utf8'),
   readFile(new URL('../js/appearance/studio-bindings.mjs', import.meta.url), 'utf8'),
+  readFile(new URL('../js/appearance/studio-render.mjs', import.meta.url), 'utf8'),
   readFile(new URL('../customize.html', import.meta.url), 'utf8'),
 ]);
-for (const text of ['browserSavedSets', 'getImportableBrowserSets(browserSavedSets, savedSets)', 'importBrowserCollection', 'setActiveDiceSet(active)']) {
+for (const text of ['browserSavedSets', 'getImportableBrowserSets(browserSavedSets, savedSets)', 'importBrowserCollection', 'setActiveDiceSet(active)', 'renderStorageMode(cloudEnabled, importableBrowserSets.length)']) {
   assert.ok(studio.includes(text), `Studio browser-import integration missing: ${text}`);
 }
 assert.ok(bindings.includes("q('import-browser-sets').addEventListener('click', actions.importBrowserCollection)"));
+assert.ok(render.includes('export function renderStorageMode') && render.includes('sets sync to your account'), 'Storage status must refresh after imports complete.');
 assert.ok(html.includes('id="import-browser-sets"') && html.includes('hidden>Import Browser Sets'));
-console.log('Studio browser import passed: guest designs remain discoverable, account imports are private/editable/idempotent, sequential saves avoid index races, failures remain retryable, and active-set continuity is protected.');
+console.log('Studio browser import passed: guest designs remain discoverable, account imports are private/editable/idempotent, sequential saves avoid index races, failures remain retryable, active-set continuity is protected, and storage status stays accurate.');

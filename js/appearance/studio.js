@@ -11,7 +11,7 @@ import {
   deleteDiceSetLocal, getActiveDiceSetId, getActiveDiceSetSnapshot, getOrCreateLocalOwnerId,
   loadSavedDiceSets, resetActiveToDefault, saveDiceSetLocal, setActiveDiceSet,
 } from './studio-persistence.mjs';
-import { fillEditor, renderCommunity, renderLibrary, renderPreview, setStatus } from './studio-render.mjs';
+import { fillEditor, renderCommunity, renderLibrary, renderPreview, renderStorageMode, setStatus } from './studio-render.mjs';
 const browserOwnerId = getOrCreateLocalOwnerId();
 const browserSavedSets = loadSavedDiceSets(localStorage, browserOwnerId);
 let ownerId = browserOwnerId;
@@ -39,9 +39,7 @@ function selectSet(set, { force = false } = {}) {
 function refresh() {
   renderLibrary([SYSTEM_DEFAULT_DICE_SET, ...savedSets], selectedId, selectSet);
   renderCommunity(communitySets, selectedId, selectSet); renderPreview(draft, selectedDie);
-  fillEditor(draft, selectedDie, activeId, ownerId, cloudEnabled);
-  const button = q('import-browser-sets'); const count = importableBrowserSets.length;
-  if (button) { button.hidden = !cloudEnabled || count === 0; button.textContent = `Import ${count} Browser Set${count === 1 ? '' : 's'}`; }
+  fillEditor(draft, selectedDie, activeId, ownerId, cloudEnabled); renderStorageMode(cloudEnabled, importableBrowserSets.length);
 }
 function replaceSaved(set) {
   const index = savedSets.findIndex((item) => item.id === set.id);
@@ -140,8 +138,7 @@ async function initialize() {
     const [cloud, community] = await Promise.all([loadCloudDiceSets(), loadCommunityDiceSets()]); communitySets = community;
     if (cloud.authenticated && cloud.userId) {
       cloudEnabled = true; ownerId = cloud.userId; savedSets = cloud.sets; importableBrowserSets = getImportableBrowserSets(browserSavedSets, savedSets);
-      q('storage-mode').textContent = importableBrowserSets.length ? `Signed in • ${importableBrowserSets.length} browser set${importableBrowserSets.length === 1 ? '' : 's'} ready to import` : 'Signed in • sets sync to your account';
-    } else q('storage-mode').textContent = 'Guest • sets stay in this browser';
+    }
     const active = findSet(activeId) || getActiveDiceSetSnapshot() || SYSTEM_DEFAULT_DICE_SET;
     selectedId = active.id; draft = cloneDiceSet(active); draftGuard.markClean(); bind(); refresh(); setStatus('Dice Studio ready.', 'ready');
   } catch (error) {
