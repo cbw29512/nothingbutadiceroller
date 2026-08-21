@@ -8,7 +8,7 @@ const zeroDamageShortcut = createFlexShortcut({
   id: 'zero-damage-check',
   name: 'Zero Damage Check',
   icon: 'sword',
-  category: 'damage',
+  category: 'custom',
   variants: [{
     id: 'base',
     label: 'Base',
