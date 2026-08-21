@@ -113,8 +113,8 @@ async function importBrowserCollection() {
     if (button) button.disabled = true;
     const result = await importBrowserSets({ browserSets: browserSavedSets, cloudSets: savedSets, userId: ownerId, saveSet: saveCloudDiceSet });
     savedSets = result.cloudSets; importableBrowserSets = result.pending;
-    const selected = result.imported.find((set) => set.id === selectedId); if (selected) { draft = cloneDiceSet(selected); draftGuard.markClean(); }
-    const active = result.imported.find((set) => set.id === activeId); if (active) setActiveDiceSet(active);
+    const selected = result.imported.find((item) => item.sourceId === selectedId); if (selected) { selectedId = selected.set.id; draft = cloneDiceSet(selected.set); draftGuard.markClean(); }
+    const active = result.imported.find((item) => item.sourceId === activeId); if (active) activeId = setActiveDiceSet(active.set);
     const failed = result.failures.length; setStatus(`${result.imported.length} browser set${result.imported.length === 1 ? '' : 's'} imported.${failed ? ` ${failed} failed and can be retried.` : ''}`, failed ? 'error' : 'ready'); refresh();
   } catch (error) { console.error('Failed to import browser dice sets:', error); setStatus(error.message, 'error'); }
   finally { if (button) button.disabled = false; }
