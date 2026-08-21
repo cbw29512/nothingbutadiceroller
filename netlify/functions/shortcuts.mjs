@@ -38,8 +38,11 @@ function userKey(userId) {
   return `users/${encodeURIComponent(String(userId))}/shortcuts-v1.json`;
 }
 
-function shortcutStore() {
-  return getStore({ name: STORE_NAME, consistency: 'strong' });
+function shortcutStore(context) {
+  if (String(context?.deploy?.context || 'dev') === 'production') {
+    return getStore({ name: STORE_NAME, consistency: 'strong' });
+  }
+  return getStore({ name: `${STORE_NAME}-nonprod`, consistency: 'strong' });
 }
 
 function isPlainObject(value) {
@@ -151,12 +154,12 @@ async function saveWorkspace(request, store, key, clear = false) {
   return conflict(latest);
 }
 
-export default async (request) => {
+export default async (request, context) => {
   try {
     const user = await getUser();
     if (!user) return json({ error: 'Authentication required.', code: 'authentication-required' }, 401);
 
-    const store = shortcutStore();
+    const store = shortcutStore(context);
     const key = userKey(user.id);
 
     if (request.method === 'GET') {

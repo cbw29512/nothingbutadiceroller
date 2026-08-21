@@ -1,7 +1,7 @@
 const DATA_URL = /^data:(image\/(?:png|jpeg|webp));base64,([a-z0-9+/=]+)$/i;
 const OWNER_BLOB_URL = /^\/api\/dice-set-image\?owner=[^&]+&set=[^&]+&token=[a-z0-9]+$/i;
 const PUBLIC_BLOB_URL = /^\/api\/dice-set-image\?public=[a-z0-9_-]{1,80}&token=[a-z0-9]+$/i;
-const LEGACY_URL = /^(?:\/api\/theme-image\?owner=[^&]+&theme=[^&]+&token=[a-z0-9]+|\/\.netlify\/blobs\/[a-z0-9/_-]+)$/i;
+const LEGACY_URL = /^(?:\/api\/theme-image\?(?:owner=[^&]+&theme=[^&]+|public=public_theme_[a-f0-9]{32})&token=[a-z0-9]+|\/\.netlify\/blobs\/[a-z0-9/_-]+)$/i;
 const IMAGE_KEYS = new Set(['kind', 'url', 'legacyUrl']);
 export const MAX_TRAY_IMAGE_BYTES = 4 * 1024 * 1024;
 export const MAX_BROWSER_TRAY_IMAGE_BYTES = 512 * 1024;
