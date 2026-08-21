@@ -7,19 +7,16 @@ const FONT_IDS = new Set(['', 'default', 'fantasy', 'runic', 'mono']);
 const MAX_OPERATIONS = 24;
 
 function base64UrlEncode(text) {
-  const bytes = new TextEncoder().encode(text);
-  let binary = '';
+  const bytes = new TextEncoder().encode(text); let binary = '';
   bytes.forEach((byte) => { binary += String.fromCharCode(byte); });
   return btoa(binary).replaceAll('+', '-').replaceAll('/', '_').replace(/=+$/g, '');
 }
-
 function base64UrlDecode(token) {
   const normalized = String(token).replaceAll('-', '+').replaceAll('_', '/');
   const padded = normalized + '='.repeat((4 - (normalized.length % 4)) % 4);
   const binary = atob(padded);
   return new TextDecoder().decode(Uint8Array.from(binary, (char) => char.charCodeAt(0)));
 }
-
 export function validateRuntimeThemePayload(payload) {
   const errors = [];
   try {
@@ -33,25 +30,22 @@ export function validateRuntimeThemePayload(payload) {
     for (const [index, operation] of (Array.isArray(payload.o) ? payload.o : []).entries()) {
       if (!Array.isArray(operation) || operation.length !== 6) { errors.push(`Operation ${index} has an invalid shape.`); continue; }
       const [text, color, fontId, x, y, fontPx] = operation;
-      if (!isValidFaceDisplayValue(text)) errors.push(`Operation ${index} text must be a number or one visible character/symbol.`);
+      if (!isValidFaceDisplayValue(text)) errors.push(`Operation ${index} text must be a short visible label.`);
       if (!HEX.test(String(color || ''))) errors.push(`Operation ${index} color is invalid.`);
       if (!FONT_IDS.has(String(fontId || ''))) errors.push(`Operation ${index} font is invalid.`);
       if (![x, y].every((value) => Number.isFinite(value) && value >= 0 && value <= payload.s)) errors.push(`Operation ${index} position is invalid.`);
       if (!Number.isFinite(fontPx) || fontPx < 6 || fontPx > 200) errors.push(`Operation ${index} font size is invalid.`);
     }
   } catch (error) {
-    console.error('Runtime theme payload validation failed:', error);
-    errors.push('Runtime theme payload validation failed.');
+    console.error('Runtime theme payload validation failed:', error); errors.push('Runtime theme payload validation failed.');
   }
   return { ok: errors.length === 0, errors };
 }
-
 export function encodeRuntimeThemePayload(payload) {
   const validation = validateRuntimeThemePayload(payload);
   if (!validation.ok) throw new Error(validation.errors.join(' | '));
   return base64UrlEncode(JSON.stringify(payload));
 }
-
 export function decodeRuntimeThemePayload(token) {
   try {
     if (!token || String(token).length > 6000) throw new Error('Runtime theme token is invalid.');
@@ -60,7 +54,6 @@ export function decodeRuntimeThemePayload(token) {
     if (!validation.ok) throw new Error(validation.errors.join(' | '));
     return payload;
   } catch (error) {
-    console.error('Failed to decode runtime theme token:', error);
-    throw error;
+    console.error('Failed to decode runtime theme token:', error); throw error;
   }
 }
