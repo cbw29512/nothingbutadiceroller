@@ -80,7 +80,11 @@ assert.equal(doc.body.style.getPropertyValue('--appearance-v2-tray-shadow'), '')
 const physicsSource = fs.readFileSync(new URL('../js/physics.js', import.meta.url), 'utf8');
 assert.match(physicsSource, /decorateDiceBoxNotation\(notation, liveRuntimeThemes\)/);
 assert.match(physicsSource, /\.\.\.liveAppearance\.diceBoxOptions/);
-assert.match(physicsSource, /liveRuntimeThemes\s*\?\s*decorateDiceBoxNotation/);
+assert.match(physicsSource, /usesCustomAppearance\s*\?\s*decorateDiceBoxNotation/);
+assert.match(physicsSource, /rollDefaultFallback\(notation, themeColor, err\)/);
+assert.match(physicsSource, /diceBox\.roll\(notation\)/, 'Appearance failure must retry the original notation unchanged.');
+assert.match(physicsSource, /theme:\s*'default'/, 'Appearance fallback must explicitly return DiceBox to Default theme.');
+assert.match(physicsSource, /liveRuntimeThemes\s*=\s*null/, 'A failed custom runtime must be disabled after fallback.');
 assert.match(physicsSource, /gravity:\s*1/);
 assert.match(physicsSource, /mass:\s*1/);
 assert.match(physicsSource, /friction:\s*0\.8/);
@@ -94,4 +98,4 @@ assert.match(appSource, /prepareActiveDiceAppearance/);
 assert.match(appSource, /applyLiveTrayAppearance\(appearanceRuntime\)/);
 assert.match(appSource, /initDicePhysics\([\s\S]*?appearanceRuntime,[\s\S]*?\);/);
 
-console.log('Appearance live integration passed: Default stays unchanged, V2 custom themes use the verified renderer, tray images stay ignored, and all live roll paths converge on rollPhysics().');
+console.log('Appearance live integration passed: Default stays unchanged, custom visuals cannot block a roll, tray images stay ignored, and roll mechanics remain canonical.');
