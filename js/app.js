@@ -9,6 +9,8 @@ import { initAccount } from './account.js';
 import { closeCustomDieControls, initCustomDieControls } from './custom-controls.js';
 import { closeDrawers, initDrawerControls } from './drawer-controls.js';
 import { canRollFromTray, initTrayControls } from './tray-controls.js';
+import { prepareActiveDiceAppearance } from './appearance/appearance-runtime.mjs';
+import { applyLiveTrayAppearance } from './appearance/live-integration.mjs';
 import { ensureShortcutRuntimeMarkup } from './shortcuts/runtime-markup.js';
 import {
   canRollPreparedShortcutFromTray,
@@ -155,7 +157,12 @@ async function boot() {
     if (stylesTitle) stylesTitle.textContent = 'Customize Dice & Tray';
 
     setStatus('Loading 3D physics…');
-    await initDicePhysics(getSkinColor(state.dieSkin, state.customAppearance?.diceColor));
+    const appearanceRuntime = await prepareActiveDiceAppearance();
+    applyLiveTrayAppearance(appearanceRuntime);
+    await initDicePhysics(
+      getSkinColor(state.dieSkin, state.customAppearance?.diceColor),
+      appearanceRuntime,
+    );
     state.physicsReady = true;
     document.dispatchEvent(new Event('rollstatechange'));
     setStatus('3D physics ready.', 'ready');
