@@ -3,7 +3,7 @@ import { getUser } from '@netlify/identity';
 import { RegExpMatcher, englishDataset, englishRecommendedTransformers } from 'obscenity';
 import { assertLockedUpdateAllowed, collectModerationText, prepareCloudDiceSet } from '../../js/appearance/cloud-rules.mjs';
 import { extractTrayImageDataUrl, MAX_TRAY_IMAGE_BYTES } from '../../js/appearance/tray-image.mjs';
-import { imageKey, openDiceSetStore, publicRecordKey, recordKey, toPublicRecord } from './dice-set-store.mjs';
+import { buildPublicProjection, imageKey, openDiceSetStore, publicRecordKey, recordKey } from './dice-set-store.mjs';
 
 const matcher = new RegExpMatcher({ ...englishDataset.build(), ...englishRecommendedTransformers });
 function json(body, status = 200) { return Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } }); }
@@ -15,6 +15,7 @@ function parseImage(dataUrl) {
   if (buffer.byteLength > MAX_TRAY_IMAGE_BYTES) throw new Error('Tray image must be 4 MB or smaller.');
   return { mime: match[1].toLowerCase(), buffer };
 }
+function newPublicAccessId() { return `public_${randomUUID().replaceAll('-', '')}`; }
 
 export default async (request) => {
   if (request.method !== 'POST') return json({ error: 'Method Not Allowed' }, 405);
@@ -54,18 +55,21 @@ export default async (request) => {
     }
 
     const now = new Date().toISOString();
+    const publicLocked = set.visibility === 'public' && set.locked;
+    let publicAccessId = existing?.publicAccessId || null;
+    if (!publicLocked && publicAccessId) {
+      await store.delete(publicRecordKey(publicAccessId));
+      publicAccessId = null;
+    } else if (publicLocked && !publicAccessId) publicAccessId = newPublicAccessId();
     const record = {
       set,
       creator: user.userMetadata?.fullName || user.user_metadata?.full_name || 'Adventurer',
-      trayImageKey, trayImageAccessToken,
+      trayImageKey, trayImageAccessToken, publicAccessId,
       createdAt: existing?.createdAt || now,
       updatedAt: now,
     };
-    const publicKey = publicRecordKey(user.id, set.id);
-    const publicLocked = set.visibility === 'public' && set.locked;
-    if (!publicLocked) await store.delete(publicKey);
     await store.setJSON(key, record);
-    if (publicLocked) await store.setJSON(publicKey, toPublicRecord(record));
+    if (publicLocked) await store.setJSON(publicRecordKey(publicAccessId), buildPublicProjection(record, publicAccessId));
     return json({ success: true, record });
   } catch (error) {
     console.error('Save V2 dice set failed:', error);
