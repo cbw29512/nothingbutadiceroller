@@ -1,7 +1,24 @@
+import { validateDiceSet } from './validation.mjs';
+
 async function parse(response) {
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data.error || 'Dice-set request failed.');
   return data;
+}
+
+export function validSetsFromRecords(records = []) {
+  try {
+    if (!Array.isArray(records)) return [];
+    return records.map((record) => record?.set).filter((set) => {
+      if (!set) return false;
+      const validation = validateDiceSet(set);
+      if (!validation.ok) console.warn(`Skipping invalid stored dice set ${set?.id || 'unknown'}.`, validation.errors);
+      return validation.ok;
+    });
+  } catch (error) {
+    console.error('Failed to validate loaded dice sets:', error);
+    return [];
+  }
 }
 
 export async function loadCloudDiceSets() {
@@ -12,7 +29,7 @@ export async function loadCloudDiceSets() {
     return {
       authenticated: true,
       userId: data.userId || null,
-      sets: Array.isArray(data.records) ? data.records.map((record) => record.set).filter(Boolean) : [],
+      sets: validSetsFromRecords(data.records),
     };
   } catch (error) {
     console.error('Failed to load cloud dice sets:', error);
@@ -24,7 +41,7 @@ export async function loadCommunityDiceSets() {
   try {
     const response = await fetch('/api/dice-sets?scope=community', { credentials: 'include' });
     const data = await parse(response);
-    return Array.isArray(data.records) ? data.records.map((record) => record.set).filter(Boolean) : [];
+    return validSetsFromRecords(data.records);
   } catch (error) {
     console.error('Failed to load community dice sets:', error);
     return [];

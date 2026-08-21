@@ -1,7 +1,7 @@
 import { getUser } from '@netlify/identity';
 import { openDiceSetStore, recordKey, resolvePublicProjection } from './dice-set-store.mjs';
 
-export default async (request) => {
+export default async (request, context) => {
   try {
     if (request.method !== 'GET') return new Response('Method Not Allowed', { status: 405 });
     const url = new URL(request.url);
@@ -9,7 +9,7 @@ export default async (request) => {
     const ownerId = String(url.searchParams.get('owner') || '');
     const setId = String(url.searchParams.get('set') || '');
     const token = String(url.searchParams.get('token') || '');
-    const store = openDiceSetStore();
+    const store = openDiceSetStore(context);
 
     let record = null;
     if (publicAccessId) {

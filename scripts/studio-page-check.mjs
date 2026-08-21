@@ -1,4 +1,7 @@
+import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { createUserDiceSet, cloneDiceSet } from '../js/appearance/schema.mjs';
+import { validSetsFromRecords } from '../js/appearance/studio-cloud.mjs';
 
 async function read(path) { return readFile(new URL(`../${path}`, import.meta.url), 'utf8'); }
 function requireText(source, text, label) { if (!source.includes(text)) throw new Error(`Missing ${label}: ${text}`); }
@@ -14,7 +17,8 @@ try {
     'id="community-library"', 'id="publish-set"', 'id="reset-default"', 'id="lock-set"',
     'id="die-style-enabled"', 'id="face-mode"', 'RAW — standard numbers', 'id="face-map"',
     'id="logical-result-label"', 'short word', 'id="tray-image"', 'id="remove-tray-image"',
-    'image/png,image/jpeg,image/webp', 'src="/js/appearance/studio.js"',
+    'image/png,image/jpeg,image/webp', 'Guest browser sets: up to 512 KB', 'Signed-in cloud sets: up to 4 MB',
+    'src="/js/appearance/studio.js"',
   ].forEach((text) => requireText(html, text, 'studio contract'));
   if (html.includes('Words and multi-character labels are not allowed.') || /id="logical-face"[^>]*type="number"/.test(html)) {
     throw new Error('Studio must support short visual labels without editable logical results.');
@@ -24,14 +28,20 @@ try {
   if (app.includes('initThemeCommunity()')) throw new Error('Landing app must not inject the advanced Theme Studio.');
   requireText(studio, 'if (activeId === draft.id) setActiveDiceSet(draft);', 'active appearance snapshot refresh after save');
   ['SYSTEM_DEFAULT_DICE_SET_ID', 'loadSavedDiceSets', 'saveDiceSetLocal', 'resetActiveToDefault'].forEach((text) => requireText(persistence, text, 'studio persistence contract'));
-  ['loadCloudDiceSets', 'loadCommunityDiceSets', 'saveCloudDiceSet'].forEach((text) => requireText(cloud, text, 'cloud/community contract'));
+  ['loadCloudDiceSets', 'loadCommunityDiceSets', 'saveCloudDiceSet', 'validSetsFromRecords'].forEach((text) => requireText(cloud, text, 'cloud/community contract'));
   requireText(render, 'getSupportedFaceEditorDice', 'shape-based die selection');
   requireText(render, 'renderFaceMap', 'shape-based face map');
   requireText(render, 'safeTrayImageUrl', 'validated tray-image preview');
   requireText(validation, 'short visible label', 'short-label validation');
-  requireText(visualControls, 'MAX_TRAY_IMAGE_BYTES', 'tray-image size limit');
+  requireText(visualControls, 'MAX_BROWSER_TRAY_IMAGE_BYTES', 'browser tray-image size limit');
+  requireText(visualControls, 'MAX_TRAY_IMAGE_BYTES', 'cloud tray-image size limit');
   requireText(visualControls, "kind: 'text'", 'visual-only face storage');
-  console.log('Studio page contract passed: short face labels, tray images, cloud/community libraries, active-set save sync, saved sets, and default fallback are protected.');
+
+  const valid = createUserDiceSet({ id: 'cloud_valid', ownerId: 'owner_valid', name: 'Valid Cloud Set' });
+  const invalid = cloneDiceSet(valid); invalid.id = 'cloud_invalid'; invalid.appearance.extra = true;
+  assert.deepEqual(validSetsFromRecords([{ set: valid }, { set: invalid }, null, {}]).map((set) => set.id), ['cloud_valid']);
+  assert.deepEqual(validSetsFromRecords(null), []);
+  console.log('Studio page contract passed: short face labels, browser/cloud tray-image limits, validated cloud/community ingestion, active-set save sync, saved sets, and default fallback are protected.');
 } catch (error) {
   console.error('Studio page contract failed:', error);
   process.exitCode = 1;

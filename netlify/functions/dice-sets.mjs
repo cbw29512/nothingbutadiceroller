@@ -21,10 +21,14 @@ function publicRecordsFromProjections(current, legacy) {
     return [];
   }
 }
+async function bestEffortDelete(store, key, label) {
+  if (!key) return;
+  try { await store.delete(key); } catch (error) { console.warn(`Failed to clean up ${label}:`, error); }
+}
 
-export default async (request) => {
+export default async (request, context) => {
   try {
-    const store = openDiceSetStore();
+    const store = openDiceSetStore(context);
     const url = new URL(request.url);
     const scope = url.searchParams.get('scope') || 'mine';
     const user = await getUser();
@@ -50,9 +54,9 @@ export default async (request) => {
       const key = recordKey(user.id, setId);
       const existing = await store.get(key, { type: 'json' }).catch(() => null);
       if (!existing) return json({ error: 'Dice set not found.' }, 404);
-      if (existing.publicAccessId) await store.delete(publicRecordKey(existing.publicAccessId));
-      if (existing.trayImageKey) await store.delete(existing.trayImageKey);
       await store.delete(key);
+      if (existing.publicAccessId) await bestEffortDelete(store, publicRecordKey(existing.publicAccessId), 'public projection');
+      if (existing.trayImageKey) await bestEffortDelete(store, existing.trayImageKey, 'tray image');
       return json({ success: true });
     }
     return json({ error: 'Method Not Allowed' }, 405);

@@ -4,8 +4,8 @@ import { RegExpMatcher, englishDataset, englishRecommendedTransformers } from 'o
 import { assertLockedUpdateAllowed, collectModerationText, prepareCloudDiceSet } from '../../js/appearance/cloud-rules.mjs';
 import { extractTrayImageDataUrl, MAX_TRAY_IMAGE_BYTES } from '../../js/appearance/tray-image.mjs';
 import {
-  buildPublicProjection, countUserRecords, imageKey, MAX_USER_DICE_SETS,
-  openDiceSetStore, publicRecordKey, recordKey,
+  buildPublicProjection, countUserRecords, MAX_USER_DICE_SETS, openDiceSetStore,
+  publicRecordKey, recordKey, versionedImageKey,
 } from './dice-set-store.mjs';
 
 const matcher = new RegExpMatcher({ ...englishDataset.build(), ...englishRecommendedTransformers });
@@ -20,9 +20,19 @@ function parseImage(dataUrl) {
 }
 function newPublicAccessId() { return `public_${randomUUID().replaceAll('-', '')}`; }
 function quotaError() { return new Error(`You can save up to ${MAX_USER_DICE_SETS} dice sets per account.`); }
+function ownerImage(userId, setId, token) {
+  return { kind: 'blob', url: `/api/dice-set-image?owner=${encodeURIComponent(userId)}&set=${encodeURIComponent(setId)}&token=${token}` };
+}
+function sameJson(left, right) { return JSON.stringify(left ?? null) === JSON.stringify(right ?? null); }
+async function bestEffortDelete(store, key, label) {
+  if (!store || !key) return;
+  try { await store.delete(key); } catch (error) { console.warn(`Failed to clean up ${label}:`, error); }
+}
 
-export default async (request) => {
+export default async (request, context) => {
   if (request.method !== 'POST') return json({ error: 'Method Not Allowed' }, 405);
+  let cleanupStore = null; let stagedTrayImageKey = null; let stagedPublicKey = null;
+  let stagedPublicWasNew = false; let recordCommitted = false;
   try {
     const user = await getUser();
     if (!user) return json({ error: 'Authentication required.' }, 401);
@@ -30,60 +40,91 @@ export default async (request) => {
     const rawSet = structuredClone(body?.set || {});
     const incomingImage = rawSet?.appearance?.tray?.image ?? null;
     const incomingDataUrl = extractTrayImageDataUrl(incomingImage);
-    const store = openDiceSetStore();
+    const store = openDiceSetStore(context); cleanupStore = store;
     const key = recordKey(user.id, rawSet.id);
     const existing = await store.get(key, { type: 'json' }).catch(() => null);
     const isNewSet = !existing;
     if (isNewSet && await countUserRecords(store, user.id) >= MAX_USER_DICE_SETS) throw quotaError();
     if (existing?.set?.locked && incomingDataUrl) throw new Error('Unlock the dice set before changing its tray image.');
 
-    if (incomingDataUrl) rawSet.appearance.tray.image = null;
+    const rawTray = rawSet?.appearance?.tray;
+    if (rawTray && (incomingDataUrl || incomingImage == null)) rawTray.image = null;
+    else if (rawTray && existing?.trayImageKey && existing?.trayImageAccessToken) {
+      rawTray.image = ownerImage(user.id, rawSet.id, existing.trayImageAccessToken);
+    } else if (rawTray && existing?.set?.appearance?.tray?.image && sameJson(incomingImage, existing.set.appearance.tray.image)) {
+      rawTray.image = structuredClone(existing.set.appearance.tray.image);
+    } else if (incomingImage != null) {
+      throw new Error('Tray images must be uploaded through Dice Studio.');
+    }
+
     let set = prepareCloudDiceSet(rawSet, user.id);
     if (existing?.set) assertLockedUpdateAllowed(existing.set, set);
-    if (matcher.hasMatch(collectModerationText(set))) return json({ error: 'Please remove inappropriate terms before saving this dice set.' }, 400);
+    if (matcher.hasMatch(collectModerationText(set))) {
+      return json({ error: 'Please remove inappropriate terms before saving this dice set.' }, 400);
+    }
 
-    let trayImageKey = existing?.trayImageKey || null;
+    const previousTrayImageKey = existing?.trayImageKey || null;
+    let trayImageKey = previousTrayImageKey;
     let trayImageAccessToken = existing?.trayImageAccessToken || null;
     const parsedImage = parseImage(incomingDataUrl);
     if (parsedImage) {
-      trayImageKey = imageKey(user.id, set.id);
       trayImageAccessToken = randomUUID().replaceAll('-', '');
-      await store.set(trayImageKey, parsedImage.buffer, { metadata: { contentType: parsedImage.mime } });
-      set.appearance.tray.image = {
-        kind: 'blob',
-        url: `/api/dice-set-image?owner=${encodeURIComponent(user.id)}&set=${encodeURIComponent(set.id)}&token=${trayImageAccessToken}`,
-      };
+      stagedTrayImageKey = versionedImageKey(user.id, set.id, trayImageAccessToken);
+      await store.set(stagedTrayImageKey, parsedImage.buffer, { metadata: { contentType: parsedImage.mime } });
+      trayImageKey = stagedTrayImageKey;
+      set.appearance.tray.image = ownerImage(user.id, set.id, trayImageAccessToken);
       set = prepareCloudDiceSet(set, user.id);
-    } else if (incomingImage == null && trayImageKey) {
-      await store.delete(trayImageKey);
-      trayImageKey = null; trayImageAccessToken = null;
-      set.appearance.tray.image = null;
+    } else if (incomingImage == null) {
+      trayImageKey = null; trayImageAccessToken = null; set.appearance.tray.image = null;
     }
 
     const now = new Date().toISOString();
     const publicLocked = set.visibility === 'public' && set.locked;
-    let publicAccessId = existing?.publicAccessId || null;
-    if (!publicLocked && publicAccessId) {
-      await store.delete(publicRecordKey(publicAccessId));
-      publicAccessId = null;
-    } else if (publicLocked && !publicAccessId) publicAccessId = newPublicAccessId();
+    const previousPublicAccessId = existing?.publicAccessId || null;
+    const existingIsPublic = existing?.set?.visibility === 'public' && existing?.set?.locked;
+    let publicAccessId = publicLocked && existingIsPublic ? previousPublicAccessId : null;
+    if (publicLocked && !publicAccessId) publicAccessId = newPublicAccessId();
     const record = {
-      set,
-      creator: user.userMetadata?.fullName || user.user_metadata?.full_name || 'Adventurer',
+      set, creator: user.userMetadata?.fullName || user.user_metadata?.full_name || 'Adventurer',
       trayImageKey, trayImageAccessToken, publicAccessId,
-      createdAt: existing?.createdAt || now,
-      updatedAt: now,
+      createdAt: existing?.createdAt || now, updatedAt: now,
     };
-    await store.setJSON(key, record);
-    if (isNewSet && await countUserRecords(store, user.id) > MAX_USER_DICE_SETS) {
-      await store.delete(key);
-      if (trayImageKey) await store.delete(trayImageKey);
-      if (publicAccessId) await store.delete(publicRecordKey(publicAccessId));
-      throw quotaError();
+
+    if (publicLocked) {
+      stagedPublicKey = publicRecordKey(publicAccessId);
+      stagedPublicWasNew = publicAccessId !== previousPublicAccessId;
+      await store.setJSON(stagedPublicKey, buildPublicProjection(record, publicAccessId));
     }
-    if (publicLocked) await store.setJSON(publicRecordKey(publicAccessId), buildPublicProjection(record, publicAccessId));
+    await store.setJSON(key, record); recordCommitted = true;
+
+    if (isNewSet) {
+      let overQuota = false;
+      try { overQuota = await countUserRecords(store, user.id) > MAX_USER_DICE_SETS; }
+      catch (error) {
+        console.error('Post-save dice-set quota verification failed; rolling back new set:', error);
+        await store.delete(key); recordCommitted = false;
+        if (stagedTrayImageKey) { await bestEffortDelete(store, stagedTrayImageKey, 'staged tray image'); stagedTrayImageKey = null; }
+        if (stagedPublicKey) { await bestEffortDelete(store, stagedPublicKey, 'staged public projection'); stagedPublicKey = null; }
+        throw new Error('Unable to verify the dice-set storage limit. The save was rolled back; retry.');
+      }
+      if (overQuota) {
+        await store.delete(key); recordCommitted = false;
+        if (stagedTrayImageKey) { await bestEffortDelete(store, stagedTrayImageKey, 'staged tray image'); stagedTrayImageKey = null; }
+        if (stagedPublicKey) { await bestEffortDelete(store, stagedPublicKey, 'staged public projection'); stagedPublicKey = null; }
+        throw quotaError();
+      }
+    }
+
+    if (previousPublicAccessId && previousPublicAccessId !== publicAccessId) {
+      await bestEffortDelete(store, publicRecordKey(previousPublicAccessId), 'previous public projection');
+    }
+    if (previousTrayImageKey && previousTrayImageKey !== trayImageKey) {
+      await bestEffortDelete(store, previousTrayImageKey, 'previous tray image');
+    }
     return json({ success: true, record });
   } catch (error) {
+    if (!recordCommitted && stagedTrayImageKey) await bestEffortDelete(cleanupStore, stagedTrayImageKey, 'staged tray image');
+    if (!recordCommitted && stagedPublicWasNew && stagedPublicKey) await bestEffortDelete(cleanupStore, stagedPublicKey, 'staged public projection');
     console.error('Save V2 dice set failed:', error);
     return json({ error: error?.message || 'Unable to save dice set.' }, 400);
   }

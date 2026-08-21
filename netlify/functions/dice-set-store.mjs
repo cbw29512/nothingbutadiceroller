@@ -11,17 +11,20 @@ function legacyPublicAccessId(ownerId, setId) {
   const hash = createHash('sha256').update(`${ownerId}\u0000${setId}`).digest('hex').slice(0, 32);
   return `public_legacy_${hash}`;
 }
-export function openDiceSetStore() {
-  try {
-    return getStore({ name: STORE_NAME, consistency: 'strong' });
-  } catch (error) {
-    console.error('Failed to open strong-consistency dice-set store:', error);
-    throw error;
-  }
+export function diceSetStoreName(context) {
+  return String(context?.deploy?.context || 'dev') === 'production' ? STORE_NAME : `${STORE_NAME}-nonprod`;
+}
+export function openDiceSetStore(context) {
+  try { return getStore({ name: diceSetStoreName(context), consistency: 'strong' }); } catch (error) { console.error('Failed to open strong-consistency dice-set store:', error); throw error; }
 }
 export function userDiceSetPrefix(userId) { return `users/${keyPart(userId)}/dice-sets/`; }
 export function recordKey(userId, setId) { return `${userDiceSetPrefix(userId)}${keyPart(setId)}.json`; }
 export function imageKey(userId, setId) { return `${userDiceSetPrefix(userId)}${keyPart(setId)}_tray`; }
+export function versionedImageKey(userId, setId, version) {
+  const safeVersion = String(version || '').trim();
+  if (!/^[A-Za-z0-9_-]{16,128}$/.test(safeVersion)) throw new Error('Tray image version is invalid.');
+  return `${imageKey(userId, setId)}_${keyPart(safeVersion)}`;
+}
 export function publicRecordKey(publicAccessId) { return `${PUBLIC_DICE_SET_PREFIX}${keyPart(publicAccessId)}.json`; }
 function isUserRecordKey(key, prefix) { return key.endsWith('.json') && key !== `${prefix}index.json`; }
 
@@ -35,6 +38,8 @@ function publicSet(record, publicAccessId) {
       kind: 'blob',
       url: `/api/dice-set-image?public=${encodeURIComponent(publicAccessId)}&token=${record.trayImageAccessToken}`,
     };
+  } else if (image) {
+    set.appearance.tray.image = null;
   }
   return set;
 }
@@ -74,6 +79,15 @@ async function listRecords(store, prefix, predicate = () => true) {
     throw error;
   }
 }
+function isCurrentProjection(projection, record) {
+  return Boolean(
+    projection?.publicAccessId && projection?.ownerId && projection?.setId
+    && record?.set?.locked && record.set.visibility === 'public'
+    && record.publicAccessId === projection.publicAccessId
+    && record.set.ownerId === projection.ownerId
+    && record.set.id === projection.setId
+  );
+}
 export async function countUserRecords(store, userId) {
   try {
     const prefix = userDiceSetPrefix(userId);
@@ -84,11 +98,16 @@ export async function countUserRecords(store, userId) {
   }
 }
 export function listUserRecords(store, userId) {
-  const prefix = userDiceSetPrefix(userId);
-  return listRecords(store, prefix, (key) => isUserRecordKey(key, prefix));
+  const prefix = userDiceSetPrefix(userId); return listRecords(store, prefix, (key) => isUserRecordKey(key, prefix));
 }
-export function listPublicProjections(store) {
-  return listRecords(store, PUBLIC_DICE_SET_PREFIX, (key) => key.endsWith('.json'));
+export async function listPublicProjections(store) {
+  const projections = await listRecords(store, PUBLIC_DICE_SET_PREFIX, (key) => key.endsWith('.json'));
+  const current = await Promise.all(projections.map(async (projection) => {
+    if (!projection?.ownerId || !projection?.setId) return null;
+    const record = await store.get(recordKey(projection.ownerId, projection.setId), { type: 'json' }).catch(() => null);
+    return isCurrentProjection(projection, record) ? projection : null;
+  }));
+  return current.filter(Boolean);
 }
 async function readLegacyIndex(store) {
   const value = await store.get(LEGACY_COMMUNITY_INDEX, { type: 'json' }).catch(() => []);
@@ -102,7 +121,7 @@ export async function listLegacyPublicProjections(store, excludedSources = new S
       const sourceKey = JSON.stringify([item?.ownerId, item?.setId]);
       if (!item?.ownerId || !item?.setId || excludedSources.has(sourceKey)) continue;
       const record = await store.get(recordKey(item.ownerId, item.setId), { type: 'json' }).catch(() => null);
-      if (!record?.set?.locked || record.set.visibility !== 'public') continue;
+      if (!record?.set?.locked || record.set.visibility !== 'public' || record?.publicAccessId) continue;
       projections.push(buildPublicProjection(record, legacyPublicAccessId(item.ownerId, item.setId), { legacy: true }));
     }
     return projections;
@@ -114,12 +133,15 @@ export async function listLegacyPublicProjections(store, excludedSources = new S
 export async function resolvePublicProjection(store, publicAccessId) {
   try {
     const current = await store.get(publicRecordKey(publicAccessId), { type: 'json' }).catch(() => null);
-    if (current?.publicAccessId === publicAccessId) return current;
+    if (current?.publicAccessId === publicAccessId) {
+      const record = await store.get(recordKey(current.ownerId, current.setId), { type: 'json' }).catch(() => null);
+      return isCurrentProjection(current, record) ? current : null;
+    }
     const legacyIndex = await readLegacyIndex(store);
     const legacy = legacyIndex.find((item) => item?.ownerId && item?.setId && legacyPublicAccessId(item.ownerId, item.setId) === publicAccessId);
     if (!legacy) return null;
     const record = await store.get(recordKey(legacy.ownerId, legacy.setId), { type: 'json' }).catch(() => null);
-    if (!record?.set?.locked || record.set.visibility !== 'public') return null;
+    if (!record?.set?.locked || record.set.visibility !== 'public' || record?.publicAccessId) return null;
     return buildPublicProjection(record, publicAccessId, { legacy: true });
   } catch (error) {
     console.error('Failed to resolve public dice-set projection:', error);

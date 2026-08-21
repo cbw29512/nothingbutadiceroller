@@ -1,4 +1,5 @@
 import { createUserDiceSet } from './schema.mjs';
+import { assertValidDiceSet } from './validation.mjs';
 
 const HEX = /^#[0-9a-f]{6}$/i;
 
@@ -36,13 +37,11 @@ export function migrateLegacyTheme(legacy, { ownerId, fallbackId } = {}) {
     appearance.tray.glow = { enabled: glowEnabled, color: glowColor, intensity: glowEnabled ? 0.7 : 0 };
 
     const imageUrl = safeLegacyImageUrl(legacy.imageUrl);
-    appearance.tray.image = imageUrl
-      ? { assetId: null, legacyUrl: imageUrl, fit: 'cover', opacity: 1 }
-      : null;
+    appearance.tray.image = imageUrl ? { kind: 'legacy', url: imageUrl } : null;
 
     set.locked = Boolean(legacy.isPublic);
     set.visibility = legacy.isPublic ? 'public' : 'private';
-    return set;
+    return assertValidDiceSet(set);
   } catch (error) {
     console.error('Failed to migrate legacy theme:', error);
     throw error;
