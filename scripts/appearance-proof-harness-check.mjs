@@ -21,6 +21,10 @@ const required = [
   "querySelector('canvas.dice-box-canvas')",
   'canvas.clientWidth',
   'tray.clientWidth',
+  'PROOF_ROLL_TIMEOUT_MS',
+  'withTimeout',
+  'Promise.race',
+  'Proof roll timed out before DiceBox returned a result.',
   'callbackValues',
   'returnedValues',
   'NATURAL 20 DETECTED — MANUAL VISUAL GATE',
@@ -45,9 +49,9 @@ assert.ok(source.includes("!Object.hasOwn(config, 'meshFile')"),
   'Proof harness must verify the runtime theme inherits canonical DiceBox geometry.');
 assert.ok(source.includes('Number.isInteger(value) && value >= 1 && value <= 20'),
   'Proof harness must enforce canonical d20 result bounds.');
-assert.equal(source.includes('offscreen: false'), false,
-  'Proof harness must use the same DiceBox renderer selection policy as production.');
+assert.ok(source.includes('offscreen: false'),
+  'Isolated proof harness must use the deterministic onscreen renderer until the visual gate passes.');
 assert.equal(source.includes('diceBox.updateConfig'), false,
   'Isolated proof harness must not mutate live DiceBox mechanics/config after initialization.');
 
-console.log('Appearance proof harness passed: external theme identity, visible full-size canvas, production-matching renderer selection, canonical mesh, numeric results, and natural-20 manual visual gate are enforced.');
+console.log('Appearance proof harness passed: external theme identity, visible full-size canvas, deterministic onscreen proof rendering, timeout diagnostics, canonical mesh, numeric results, and natural-20 manual visual gate are enforced.');

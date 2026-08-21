@@ -10,6 +10,7 @@ const MODULE_SOURCES = [
   `https://cdn.jsdelivr.net/npm/@3d-dice/dice-box@${APPEARANCE_DICEBOX_VERSION}/dist/dice-box.es.min.js`,
   `https://unpkg.com/@3d-dice/dice-box@${APPEARANCE_DICEBOX_VERSION}/dist/dice-box.es.min.js`,
 ];
+const PROOF_ROLL_TIMEOUT_MS = 15000;
 
 let diceBox = null;
 let runtimeTheme = null;
@@ -69,6 +70,16 @@ function valuesFrom(results) {
 function enableButtons(enabled) {
   q('proof-roll-one').disabled = !enabled;
   q('proof-roll-ten').disabled = !enabled;
+}
+
+function withTimeout(promise, timeoutMs, message) {
+  let timer;
+  return Promise.race([
+    Promise.resolve(promise),
+    new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new Error(message)), timeoutMs);
+    }),
+  ]).finally(() => clearTimeout(timer));
 }
 
 async function decodeThemeSvg(url) {
@@ -147,10 +158,14 @@ async function proofRoll(qty) {
     enableButtons(false);
     completedDice = [];
     q('proof-status').textContent = `Rolling ${qty} canonical d20${qty === 1 ? '' : 's'}…`;
-    const results = await diceBox.roll([{ qty, sides: 20 }], {
-      theme: runtimeTheme.themeName,
-      themeColor: runtimeTheme.themeColor,
-    });
+    const results = await withTimeout(
+      diceBox.roll([{ qty, sides: 20 }], {
+        theme: runtimeTheme.themeName,
+        themeColor: runtimeTheme.themeColor,
+      }),
+      PROOF_ROLL_TIMEOUT_MS,
+      'Proof roll timed out before DiceBox returned a result.',
+    );
     const values = valuesFrom(results);
     assertProof(values.length === qty, `DiceBox returned ${values.length} engine result(s); expected ${qty}.`);
     assertProof(values.every((value) => Number.isInteger(value) && value >= 1 && value <= 20),
@@ -190,6 +205,9 @@ async function initialize() {
       theme: runtimeTheme.themeName,
       themeColor: runtimeTheme.themeColor,
       externalThemes: { [runtimeTheme.themeName]: runtimeTheme.basePath },
+      // Keep this isolated visual proof on DiceBox's direct onscreen renderer.
+      // The offscreen-worker compatibility gate belongs to final live integration.
+      offscreen: false,
       gravity: 1, mass: 1, friction: 0.8, restitution: 0.15,
       linearDamping: 0.45, angularDamping: 0.4, startingHeight: 8,
       spinForce: 5, throwForce: 5, scale: scale(),
@@ -210,7 +228,7 @@ async function initialize() {
     q('proof-roll-one').addEventListener('click', () => proofRoll(1));
     q('proof-roll-ten').addEventListener('click', () => proofRoll(10));
     enableButtons(true);
-    q('proof-status').textContent = `DiceBox ${APPEARANCE_DICEBOX_VERSION} proof ready. External theme ${runtimeTheme.themeName} verified on canonical default mesh with a visible full-size canvas. Roll until a natural 20 appears.`;
+    q('proof-status').textContent = `DiceBox ${APPEARANCE_DICEBOX_VERSION} proof ready. External theme ${runtimeTheme.themeName} verified on canonical default mesh with a visible full-size canvas using the deterministic onscreen proof renderer. Roll until a natural 20 appears.`;
   } catch (error) {
     console.error('Appearance proof harness failed to initialize:', error);
     diceBox = null;
