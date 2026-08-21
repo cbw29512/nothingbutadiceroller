@@ -106,6 +106,26 @@ function verifyLoadedTheme() {
   assertProof(loaded.meshName === 'default', 'DiceBox did not use the canonical default mesh for the proof theme.');
 }
 
+async function verifyCanvasLayout() {
+  const tray = q('appearance-proof-tray');
+  assertProof(tray, 'Proof tray is missing from the page.');
+
+  await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  const canvas = tray.querySelector('canvas.dice-box-canvas');
+  assertProof(canvas, 'DiceBox canvas was not inserted into the proof tray.');
+
+  const trayWidth = tray.clientWidth;
+  const trayHeight = tray.clientHeight;
+  const canvasWidth = canvas.clientWidth;
+  const canvasHeight = canvas.clientHeight;
+  assertProof(trayWidth > 0 && trayHeight > 0, 'Proof tray has zero render dimensions.');
+  assertProof(canvasWidth > 0 && canvasHeight > 0, 'DiceBox canvas has zero render dimensions.');
+  assertProof(
+    Math.abs(canvasWidth - trayWidth) <= 2 && Math.abs(canvasHeight - trayHeight) <= 2,
+    `DiceBox canvas does not fill the proof tray (${canvasWidth}×${canvasHeight} vs ${trayWidth}×${trayHeight}).`,
+  );
+}
+
 function verifyCompletedDice(qty, values) {
   assertProof(completedDice.length === qty, `Expected ${qty} completed d20${qty === 1 ? '' : 's'}, got ${completedDice.length}.`);
   for (const die of completedDice) {
@@ -170,7 +190,6 @@ async function initialize() {
       theme: runtimeTheme.themeName,
       themeColor: runtimeTheme.themeColor,
       externalThemes: { [runtimeTheme.themeName]: runtimeTheme.basePath },
-      offscreen: false,
       gravity: 1, mass: 1, friction: 0.8, restitution: 0.15,
       linearDamping: 0.45, angularDamping: 0.4, startingHeight: 8,
       spinForce: 5, throwForce: 5, scale: scale(),
@@ -186,11 +205,12 @@ async function initialize() {
     verifyLoadedTheme();
     assertProof(preflightConfig.systemName === loadedThemeConfig?.systemName,
       'Preflight theme config and DiceBox-loaded theme config disagree.');
+    await verifyCanvasLayout();
 
     q('proof-roll-one').addEventListener('click', () => proofRoll(1));
     q('proof-roll-ten').addEventListener('click', () => proofRoll(10));
     enableButtons(true);
-    q('proof-status').textContent = `DiceBox ${APPEARANCE_DICEBOX_VERSION} proof ready. External theme ${runtimeTheme.themeName} verified on canonical default mesh. Roll until a natural 20 appears.`;
+    q('proof-status').textContent = `DiceBox ${APPEARANCE_DICEBOX_VERSION} proof ready. External theme ${runtimeTheme.themeName} verified on canonical default mesh with a visible full-size canvas. Roll until a natural 20 appears.`;
   } catch (error) {
     console.error('Appearance proof harness failed to initialize:', error);
     diceBox = null;

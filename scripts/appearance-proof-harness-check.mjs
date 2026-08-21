@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
-const source = await readFile(new URL('../js/appearance/dicebox-proof-harness.js', import.meta.url), 'utf8');
+const [source, css] = await Promise.all([
+  readFile(new URL('../js/appearance/dicebox-proof-harness.js', import.meta.url), 'utf8'),
+  readFile(new URL('../appearance-harness.css', import.meta.url), 'utf8'),
+]);
 const required = [
   'preflightRuntimeTheme',
   'theme.config.json',
@@ -14,6 +17,10 @@ const required = [
   "loaded.meshName === 'default'",
   "die.theme === runtimeTheme.themeName",
   "die.meshName === 'default'",
+  'verifyCanvasLayout',
+  "querySelector('canvas.dice-box-canvas')",
+  'canvas.clientWidth',
+  'tray.clientWidth',
   'callbackValues',
   'returnedValues',
   'NATURAL 20 DETECTED — MANUAL VISUAL GATE',
@@ -23,11 +30,24 @@ for (const reference of required) {
   assert.ok(source.includes(reference), `Proof harness is missing required evidence gate: ${reference}`);
 }
 
+for (const reference of [
+  '.appearance-proof-tray canvas',
+  'position:absolute!important',
+  'inset:0',
+  'width:100%!important',
+  'height:100%!important',
+  'z-index:2',
+]) {
+  assert.ok(css.includes(reference), `Proof harness CSS is missing required DiceBox canvas layout: ${reference}`);
+}
+
 assert.ok(source.includes("!Object.hasOwn(config, 'meshFile')"),
   'Proof harness must verify the runtime theme inherits canonical DiceBox geometry.');
 assert.ok(source.includes('Number.isInteger(value) && value >= 1 && value <= 20'),
   'Proof harness must enforce canonical d20 result bounds.');
+assert.equal(source.includes('offscreen: false'), false,
+  'Proof harness must use the same DiceBox renderer selection policy as production.');
 assert.equal(source.includes('diceBox.updateConfig'), false,
   'Isolated proof harness must not mutate live DiceBox mechanics/config after initialization.');
 
-console.log('Appearance proof harness passed: external theme identity, SVG availability, canonical mesh, numeric results, and natural-20 manual visual gate are enforced.');
+console.log('Appearance proof harness passed: external theme identity, visible full-size canvas, production-matching renderer selection, canonical mesh, numeric results, and natural-20 manual visual gate are enforced.');
