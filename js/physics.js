@@ -82,22 +82,42 @@ export function isPhysicsReady() {
   return Boolean(diceBox);
 }
 
+async function rollDefaultFallback(notation, themeColor, originalError) {
+  console.warn('Custom dice appearance failed; retrying the same roll with Default Dice.', originalError);
+  liveRuntimeThemes = null;
+  await Promise.resolve(diceBox.updateConfig({
+    theme: 'default',
+    themeColor,
+    scale: getDiceScale(),
+  }));
+  return diceBox.roll(notation);
+}
+
 export async function rollPhysics(notation, themeColor) {
   if (!diceBox) throw new Error('DiceBox is not initialized.');
   if (!Array.isArray(notation) || notation.length === 0) {
     throw new Error('No valid dice notation to roll.');
   }
 
+  const usesCustomAppearance = Boolean(liveRuntimeThemes);
   try {
     await Promise.resolve(diceBox.updateConfig({
       themeColor,
       scale: getDiceScale(),
     }));
-    const liveNotation = liveRuntimeThemes
+    const liveNotation = usesCustomAppearance
       ? decorateDiceBoxNotation(notation, liveRuntimeThemes)
       : notation;
     return await diceBox.roll(liveNotation);
   } catch (err) {
+    if (usesCustomAppearance) {
+      try {
+        return await rollDefaultFallback(notation, themeColor, err);
+      } catch (fallbackError) {
+        console.error('Default Dice fallback roll also failed:', fallbackError);
+        throw fallbackError;
+      }
+    }
     console.error('DiceBox roll failed:', err);
     throw err;
   }
