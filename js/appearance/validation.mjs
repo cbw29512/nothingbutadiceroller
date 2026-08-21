@@ -8,6 +8,7 @@ import {
 } from './defaults.mjs';
 import { countFaceDisplayGraphemes, isValidFaceDisplayValue } from './face-display.mjs';
 import { isCanonicalFaceResult } from './face-values.mjs';
+import { validateTrayImage } from './tray-image.mjs';
 
 const HEX = /^#[0-9a-f]{6}$/i;
 const FACE_KINDS = new Set(['text', 'icon']);
@@ -20,44 +21,28 @@ function checkGlow(glow, path, errors) {
   if (!glow || typeof glow !== 'object') return errors.push(`${path} must be an object.`);
   if (typeof glow.enabled !== 'boolean') errors.push(`${path}.enabled must be boolean.`);
   if (!HEX.test(String(glow.color || ''))) errors.push(`${path}.color must be a 6-digit hex color.`);
-  if (!Number.isFinite(glow.intensity) || glow.intensity < 0 || glow.intensity > 1) {
-    errors.push(`${path}.intensity must be between 0 and 1.`);
-  }
+  if (!Number.isFinite(glow.intensity) || glow.intensity < 0 || glow.intensity > 1) errors.push(`${path}.intensity must be between 0 and 1.`);
 }
-
 function checkStyleOverrides(overrides, path, errors) {
-  if (!overrides || typeof overrides !== 'object' || Array.isArray(overrides)) {
-    errors.push(`${path} must be an object.`);
-    return;
-  }
+  if (!overrides || typeof overrides !== 'object' || Array.isArray(overrides)) return errors.push(`${path} must be an object.`);
   const unsupported = Object.keys(overrides).filter((key) => !STYLE_OVERRIDE_KEYS.has(key));
   if (unsupported.length) errors.push(`${path} contains unsupported fields: ${unsupported.join(', ')}.`);
   if (overrides.bodyColor != null && !HEX.test(String(overrides.bodyColor))) errors.push(`${path}.bodyColor is invalid.`);
   if (overrides.faceColor != null && !HEX.test(String(overrides.faceColor))) errors.push(`${path}.faceColor is invalid.`);
-  if (overrides.opacity != null && (!Number.isFinite(overrides.opacity) || overrides.opacity < 0.25 || overrides.opacity > 1)) {
-    errors.push(`${path}.opacity must be between 0.25 and 1.`);
-  }
+  if (overrides.opacity != null && (!Number.isFinite(overrides.opacity) || overrides.opacity < 0.25 || overrides.opacity > 1)) errors.push(`${path}.opacity must be between 0.25 and 1.`);
   if (overrides.glow != null) checkGlow(overrides.glow, `${path}.glow`, errors);
 }
-
 function checkFace(face, path, errors) {
   if (!face || typeof face !== 'object') return errors.push(`${path} must be an object.`);
   if (!FACE_KINDS.has(face.kind)) errors.push(`${path}.kind is unsupported.`);
   if (face.color != null && !HEX.test(String(face.color))) errors.push(`${path}.color is invalid.`);
-  if (face.fontId != null && (typeof face.fontId !== 'string' || face.fontId.length > 80)) {
-    errors.push(`${path}.fontId must reference a supported font.`);
-  }
-  if (face.kind === 'text' && !isValidFaceDisplayValue(face.value)) {
-    errors.push(`${path}.value must be a number or one visible character/symbol.`);
-  }
+  if (face.fontId != null && (typeof face.fontId !== 'string' || face.fontId.length > 80)) errors.push(`${path}.fontId must reference a supported font.`);
+  if (face.kind === 'text' && !isValidFaceDisplayValue(face.value)) errors.push(`${path}.value must be a short visible label.`);
   if (face.kind === 'icon') {
     const value = typeof face.value === 'string' ? face.value.trim() : '';
-    if (!LEGACY_ICON_IDS.has(value) && countFaceDisplayGraphemes(value) !== 1) {
-      errors.push(`${path}.value must be one visible symbol or a supported built-in icon.`);
-    }
+    if (!LEGACY_ICON_IDS.has(value) && countFaceDisplayGraphemes(value) !== 1) errors.push(`${path}.value must be one visible symbol or a supported built-in icon.`);
   }
 }
-
 function checkDie(type, die, errors) {
   if (!die) return errors.push(`${type} configuration is required.`);
   if (die.shapeId !== `canonical:${type}`) errors.push(`${type} shapeId must remain canonical:${type}.`);
@@ -66,18 +51,12 @@ function checkDie(type, die, errors) {
   checkStyleOverrides(die.styleOverrides, `appearance.diceSet.dice.${type}.styleOverrides`, errors);
   const faces = die.faces && typeof die.faces === 'object' ? die.faces : {};
   const faceEntries = Object.entries(faces);
-  if (die.faceMode === RAW_FACE_MODE && faceEntries.length) {
-    errors.push(`${type} RAW faces must use standard numbering with no visual replacements.`);
-  }
+  if (die.faceMode === RAW_FACE_MODE && faceEntries.length) errors.push(`${type} RAW faces must use standard numbering with no visual replacements.`);
   for (const [logicalFace, face] of faceEntries) {
-    if (!isCanonicalFaceResult(type, logicalFace)) {
-      errors.push(`${type} custom face ${logicalFace} is not a physical face result for this die.`);
-    } else if (die.faceMode === CUSTOM_FACE_MODE) {
-      checkFace(face, `appearance.diceSet.dice.${type}.faces.${logicalFace}`, errors);
-    }
+    if (!isCanonicalFaceResult(type, logicalFace)) errors.push(`${type} custom face ${logicalFace} is not a physical face result for this die.`);
+    else if (die.faceMode === CUSTOM_FACE_MODE) checkFace(face, `appearance.diceSet.dice.${type}.faces.${logicalFace}`, errors);
   }
 }
-
 function checkAppearance(appearance, errors) {
   const style = appearance?.diceSet?.defaultStyle;
   if (!style) return errors.push('appearance.diceSet.defaultStyle is required.');
@@ -92,6 +71,8 @@ function checkAppearance(appearance, errors) {
   for (const type of Object.keys(CANONICAL_DICE)) checkDie(type, dice[type], errors);
   if (!HEX.test(String(appearance?.tray?.color || ''))) errors.push('Tray color is invalid.');
   checkGlow(appearance?.tray?.glow, 'appearance.tray.glow', errors);
+  const trayImage = validateTrayImage(appearance?.tray?.image);
+  if (!trayImage.ok) errors.push(trayImage.error);
 }
 
 export function validateDiceSet(set) {
@@ -122,7 +103,6 @@ export function validateDiceSet(set) {
   }
   return { ok: errors.length === 0, errors };
 }
-
 export function assertValidDiceSet(set) {
   const result = validateDiceSet(set);
   if (!result.ok) throw new Error(result.errors.join(' | '));
