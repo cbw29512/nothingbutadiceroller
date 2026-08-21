@@ -4,10 +4,7 @@ import { createStudioDraftGuard } from '../js/appearance/studio-draft-guard.mjs'
 
 const confirmations = [];
 let confirmationResult = false;
-const guard = createStudioDraftGuard({
-  confirmFn(message) { confirmations.push(message); return confirmationResult; },
-});
-
+const guard = createStudioDraftGuard({ confirmFn(message) { confirmations.push(message); return confirmationResult; } });
 assert.equal(guard.isDirty(), false);
 assert.equal(guard.confirmDiscard(), true, 'Clean drafts must switch without prompting.');
 assert.equal(confirmations.length, 0);
@@ -33,14 +30,20 @@ beforeUnloadHandler(dirtyEvent);
 assert.equal(dirtyEvent.prevented, true);
 assert.equal(dirtyEvent.returnValue, '');
 
-const studio = await readFile(new URL('../js/appearance/studio.js', import.meta.url), 'utf8');
+const [studio, bindings] = await Promise.all([
+  readFile(new URL('../js/appearance/studio.js', import.meta.url), 'utf8'),
+  readFile(new URL('../js/appearance/studio-bindings.mjs', import.meta.url), 'utf8'),
+]);
 for (const required of [
   'createStudioDraftGuard()', 'draftGuard.markDirty()', 'draftGuard.markClean()',
   "requireCleanDraft('using it on the roller')", "requireCleanDraft('locking or unlocking it')",
   "requireCleanDraft('changing its community visibility')", 'if (!draftIsPersisted())',
   "setStatus('Unsaved dice set discarded.'", 'draftGuard.confirmAction(`Delete',
-  "q('set-name').addEventListener('input'", 'draftGuard.bindBeforeUnload(window)',
-  'if (activeId === draft.id) setActiveDiceSet(draft);',
+  'if (activeId === draft.id) setActiveDiceSet(draft);', 'bindStudioControls({',
 ]) assert.ok(studio.includes(required), `Studio draft contract missing: ${required}`);
+for (const required of [
+  "q('set-name').addEventListener('input'", "q('set-name').addEventListener('change'",
+  'bindStudioVisualControls({', 'draftGuard.bindBeforeUnload(windowRef)',
+]) assert.ok(bindings.includes(required), `Studio binding contract missing: ${required}`);
 
-console.log('Studio draft guard passed: clean/dirty state, discard confirmation, unload protection, save-before-use/lock/publish, unsaved discard, and delete confirmation are protected.');
+console.log('Studio draft guard passed: clean/dirty state, discard confirmation, unload protection, save-before-use/lock/publish, unsaved discard, delete confirmation, and modular bindings are protected.');
