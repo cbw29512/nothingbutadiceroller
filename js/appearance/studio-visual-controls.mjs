@@ -2,11 +2,22 @@ import { CUSTOM_FACE_MODE } from './defaults.mjs';
 import { canEditDiceSet } from './authorization.mjs';
 import { replaceVisualFace, removeVisualFace, useRawFaces } from './face-customization.mjs';
 import { buildAppearanceRenderPlan } from './render-plan.mjs';
+import { MAX_TRAY_IMAGE_BYTES } from './tray-image.mjs';
 
 function ensureDieGlow(set, type) {
   const overrides = set.appearance.diceSet.dice[type].styleOverrides;
   if (!overrides.glow) overrides.glow = structuredClone(buildAppearanceRenderPlan(set).dice[type].style.glow);
   return overrides.glow;
+}
+function readImageFile(file) {
+  return new Promise((resolve, reject) => {
+    if (!file || !['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) return reject(new Error('Tray image must be PNG, JPEG, or WebP.'));
+    if (file.size > MAX_TRAY_IMAGE_BYTES) return reject(new Error('Tray image must be 4 MB or smaller.'));
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ''));
+    reader.onerror = () => reject(new Error('Unable to read tray image.'));
+    reader.readAsDataURL(file);
+  });
 }
 export function bindStudioVisualControls(context) {
   const { q, updateDraft, getDraft, setDraft, getSelectedDie, getOwnerId, refresh, setStatus } = context;
@@ -34,6 +45,19 @@ export function bindStudioVisualControls(context) {
   q('tray-glow-color').addEventListener('input', () => updateDraft((set) => {
     set.appearance.tray.glow.color = q('tray-glow-color').value; set.appearance.tray.glow.intensity = 0.75;
   }));
+  q('tray-image').addEventListener('change', async () => {
+    try {
+      const file = q('tray-image').files?.[0];
+      if (!file) return;
+      const url = await readImageFile(file);
+      updateDraft((set) => { set.appearance.tray.image = { kind: 'data', url }; });
+      q('tray-image').value = '';
+      setStatus('Tray image added visually. Save the set to keep it.', 'ready');
+    } catch (error) {
+      console.error('Failed to add tray image:', error); q('tray-image').value = ''; setStatus(error.message, 'error');
+    }
+  });
+  q('remove-tray-image').addEventListener('click', () => updateDraft((set) => { set.appearance.tray.image = null; }));
   q('face-mode').addEventListener('change', () => {
     const set = getDraft();
     if (!canEditDiceSet(set, getOwnerId())) return;
