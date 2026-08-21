@@ -12,7 +12,6 @@ import {
   loadSavedDiceSets, resetActiveToDefault, saveDiceSetLocal, setActiveDiceSet,
 } from './studio-persistence.mjs';
 import { fillEditor, renderCommunity, renderLibrary, renderPreview, setStatus } from './studio-render.mjs';
-
 const browserOwnerId = getOrCreateLocalOwnerId();
 const browserSavedSets = loadSavedDiceSets(localStorage, browserOwnerId);
 let ownerId = browserOwnerId;
@@ -26,7 +25,6 @@ let draft = cloneDiceSet(SYSTEM_DEFAULT_DICE_SET);
 let selectedDie = 'd20';
 const draftGuard = createStudioDraftGuard();
 const q = (id) => document.getElementById(id);
-
 function findSet(id) {
   if (id === SYSTEM_DEFAULT_DICE_SET_ID) return SYSTEM_DEFAULT_DICE_SET;
   return savedSets.find((set) => set.id === id) || communitySets.find((set) => set.id === id) || null;
