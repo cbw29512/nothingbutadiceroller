@@ -1,5 +1,6 @@
 import { CANONICAL_DICE } from './defaults.mjs';
 import { getCanonicalFaceResults, isCanonicalFaceResult } from './face-values.mjs';
+import { matchColliderFaceToRenderFace } from './dicebox-render-face-match.mjs';
 
 function getRenderMesh(modelData, dieType) {
   const mesh = modelData?.meshes?.find((item) => item?.name === dieType);
@@ -7,6 +8,10 @@ function getRenderMesh(modelData, dieType) {
     throw new Error(`Canonical ${dieType} render mesh is missing UV data.`);
   }
   return mesh;
+}
+
+function getColliderMesh(modelData, dieType) {
+  return modelData?.meshes?.find((item) => item?.name === `${dieType}_collider`) || null;
 }
 
 function triangleUv(mesh, faceId) {
@@ -67,16 +72,21 @@ export function extractDiceBoxFaceRegions(modelData, dieType) {
   try {
     if (!Object.hasOwn(CANONICAL_DICE, dieType)) throw new Error(`Unsupported die type: ${dieType}`);
     const mesh = getRenderMesh(modelData, dieType);
+    const colliderMesh = getColliderMesh(modelData, dieType);
     const colliderMap = modelData?.colliderFaceMap?.[dieType];
     if (!colliderMap || typeof colliderMap !== 'object') throw new Error(`Canonical ${dieType} colliderFaceMap is missing.`);
     const grouped = new Map();
+    const usedD20RenderFaces = new Set();
     for (const [rawFaceId, rawResult] of Object.entries(colliderMap)) {
       const faceId = Number(rawFaceId); const logicalResult = Number(rawResult);
       if (!Number.isInteger(faceId) || !isCanonicalFaceResult(dieType, logicalResult)) {
         throw new Error(`${dieType} collider mapping contains an invalid face.`);
       }
+      const renderFaceId = dieType === 'd20' && colliderMesh
+        ? matchColliderFaceToRenderFace(mesh, colliderMesh, faceId, usedD20RenderFaces)
+        : faceId;
       const triangles = grouped.get(logicalResult) || [];
-      triangles.push(triangleUv(mesh, faceId));
+      triangles.push(triangleUv(mesh, renderFaceId));
       grouped.set(logicalResult, triangles);
     }
     const expected = getCanonicalFaceResults(dieType);
