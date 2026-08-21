@@ -87,8 +87,8 @@
             <strong id="logical-face-label">Face 20</strong>
             <span id="logical-result-label">Always rolls 20</span>
           </div>
-          <label class="studio-field">Face display<input id="face-value" data-face-edit-control type="text" maxlength="16" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="☠, ★, A, 20"></label>
-          <p class="studio-note">Use a number, one character, or one symbol. Words and multi-character labels are not allowed.</p>
+          <label class="studio-field">Face display<input id="face-value" data-face-edit-control type="text" maxlength="16" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="☠, ★, CRIT, 20"></label>
+          <p class="studio-note">Use a number, keyboard character, symbol, rune, icon, or short word. This changes only the printed face.</p>
           <label class="studio-field">Face color<input id="custom-face-color" data-face-edit-control type="color" value="#ffffff"></label>
           <div class="button-row"><button id="apply-face" class="btn secondary" data-face-edit-control type="button">Apply Face</button><button id="remove-face" class="btn ghost" data-face-edit-control type="button">Restore Number</button></div>
         </fieldset>
@@ -99,6 +99,9 @@
             <label>Glow<input id="tray-glow-color" data-edit-control type="color"></label>
           </div>
           <label class="check-row"><input id="tray-glow-enabled" data-edit-control type="checkbox"> Enable tray glow</label>
+          <label class="studio-field">Tray image<input id="tray-image" data-edit-control type="file" accept="image/png,image/jpeg,image/webp"></label>
+          <p class="studio-note">Optional PNG, JPEG, or WebP up to 4 MB. The image changes the tray only.</p>
+          <button id="remove-tray-image" class="btn ghost" data-edit-control type="button">Remove Tray Image</button>
         </fieldset>
         <div class="studio-actions">
           <button id="save-set" class="btn primary" type="button">Save Dice Set</button>
