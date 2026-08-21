@@ -6,6 +6,18 @@ const COMMUNITY_INDEX = 'community/dice-sets/index.json';
 function json(body, status = 200) { return Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } }); }
 function recordKey(userId, setId) { return `users/${userId}/dice-sets/${setId}.json`; }
 function indexKey(userId) { return `users/${userId}/dice-sets/index.json`; }
+function publicCreator(value) {
+  const text = String(value || '').trim();
+  return text && !text.includes('@') ? text : 'Adventurer';
+}
+function toPublicRecord(record) {
+  return {
+    set: record?.set || null,
+    creator: publicCreator(record?.creator),
+    createdAt: record?.createdAt || null,
+    updatedAt: record?.updatedAt || null,
+  };
+}
 async function readArray(store, key) {
   const value = await store.get(key, { type: 'json' }).catch(() => []);
   return Array.isArray(value) ? value : [];
@@ -20,7 +32,8 @@ export default async (request) => {
     if (request.method === 'GET' && scope === 'community') {
       const index = await readArray(store, COMMUNITY_INDEX);
       const records = (await Promise.all(index.map((item) => store.get(recordKey(item.ownerId, item.setId), { type: 'json' }).catch(() => null))))
-        .filter((record) => record?.set?.locked && record?.set?.visibility === 'public');
+        .filter((record) => record?.set?.locked && record?.set?.visibility === 'public')
+        .map(toPublicRecord);
       return json({ records });
     }
     if (!user) return json({ error: 'Authentication required.' }, 401);
@@ -32,7 +45,7 @@ export default async (request) => {
         if (!record) return json({ error: 'Dice set not found.' }, 404);
         const publicLocked = record.set?.locked && record.set?.visibility === 'public';
         if (ownerId !== user.id && !publicLocked) return json({ error: 'Dice set is private.' }, 403);
-        return json({ record, userId: user.id });
+        return json({ record: ownerId === user.id ? record : toPublicRecord(record), userId: user.id });
       }
       const index = await readArray(store, indexKey(user.id));
       const records = (await Promise.all(index.map((item) => store.get(recordKey(user.id, item.setId), { type: 'json' }).catch(() => null))))

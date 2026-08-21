@@ -65,7 +65,7 @@ export default async (request) => {
     const now = new Date().toISOString();
     const record = {
       set,
-      creator: user.userMetadata?.fullName || user.user_metadata?.full_name || user.email || 'Adventurer',
+      creator: user.userMetadata?.fullName || user.user_metadata?.full_name || 'Adventurer',
       trayImageKey, trayImageAccessToken,
       createdAt: existing?.createdAt || now,
       updatedAt: now,
