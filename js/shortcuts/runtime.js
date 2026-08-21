@@ -179,6 +179,10 @@ function activeCompiled() {
   return compileSlot(active.slot, active.variantId);
 }
 
+function hasShortcutResultKind(execution, kind) {
+  return execution.result.groups.some((group) => group.kind === kind);
+}
+
 function formatInstanceRoll(instance, resolved) {
   const values = (resolved?.dice || []).flatMap((die) => die.values.map((value) => `d${die.sides} ${value}`));
   const rollText = values.join(' + ');
@@ -198,14 +202,14 @@ function formatShortcutResult(execution) {
       parts.push(`${group.label.toUpperCase()}${suffix}${damageType}: ${formatInstanceRoll(instance, resolvedById.get(instance.id))}`);
     });
   }
-  if (execution.result.damageTotal) parts.push(`TOTAL DAMAGE = ${execution.result.damageTotal}`);
-  if (execution.result.healingTotal) parts.push(`TOTAL HEALING = ${execution.result.healingTotal}`);
+  if (hasShortcutResultKind(execution, 'damage')) parts.push(`TOTAL DAMAGE = ${execution.result.damageTotal}`);
+  if (hasShortcutResultKind(execution, 'healing')) parts.push(`TOTAL HEALING = ${execution.result.healingTotal}`);
   return parts.join(' | ');
 }
 
 function shortcutDisplayTotal(execution) {
-  if (execution.result.damageTotal) return execution.result.damageTotal;
-  if (execution.result.healingTotal) return execution.result.healingTotal;
+  if (hasShortcutResultKind(execution, 'damage')) return execution.result.damageTotal;
+  if (hasShortcutResultKind(execution, 'healing')) return execution.result.healingTotal;
   return '—';
 }
 
@@ -220,9 +224,9 @@ function saveShortcutHistory(execution, breakdown) {
     time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
     formula: historyFormula(),
     breakdown,
-    total: execution.result.damageTotal
+    total: hasShortcutResultKind(execution, 'damage')
       ? `Damage ${execution.result.damageTotal}`
-      : execution.result.healingTotal
+      : hasShortcutResultKind(execution, 'healing')
         ? `Healing ${execution.result.healingTotal}`
         : 'Grouped',
   });
@@ -388,4 +392,3 @@ export function initShortcutRuntime() {
   identity.on('login', loadForSession);
   identity.on('logout', () => loadForSession(null));
 }
-
