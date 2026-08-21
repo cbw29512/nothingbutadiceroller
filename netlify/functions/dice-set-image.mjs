@@ -29,7 +29,7 @@ export default async (request) => {
     return new Response(entry.data, {
       headers: {
         'Content-Type': entry.metadata?.contentType || 'image/png',
-        'Cache-Control': publicLocked ? 'public, max-age=86400' : 'private, max-age=3600',
+        'Cache-Control': 'no-store',
         'X-Content-Type-Options': 'nosniff',
       },
     });

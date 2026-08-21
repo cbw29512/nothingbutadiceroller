@@ -25,9 +25,10 @@ try {
     .forEach((text) => requireText(cloudRules, text, 'cloud rule'));
   [
     "path: '/api/dice-set-image'", "const publicLocked = record.set?.visibility === 'public' && record.set?.locked",
-    'const hasCapability = publicLocked', 'user.id !== ownerId', 'Cache-Control', 'X-Content-Type-Options',
+    'const hasCapability = publicLocked', 'user.id !== ownerId', "'Cache-Control': 'no-store'", 'X-Content-Type-Options',
   ].forEach((text) => requireText(imageApi, text, 'tray image API protection'));
-  console.log('Dice-set API contract passed: auth ownership, locked mutation guard, public-read privacy boundary, private-image capability revocation, system-default protection, and scoped tray images.');
+  if (/max-age|public,\s*max-age|private,\s*max-age/.test(imageApi)) throw new Error('Capability-scoped tray images must not remain cacheable after visibility changes.');
+  console.log('Dice-set API contract passed: auth ownership, locked mutation guard, public-read privacy boundary, immediate private-image capability revocation, system-default protection, and no-store tray images.');
 } catch (error) {
   console.error('Dice-set API contract failed:', error);
   process.exitCode = 1;
