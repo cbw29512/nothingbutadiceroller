@@ -3,7 +3,10 @@ import { getUser } from '@netlify/identity';
 import { RegExpMatcher, englishDataset, englishRecommendedTransformers } from 'obscenity';
 import { assertLockedUpdateAllowed, collectModerationText, prepareCloudDiceSet } from '../../js/appearance/cloud-rules.mjs';
 import { extractTrayImageDataUrl, MAX_TRAY_IMAGE_BYTES } from '../../js/appearance/tray-image.mjs';
-import { buildPublicProjection, imageKey, openDiceSetStore, publicRecordKey, recordKey } from './dice-set-store.mjs';
+import {
+  buildPublicProjection, countUserRecords, imageKey, MAX_USER_DICE_SETS,
+  openDiceSetStore, publicRecordKey, recordKey,
+} from './dice-set-store.mjs';
 
 const matcher = new RegExpMatcher({ ...englishDataset.build(), ...englishRecommendedTransformers });
 function json(body, status = 200) { return Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } }); }
@@ -16,6 +19,7 @@ function parseImage(dataUrl) {
   return { mime: match[1].toLowerCase(), buffer };
 }
 function newPublicAccessId() { return `public_${randomUUID().replaceAll('-', '')}`; }
+function quotaError() { return new Error(`You can save up to ${MAX_USER_DICE_SETS} dice sets per account.`); }
 
 export default async (request) => {
   if (request.method !== 'POST') return json({ error: 'Method Not Allowed' }, 405);
@@ -29,6 +33,8 @@ export default async (request) => {
     const store = openDiceSetStore();
     const key = recordKey(user.id, rawSet.id);
     const existing = await store.get(key, { type: 'json' }).catch(() => null);
+    const isNewSet = !existing;
+    if (isNewSet && await countUserRecords(store, user.id) >= MAX_USER_DICE_SETS) throw quotaError();
     if (existing?.set?.locked && incomingDataUrl) throw new Error('Unlock the dice set before changing its tray image.');
 
     if (incomingDataUrl) rawSet.appearance.tray.image = null;
@@ -69,6 +75,12 @@ export default async (request) => {
       updatedAt: now,
     };
     await store.setJSON(key, record);
+    if (isNewSet && await countUserRecords(store, user.id) > MAX_USER_DICE_SETS) {
+      await store.delete(key);
+      if (trayImageKey) await store.delete(trayImageKey);
+      if (publicAccessId) await store.delete(publicRecordKey(publicAccessId));
+      throw quotaError();
+    }
     if (publicLocked) await store.setJSON(publicRecordKey(publicAccessId), buildPublicProjection(record, publicAccessId));
     return json({ success: true, record });
   } catch (error) {

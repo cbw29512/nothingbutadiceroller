@@ -4,6 +4,7 @@ import { getStore } from '@netlify/blobs';
 export const STORE_NAME = 'dice-trays-store';
 export const PUBLIC_DICE_SET_PREFIX = 'community/public-dice-sets/';
 export const LEGACY_COMMUNITY_INDEX = 'community/dice-sets/index.json';
+export const MAX_USER_DICE_SETS = 100;
 
 function keyPart(value) { return encodeURIComponent(String(value)); }
 function legacyPublicAccessId(ownerId, setId) {
@@ -22,6 +23,7 @@ export function userDiceSetPrefix(userId) { return `users/${keyPart(userId)}/dic
 export function recordKey(userId, setId) { return `${userDiceSetPrefix(userId)}${keyPart(setId)}.json`; }
 export function imageKey(userId, setId) { return `${userDiceSetPrefix(userId)}${keyPart(setId)}_tray`; }
 export function publicRecordKey(publicAccessId) { return `${PUBLIC_DICE_SET_PREFIX}${keyPart(publicAccessId)}.json`; }
+function isUserRecordKey(key, prefix) { return key.endsWith('.json') && key !== `${prefix}index.json`; }
 
 function publicSet(record, publicAccessId) {
   const set = structuredClone(record?.set || {});
@@ -53,31 +55,37 @@ export function buildPublicProjection(record, publicAccessId, { legacy = false }
   try {
     const publicRecord = toPublicRecord(record, publicAccessId);
     if (!publicRecord) throw new Error('Unable to create public dice-set projection.');
-    return {
-      publicAccessId,
-      ownerId: record.set.ownerId,
-      setId: record.set.id,
-      legacy,
-      publicRecord,
-    };
+    return { publicAccessId, ownerId: record.set.ownerId, setId: record.set.id, legacy, publicRecord };
   } catch (error) {
     console.error('Failed to build public dice-set projection:', error);
     throw error;
   }
 }
+async function listKeys(store, prefix) {
+  const { blobs = [] } = await store.list({ prefix });
+  return blobs.map((entry) => entry?.key).filter((key) => typeof key === 'string');
+}
 async function listRecords(store, prefix, predicate = () => true) {
   try {
-    const { blobs = [] } = await store.list({ prefix });
-    const keys = blobs.map((entry) => entry?.key).filter((key) => typeof key === 'string' && predicate(key));
+    const keys = (await listKeys(store, prefix)).filter(predicate);
     return (await Promise.all(keys.map((key) => store.get(key, { type: 'json' }).catch(() => null)))).filter(Boolean);
   } catch (error) {
     console.error(`Failed to list dice-set records under ${prefix}:`, error);
     throw error;
   }
 }
+export async function countUserRecords(store, userId) {
+  try {
+    const prefix = userDiceSetPrefix(userId);
+    return (await listKeys(store, prefix)).filter((key) => isUserRecordKey(key, prefix)).length;
+  } catch (error) {
+    console.error('Failed to count user dice sets:', error);
+    throw error;
+  }
+}
 export function listUserRecords(store, userId) {
   const prefix = userDiceSetPrefix(userId);
-  return listRecords(store, prefix, (key) => key.endsWith('.json') && key !== `${prefix}index.json`);
+  return listRecords(store, prefix, (key) => isUserRecordKey(key, prefix));
 }
 export function listPublicProjections(store) {
   return listRecords(store, PUBLIC_DICE_SET_PREFIX, (key) => key.endsWith('.json'));

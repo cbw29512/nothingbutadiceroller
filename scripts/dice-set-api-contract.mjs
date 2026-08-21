@@ -15,7 +15,8 @@ try {
     'assertLockedUpdateAllowed(existing.set, set)', "set.visibility === 'public' && set.locked",
     'trayImageAccessToken', 'MAX_TRAY_IMAGE_BYTES', "|| 'Adventurer'", 'openDiceSetStore()',
     'newPublicAccessId()', 'existing?.publicAccessId || null', 'store.delete(publicRecordKey(publicAccessId))',
-    'buildPublicProjection(record, publicAccessId)',
+    'buildPublicProjection(record, publicAccessId)', 'countUserRecords(store, user.id) >= MAX_USER_DICE_SETS',
+    'countUserRecords(store, user.id) > MAX_USER_DICE_SETS', 'if (trayImageKey) await store.delete(trayImageKey)',
   ].forEach((text) => requireText(saveApi, text, 'save API protection'));
   if (saveApi.includes('user.email')) throw new Error('Dice-set creator metadata must never fall back to account email.');
   if (/COMMUNITY_INDEX|indexKey\(|setJSON\([^\n]*index/i.test(saveApi)) throw new Error('Save API must not write shared dice-set index blobs.');
@@ -36,12 +37,12 @@ try {
   if (/max-age|public,\s*max-age|private,\s*max-age/.test(imageApi)) throw new Error('Capability-scoped tray images must not remain cacheable after visibility changes.');
   [
     "getStore({ name: STORE_NAME, consistency: 'strong' })", "PUBLIC_DICE_SET_PREFIX = 'community/public-dice-sets/'",
-    'LEGACY_COMMUNITY_INDEX', 'store.list({ prefix })', 'listUserRecords', 'listPublicProjections',
-    'listLegacyPublicProjections', 'resolvePublicProjection', 'publicRecordKey', 'buildPublicProjection',
-    "creator: 'Adventurer'", 'set.id = publicAccessId', 'set.ownerId = `community_${publicAccessId}`',
-    '/api/dice-set-image?public=${encodeURIComponent(publicAccessId)}&token=',
+    'LEGACY_COMMUNITY_INDEX', 'MAX_USER_DICE_SETS = 100', 'store.list({ prefix })', 'countUserRecords',
+    'listUserRecords', 'listPublicProjections', 'listLegacyPublicProjections', 'resolvePublicProjection',
+    'publicRecordKey', 'buildPublicProjection', "creator: 'Adventurer'", 'set.id = publicAccessId',
+    'set.ownerId = `community_${publicAccessId}`', '/api/dice-set-image?public=${encodeURIComponent(publicAccessId)}&token=',
   ].forEach((text) => requireText(storeLayer, text, 'opaque strong per-record storage contract'));
-  console.log('Dice-set API contract passed: strong-consistency ownership, no shared-index writes, opaque per-set public projections, privacy-safe legacy reads, no public account identifiers, fresh capability revocation, and no-store tray images.');
+  console.log('Dice-set API contract passed: strong-consistency ownership, bounded per-account storage, no shared-index writes, opaque per-set public projections, privacy-safe legacy reads, no public account identifiers, capability revocation, and no-store tray images.');
 } catch (error) {
   console.error('Dice-set API contract failed:', error);
   process.exitCode = 1;

@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
 import { createUserDiceSet } from '../js/appearance/schema.mjs';
 import { validateDiceSet } from '../js/appearance/validation.mjs';
-import { buildPublicProjection, publicRecordKey, toPublicRecord } from '../netlify/functions/dice-set-store.mjs';
+import {
+  buildPublicProjection, countUserRecords, MAX_USER_DICE_SETS, publicRecordKey, toPublicRecord,
+} from '../netlify/functions/dice-set-store.mjs';
 
 const internalOwnerId = 'internal_netlify_user_123';
 const source = createUserDiceSet({ id: 'set_private_source', ownerId: internalOwnerId, name: 'Community Example' });
@@ -35,4 +37,14 @@ assert.equal(serializedPublic.includes('Private Account Name'), false, 'Public p
 assert.equal(projection.ownerId, internalOwnerId, 'Internal projection may retain the private locator server-side.');
 assert.equal(JSON.stringify(projection.publicRecord).includes(internalOwnerId), false);
 assert.equal(publicRecordKey(publicAccessId), `community/public-dice-sets/${publicAccessId}.json`);
-console.log('Public dice-set projection passed: public identity and tray images are opaque, account identifiers/profile names stay server-side, and the projected set remains valid and usable.');
+assert.equal(MAX_USER_DICE_SETS, 100);
+const fakeStore = {
+  async list({ prefix }) {
+    return { blobs: [
+      { key: `${prefix}set_one.json` }, { key: `${prefix}set_two.json` },
+      { key: `${prefix}index.json` }, { key: `${prefix}set_one_tray` },
+    ] };
+  },
+};
+assert.equal(await countUserRecords(fakeStore, internalOwnerId), 2, 'Quota count must include only persisted dice-set JSON records.');
+console.log('Public dice-set projection passed: public identity and tray images are opaque, account identifiers/profile names stay server-side, projected sets remain valid, and the cloud collection quota counts only real set records.');
