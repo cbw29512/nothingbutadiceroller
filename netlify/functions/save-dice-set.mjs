@@ -32,7 +32,8 @@ export default async (request) => {
     if (!user) return json({ error: 'Authentication required.' }, 401);
     const body = await request.json();
     const rawSet = structuredClone(body?.set || {});
-    const incomingDataUrl = extractTrayImageDataUrl(rawSet?.appearance?.tray?.image);
+    const incomingImage = rawSet?.appearance?.tray?.image ?? null;
+    const incomingDataUrl = extractTrayImageDataUrl(incomingImage);
     const store = getStore(STORE_NAME);
     const key = recordKey(user.id, rawSet.id);
     const existing = await store.get(key, { type: 'json' }).catch(() => null);
@@ -55,8 +56,10 @@ export default async (request) => {
         url: `/api/dice-set-image?owner=${encodeURIComponent(user.id)}&set=${encodeURIComponent(set.id)}&token=${trayImageAccessToken}`,
       };
       set = prepareCloudDiceSet(set, user.id);
-    } else if (existing?.set?.appearance?.tray?.image && !set.appearance.tray.image) {
-      set.appearance.tray.image = structuredClone(existing.set.appearance.tray.image);
+    } else if (incomingImage == null && trayImageKey) {
+      await store.delete(trayImageKey).catch((error) => console.warn('Tray image cleanup failed:', error));
+      trayImageKey = null; trayImageAccessToken = null;
+      set.appearance.tray.image = null;
     }
 
     const now = new Date().toISOString();
