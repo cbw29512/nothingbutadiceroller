@@ -1,6 +1,6 @@
 # Nothing But A Dice Roller
 
-A fast tabletop RPG dice roller with standard 3D dice, advantage/disadvantage quick rolls, secure custom dN rolls, saved roll shortcuts, account sync, and visual Dice & Tray customization.
+A fast tabletop RPG dice roller with standard 3D dice, advantage/disadvantage quick rolls, secure custom dN rolls, saved roll shortcuts, account sync, and visual Dice Studio customization.
 
 Production: https://nothingbutattrpgdiceroller.netlify.app/
 
@@ -17,7 +17,7 @@ Production: https://nothingbutattrpgdiceroller.netlify.app/
 
 - `/` — main dice roller
 - `/rolls.html` — roll shortcut manager
-- `/customize.html` — Dice & Tray Studio
+- `/customize.html` — Dice Studio
 - `/how-to.html` — user guide
 - `/privacy.html` — privacy/data explanation
 - `/legal.html` — legal notices and SRD attribution

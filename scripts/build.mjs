@@ -101,16 +101,18 @@ async function validateBuild() {
       'popovertarget="desktop-custom-die-popover"', 'id="desktop-custom-die-popover"', 'popover="auto"',
       '>CUSTOM</button>', 'Keep dice after roll', 'id="tray-roll-hint"', 'CLICK / TAP TRAY TO ROLL',
       'SECURE RANDOMIZATION ENGINE', 'Physics-resolved dice • Cryptographic custom rolls', 'href="/how-to.html"',
+      'aria-label="Open Dice Studio">Dice Studio</button>',
       'save dice configurations to your account and load them on other devices.',
     ], 'completed UI reference');
 
     requireReferences(studioHtml, [
-      'DICE & TRAY STUDIO', 'id="studio-library"', 'id="studio-preview-tray"', 'id="reset-default"',
+      'DICE STUDIO', 'id="studio-library"', 'id="studio-preview-tray"', 'id="reset-default"',
       'id="lock-set"', 'RAW — standard numbers', 'src="/js/appearance/studio.js"', 'href="/how-to.html"',
     ], 'Dice Studio reference');
 
     requireReferences(howToHtml, [
       'Roll first. Customize only when you want to.', 'Visual faces never change results.',
+      'From the main roller, choose <strong>Dice Studio</strong>', 'Dice Studio does not change mechanics.',
       'href="/privacy.html"', 'href="/legal.html"', 'href="/customize.html"', 'href="/rolls.html"',
     ], 'How To reference');
     requireReferences(privacyHtml, [
@@ -143,7 +145,7 @@ async function validateBuild() {
     ], 'Phase 4 harness reference');
 
     if (html.includes('shortcut-toolbar.css') || html.includes('shortcut-toolbar-harness')) throw new Error('Base HTML must keep shortcut UI as progressive enhancement.');
-    if (html.includes('studio-preview-tray') || html.includes('DICE & TRAY STUDIO') || html.includes('appearance-proof-tray')) {
+    if (html.includes('studio-preview-tray') || html.includes('DICE STUDIO') || html.includes('appearance-proof-tray')) {
       throw new Error('Advanced Dice Studio and proof harness must remain off the landing page.');
     }
 
