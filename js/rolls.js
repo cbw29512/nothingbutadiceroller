@@ -10,6 +10,15 @@ import {
   renderTabs, setStatus,
 } from './shortcuts/manager-ui.mjs';
 
+function ensureResponsiveStyles() {
+  if (document.getElementById('rolls-mobile-hardening-styles')) return;
+  const link = document.createElement('link');
+  link.id = 'rolls-mobile-hardening-styles';
+  link.rel = 'stylesheet';
+  link.href = '/js/rolls-mobile-hardening.css';
+  document.head.appendChild(link);
+}
+
 function renderAll() {
   renderTabs();
   renderOrganizer();
@@ -73,6 +82,7 @@ function bindEvents() {
 
 async function boot() {
   try {
+    ensureResponsiveStyles();
     bindEvents();
     renderIconAndCategoryOptions();
     renderHomebrew();
@@ -92,4 +102,3 @@ if (document.readyState === 'loading') {
 } else {
   boot();
 }
-

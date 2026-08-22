@@ -24,6 +24,20 @@ function auditPage() {
     const labelledBy = element.getAttribute('aria-labelledby');
     return !(element.getAttribute('aria-label') || (labelledBy && document.getElementById(labelledBy)));
   }).map((element) => element.id || 'dialog');
+  const viewportWidth = document.documentElement.clientWidth;
+  const overflowingElements = [...document.querySelectorAll('body *')]
+    .filter(visible)
+    .map((element) => {
+      const rect = element.getBoundingClientRect();
+      const overBy = Math.max(0, rect.right - viewportWidth, -rect.left);
+      const name = element.id
+        ? `#${element.id}`
+        : `${element.tagName.toLowerCase()}${element.classList.length ? `.${[...element.classList].slice(0, 2).join('.')}` : ''}`;
+      return { name, left: Math.round(rect.left), right: Math.round(rect.right), width: Math.round(rect.width), overBy: Math.ceil(overBy) };
+    })
+    .filter((item) => item.overBy > 1)
+    .sort((left, right) => right.overBy - left.overBy)
+    .slice(0, 8);
 
   return {
     title: document.title.trim(),
@@ -33,7 +47,9 @@ function auditPage() {
     h1Count: document.querySelectorAll('h1').length,
     emptyHeadings: [...document.querySelectorAll('h1,h2,h3,h4,h5,h6')]
       .filter((element) => !element.textContent.trim()).length,
-    overflowPixels: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    viewportWidth,
+    overflowPixels: document.documentElement.scrollWidth - viewportWidth,
+    overflowingElements,
     duplicates,
     unlabeledControls,
     unnamedActions,
@@ -51,7 +67,12 @@ export function assertPageAudit(audit, label) {
   if (audit.mainCount !== 1) issues.push(`expected 1 main landmark, found ${audit.mainCount}`);
   if (audit.h1Count !== 1) issues.push(`expected 1 h1, found ${audit.h1Count}`);
   if (audit.emptyHeadings) issues.push(`${audit.emptyHeadings} empty heading(s)`);
-  if (audit.overflowPixels > 1) issues.push(`${audit.overflowPixels}px horizontal overflow`);
+  if (audit.overflowPixels > 1) {
+    const offenders = audit.overflowingElements?.length
+      ? `; offenders: ${audit.overflowingElements.map((item) => `${item.name} +${item.overBy}px`).join(', ')}`
+      : '';
+    issues.push(`${audit.overflowPixels}px horizontal overflow${offenders}`);
+  }
   if (audit.duplicates.length) issues.push(`duplicate ids: ${audit.duplicates.join(', ')}`);
   if (audit.unlabeledControls.length) issues.push(`unlabeled controls: ${audit.unlabeledControls.join(', ')}`);
   if (audit.unnamedActions.length) issues.push(`unnamed actions: ${audit.unnamedActions.join(', ')}`);
