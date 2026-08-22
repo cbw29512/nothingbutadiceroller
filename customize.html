@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="theme-color" content="#090c12">
+  <title>Dice & Tray Studio • Nothing But A Dice Roller</title>
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/customize.css">
+</head>
+<body class="studio-page">
+  <div class="studio-shell">
+    <header class="studio-header">
+      <div>
+        <p class="eyebrow">DICE & TRAY STUDIO</p>
+        <h1>Build your dice. Keep the RPG underneath.</h1>
+        <p>Change the look only. Every die keeps its standard shape and standard numerical result.</p>
+      </div>
+      <a class="btn secondary" href="/">Back to Roller</a>
+    </header>
+
+    <main class="studio-grid">
+      <aside class="studio-panel library-panel" aria-label="Saved dice sets">
+        <div class="studio-panel-heading">
+          <div><span class="section-label">Dice Sets</span><h2>My Collection</h2></div>
+          <button id="new-set" class="btn primary" type="button">New Set</button>
+        </div>
+        <p id="storage-mode" class="studio-note">Checking account…</p>
+        <button id="import-browser-sets" class="btn secondary full" type="button" hidden>Import Browser Sets</button>
+        <div id="studio-library" class="studio-library"></div>
+        <button id="reset-default" class="btn secondary full" type="button">Reset to Default</button>
+        <p class="studio-note">Default Dice is permanent and cannot be edited or deleted.</p>
+        <div class="studio-panel-heading community-heading">
+          <div><span class="section-label">Community</span><h2>Public Locked Sets</h2></div>
+          <button id="refresh-community" class="btn ghost" type="button">Refresh</button>
+        </div>
+        <div id="community-library" class="studio-library"></div>
+      </aside>
+
+      <section class="studio-preview-panel" aria-label="Dice set preview">
+        <div class="studio-panel-heading">
+          <div><span class="section-label">Live Preview</span><h2>Dice Tray</h2></div>
+          <span id="active-badge" class="active-badge"></span>
+        </div>
+        <div id="studio-preview-tray" class="studio-preview-tray">
+          <div id="studio-preview-dice" class="studio-preview-dice"></div>
+        </div>
+        <p class="studio-note">Preview artwork is visual only. Roll mechanics are never edited here.</p>
+      </section>
+
+      <aside class="studio-panel editor-panel" aria-label="Dice and tray editor">
+        <div class="studio-panel-heading">
+          <div><span class="section-label">Editor</span><h2 id="selected-die-label">D20</h2></div>
+        </div>
+        <label class="studio-field">Set name<input id="set-name" data-edit-control type="text" maxlength="80"></label>
+        <fieldset class="studio-group">
+          <legend>Set-wide dice look</legend>
+          <div class="color-grid">
+            <label>Body<input id="dice-body-color" data-edit-control type="color"></label>
+            <label>Faces<input id="dice-face-color" data-edit-control type="color"></label>
+            <label>Glow<input id="dice-glow-color" data-edit-control type="color"></label>
+          </div>
+          <label class="check-row"><input id="dice-glow-enabled" data-edit-control type="checkbox"> Enable dice glow</label>
+        </fieldset>
+        <fieldset class="studio-group">
+          <legend>Selected die look</legend>
+          <label class="check-row"><input id="die-style-enabled" data-edit-control type="checkbox"> Customize this die separately</label>
+          <div class="color-grid">
+            <label>Body<input id="die-body-color" data-edit-control data-die-style-control type="color"></label>
+            <label>Faces<input id="die-face-color" data-edit-control data-die-style-control type="color"></label>
+            <label>Glow<input id="die-glow-color" data-edit-control data-die-style-control type="color"></label>
+          </div>
+          <label class="check-row"><input id="die-glow-enabled" data-edit-control data-die-style-control type="checkbox"> Enable glow for this die</label>
+        </fieldset>
+        <fieldset class="studio-group">
+          <legend>Selected die faces</legend>
+          <label class="studio-field">Face mode
+            <select id="face-mode" data-edit-control>
+              <option value="raw">RAW — standard numbers</option>
+              <option value="custom">Custom appearance</option>
+            </select>
+          </label>
+          <p class="studio-note">Tap a face on the die map. Replace only what is printed there; the result underneath never changes.</p>
+          <div id="face-map" class="face-map" aria-label="Editable die faces"></div>
+          <input id="logical-face" type="hidden" value="20">
+          <div class="selected-face-readout" aria-live="polite">
+            <strong id="logical-face-label">Face 20</strong>
+            <span id="logical-result-label">Always rolls 20</span>
+          </div>
+          <label class="studio-field">Face display<input id="face-value" data-face-edit-control type="text" maxlength="16" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="☠, ★, CRIT, 20"></label>
+          <p class="studio-note">Use a number, keyboard character, symbol, rune, icon, or short word. This changes only the printed face.</p>
+          <label class="studio-field">Face color<input id="custom-face-color" data-face-edit-control type="color" value="#ffffff"></label>
+          <div class="button-row"><button id="apply-face" class="btn secondary" data-face-edit-control type="button">Apply Face</button><button id="remove-face" class="btn ghost" data-face-edit-control type="button">Restore Number</button></div>
+        </fieldset>
+        <fieldset class="studio-group">
+          <legend>Tray</legend>
+          <div class="color-grid">
+            <label>Color<input id="tray-color" data-edit-control type="color"></label>
+            <label>Glow<input id="tray-glow-color" data-edit-control type="color"></label>
+          </div>
+          <label class="check-row"><input id="tray-glow-enabled" data-edit-control type="checkbox"> Enable tray glow</label>
+          <label class="studio-field">Tray image<input id="tray-image" data-edit-control type="file" accept="image/png,image/jpeg,image/webp"></label>
+          <p class="studio-note">Optional PNG, JPEG, or WebP. Guest browser sets: up to 512 KB. Signed-in cloud sets: up to 4 MB.</p>
+          <button id="remove-tray-image" class="btn ghost" data-edit-control type="button">Remove Tray Image</button>
+        </fieldset>
+        <div class="studio-actions">
+          <button id="save-set" class="btn primary" type="button">Save Dice Set</button>
+          <button id="use-set" class="btn secondary" type="button">Use This Set</button>
+          <button id="lock-set" class="btn secondary" type="button">Lock Set</button>
+          <button id="publish-set" class="btn secondary" type="button">Publish Set</button>
+          <button id="delete-set" class="btn danger" type="button">Delete Set</button>
+        </div>
+        <p id="studio-status" class="status-line" role="status">Loading Dice Studio…</p>
+      </aside>
+    </main>
+  </div>
+  <script type="module" src="/js/appearance/studio.js"></script>
+</body>
+</html>

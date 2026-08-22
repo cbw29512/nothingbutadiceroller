@@ -3,13 +3,13 @@ import { getSkinColor } from './utils.js';
 import { initDicePhysics } from './physics.js';
 import { addDie, clearPool, performRoll } from './roller.js';
 import { renderHistory, renderPool, setStatus } from './ui.js';
-import { initStylePicker } from './style-picker.js';
-import { initThemeCommunity } from './theme-community.js';
 import { assertStylesLoaded } from './deployment.js';
 import { initAccount } from './account.js';
 import { closeCustomDieControls, initCustomDieControls } from './custom-controls.js';
 import { closeDrawers, initDrawerControls } from './drawer-controls.js';
 import { canRollFromTray, initTrayControls } from './tray-controls.js';
+import { prepareActiveDiceAppearance } from './appearance/appearance-runtime.mjs';
+import { applyLiveTrayAppearance } from './appearance/live-integration.mjs';
 import { ensureShortcutRuntimeMarkup } from './shortcuts/runtime-markup.js';
 import {
   canRollPreparedShortcutFromTray,
@@ -82,17 +82,13 @@ function syncControls() {
 
 function bindDiceButtons(selector) {
   document.querySelectorAll(selector).forEach(button => {
-    if (button.dataset.type) {
-      button.addEventListener('click', () => addDie(button.dataset.type));
-    }
+    if (button.dataset.type) button.addEventListener('click', () => addDie(button.dataset.type));
   });
 }
 
 function bindQuickRollButtons() {
   document.querySelectorAll('[data-quick-roll]').forEach(button => {
-    button.addEventListener('click', () => {
-      performActiveRoll(button.dataset.quickRoll, { quickD20: true });
-    });
+    button.addEventListener('click', () => performActiveRoll(button.dataset.quickRoll, { quickD20: true }));
   });
 }
 
@@ -106,10 +102,7 @@ function bindEvents() {
     initTrayControls(performActiveRoll, canRollActiveFromTray);
     document.addEventListener('rollstatechange', syncControls);
     document.addEventListener('shortcutstatechange', syncControls);
-    document.addEventListener('configurationloaded', () => {
-      syncControls();
-      initStylePicker();
-    });
+    document.addEventListener('configurationloaded', syncControls);
 
     document.getElementById('keep-btn')?.addEventListener('click', () => {
       state.keepDice = !state.keepDice;
@@ -150,18 +143,19 @@ async function boot() {
     renderPool();
     renderHistory();
     bindEvents();
-    initStylePicker();
     initAccount();
     initShortcutRuntime();
-    initThemeCommunity();
 
     const stylesButton = document.getElementById('open-styles-btn');
     if (stylesButton) stylesButton.textContent = 'Customize';
-    const stylesTitle = document.getElementById('styles-title');
-    if (stylesTitle) stylesTitle.textContent = 'Customize Dice & Tray';
 
     setStatus('Loading 3D physics…');
-    await initDicePhysics(getSkinColor(state.dieSkin, state.customAppearance?.diceColor));
+    const appearanceRuntime = await prepareActiveDiceAppearance();
+    applyLiveTrayAppearance(appearanceRuntime);
+    await initDicePhysics(
+      getSkinColor(state.dieSkin, state.customAppearance?.diceColor),
+      appearanceRuntime,
+    );
     state.physicsReady = true;
     document.dispatchEvent(new Event('rollstatechange'));
     setStatus('3D physics ready.', 'ready');

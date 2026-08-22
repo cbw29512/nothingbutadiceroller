@@ -21,9 +21,6 @@ function renderAccount() {
 async function applyConfiguration(config, showMessage = true) {
   try {
     state.selectedDice = (config.selectedDice || []).map((die) => ({ type: die.type }));
-    state.trayTheme = config.trayTheme || state.trayTheme;
-    state.dieSkin = config.dieSkin || state.dieSkin;
-    state.customAppearance = config.customAppearance || null;
     state.keepDice = Boolean(config.keepDice);
     state.d20Mode = 'normal';
     state.hasRolled = false;
@@ -81,9 +78,6 @@ async function saveCurrentConfiguration() {
         id: existing?.id,
         name,
         selectedDice: state.selectedDice,
-        trayTheme: state.trayTheme,
-        dieSkin: state.dieSkin,
-        customAppearance: state.customAppearance,
         keepDice: state.keepDice,
         isDefault: Boolean(document.getElementById('config-default')?.checked),
       }),

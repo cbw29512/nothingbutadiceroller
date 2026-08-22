@@ -8,6 +8,7 @@ import {
   requestRecoveryAccount,
   signupAccount,
 } from './account-api.js';
+import { friendlyAuthError } from './auth-errors.js';
 import { setAccountMessage } from './account-ui.js';
 
 let pendingCallback = null;
@@ -102,7 +103,7 @@ async function processCallback(onSession) {
     return true;
   } catch (error) {
     console.error('Identity callback failed:', error);
-    setAccountMessage(error.message || 'Unable to verify this account link.', 'error');
+    setAccountMessage(friendlyAuthError(error, 'callback'), 'error');
     accountDrawer(true);
     return true;
   }
@@ -118,7 +119,7 @@ export async function initAuthUI(onSession) {
       const user = await loginAccount(email, password);
       onSession(user);
       setAccountMessage('Signed in.', 'ready');
-    } catch (error) { setAccountMessage(error.message, 'error'); }
+    } catch (error) { setAccountMessage(friendlyAuthError(error, 'login'), 'error'); }
   });
 
   document.getElementById('account-signup-btn')?.addEventListener('click', async () => {
@@ -128,14 +129,14 @@ export async function initAuthUI(onSession) {
       const { user } = await signupAccount(email, password);
       onSession(user);
       setAccountMessage(user ? 'Account created and signed in.' : 'Account created. Check your email to confirm it.', 'ready');
-    } catch (error) { setAccountMessage(error.message, 'error'); }
+    } catch (error) { setAccountMessage(friendlyAuthError(error, 'signup'), 'error'); }
   });
 
   document.getElementById('account-recovery-btn')?.addEventListener('click', async () => {
     try {
       await requestRecoveryAccount(credentials().email);
       setAccountMessage('If that account exists, a password reset email is on the way.', 'ready');
-    } catch (error) { setAccountMessage(error.message, 'error'); }
+    } catch (error) { setAccountMessage(friendlyAuthError(error, 'recovery'), 'error'); }
   });
 
   document.getElementById('account-callback-submit')?.addEventListener('click', async () => {
@@ -148,7 +149,7 @@ export async function initAuthUI(onSession) {
       hideCallback();
       onSession(user);
       setAccountMessage('Account ready. You are signed in.', 'ready');
-    } catch (error) { setAccountMessage(error.message, 'error'); }
+    } catch (error) { setAccountMessage(friendlyAuthError(error, 'callback'), 'error'); }
   });
 
   const callbackHandled = await processCallback(onSession);

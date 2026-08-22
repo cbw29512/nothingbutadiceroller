@@ -1,7 +1,6 @@
 import { state, savePreferences } from './state.js';
 import { clearPhysics } from './physics.js';
 import { renderHistory, renderResults } from './ui.js';
-import { getSkinColor } from './utils.js';
 
 const MAX_CUSTOM_SIDES = 1_000_000;
 const UINT32_RANGE = 0x1_0000_0000;
@@ -61,7 +60,7 @@ function showCustomTrayResult(sides, result) {
   );
   display.style.setProperty(
     '--custom-result-die-color',
-    getSkinColor(state.dieSkin, state.customAppearance?.diceColor),
+    'var(--appearance-v2-dice-color, #b91c1c)',
   );
 
   const die = document.createElement('div');

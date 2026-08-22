@@ -27,6 +27,10 @@ export function initDrawerControls() {
   try {
     getDrawers().forEach(([name, drawer]) => {
       document.getElementById(`open-${name}-btn`)?.addEventListener('click', () => {
+        if (name === 'styles') {
+          window.location.assign('/customize.html');
+          return;
+        }
         setDrawer(drawer, true);
       });
       document.getElementById(`close-${name}-btn`)?.addEventListener('click', () => {
