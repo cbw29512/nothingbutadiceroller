@@ -67,12 +67,12 @@ Phase 2 evidence: exact hardening heads have completed the built-site Chrome mat
 ## Phase 6 — Cloud concurrency and data integrity
 
 - [x] Add optimistic concurrency/version protection to Dice Studio cloud records. **Strong ETag reads plus atomic `onlyIfMatch` / `onlyIfNew` owner commits protect saves; stale deletes must first win a conditional tombstone write.**
-- [ ] Add optimistic concurrency/version protection to saved configurations where appropriate. **Shortcut workspaces already have version conflicts; other persistence surfaces still require an explicit scope review before this is closed.**
+- [x] Add optimistic concurrency/version protection to saved configurations where appropriate. **The per-user saved-configuration collection now uses strong ETag reads plus `onlyIfMatch` / `onlyIfNew`; stale save/delete operations return a sanitized 409 and the latest collection/version.**
 - [x] Preserve the shortcut ETag/version conflict behavior already in place.
-- [x] Make Dice Studio conflicts explicit and recoverable instead of silent last-write-wins. **A 409 refreshes the library's latest server copy while preserving the open stale draft/version, so repeated Save cannot silently force an overwrite.**
-- [x] Add conflict-path tests for newly protected cloud records. **The release suite injects another-device write between a strong read and conditional write and verifies the losing writer receives the newest server state/version.**
+- [x] Make Dice Studio/configuration conflicts explicit and recoverable instead of silent last-write-wins. **Dice Studio preserves a stale open draft until the user deliberately reloads; saved configurations refresh the latest list/version while leaving the player's current dice unchanged.**
+- [x] Add conflict-path tests for newly protected cloud records. **Release checks inject competing writes between strong reads and conditional writes for both Dice Studio records and saved-configuration collections.**
 
-Phase 6 evidence: exact head `01a3d95206fb5f72b3243100cde6ddaf5e8484fd` passed the full deterministic build/contracts, including the injected two-device race and conditional-delete ordering, followed by the rendered desktop/mobile Chrome interaction matrix. Community projections carry an owner-record revision marker and fail closed when stale.
+Phase 6 evidence: Dice Studio exact head `01a3d95206fb5f72b3243100cde6ddaf5e8484fd` passed its injected two-device race plus Chrome. Saved-configuration exact head `09138033585634c2ff143356d45c0299bfb360a1` passed clean deterministic/build/browser validation and CodeQL; its race fixture also verifies conflict payload sanitization and that internal storage exception text does not reach clients.
 
 ## Phase 7 — Privacy lifecycle
 
@@ -97,7 +97,7 @@ Phase 6 evidence: exact head `01a3d95206fb5f72b3243100cde6ddaf5e8484fd` passed t
 - [x] Add Dependabot configuration for npm and GitHub Actions. **Weekly version updates cover both ecosystems.**
 - [x] Add CodeQL/static security scanning. **Dedicated CodeQL v4 JavaScript workflow runs `security-extended` on PRs, main, weekly schedule, and manual dispatch.**
 - [ ] Review and retire legacy Theme Studio production surface after compatibility/migration verification.
-- [ ] Standardize server error responses so internal error details are not unnecessarily exposed.
+- [ ] Standardize server error responses so internal error details are not unnecessarily exposed. **Saved configurations now use the shared typed public-error boundary; the remaining public Netlify endpoints are being audited before this is closed.**
 
 Phase 9 security evidence: exact dependency-cleaned head `400b34ab6b4c7cf5c4b0f6215d5aee04b56753b7` passed clean-checkout `npm ci`, the complete deterministic/build/browser release validation, the local DevSecOps contract, and the independent CodeQL `security-extended` analysis.
 
@@ -118,7 +118,7 @@ Phase 9 security evidence: exact dependency-cleaned head `400b34ab6b4c7cf5c4b0f6
 - [x] `npm ci` succeeds from a clean GitHub Actions checkout.
 - [x] Full deterministic contract/build suite passes on the current hardening line.
 - [x] Browser/E2E suite passes on desktop and mobile targets.
-- [x] Security/static-analysis workflow passes. **Exact head completed CodeQL `security-extended` successfully.**
+- [x] Security/static-analysis workflow passes. **Exact hardening heads complete CodeQL `security-extended` successfully.**
 - [ ] Netlify Deploy Preview is green for the exact release head.
 - [ ] Manual visual acceptance passes on the exact Deploy Preview.
 - [ ] Authentication lifecycle passes.
