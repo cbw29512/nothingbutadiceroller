@@ -3,6 +3,7 @@ import { getUser, verifyRequestOrigin } from '@netlify/identity';
 import { RegExpMatcher, englishDataset, englishRecommendedTransformers } from 'obscenity';
 import { assertLockedUpdateAllowed, collectModerationText, prepareCloudDiceSet } from '../../js/appearance/cloud-rules.mjs';
 import { extractTrayImageDataUrl, MAX_TRAY_IMAGE_BYTES } from '../../js/appearance/tray-image.mjs';
+import { sanitizeTrayImageBytes } from './image-sanitizer/index.mjs';
 import {
   buildPublicProjection, countUserRecords, MAX_USER_DICE_SETS, openDiceSetStore,
   publicRecordKey, recordKey, versionedImageKey,
@@ -16,7 +17,7 @@ function parseImage(dataUrl) {
   if (!match) throw new Error('Tray image must be PNG, JPEG, or WebP.');
   const buffer = Buffer.from(match[2], 'base64');
   if (buffer.byteLength > MAX_TRAY_IMAGE_BYTES) throw new Error('Tray image must be 4 MB or smaller.');
-  return { mime: match[1].toLowerCase(), buffer };
+  return sanitizeTrayImageBytes(buffer, match[1].toLowerCase());
 }
 function newPublicAccessId() { return `public_${randomUUID().replaceAll('-', '')}`; }
 function quotaError() { return new Error(`You can save up to ${MAX_USER_DICE_SETS} dice sets per account.`); }
