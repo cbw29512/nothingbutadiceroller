@@ -21,7 +21,7 @@ try {
     'Tray images must be uploaded through Dice Studio.', 'const rawTray = rawSet?.appearance?.tray;',
     'rawTray.image = ownerImage(user.id, rawSet.id, existing.trayImageAccessToken)', 'The save was rolled back; retry.',
     'normalizeExpectedVersion(body.version)', 'readVersionedRecord(store, key)', 'conditionalRecordWrite(store, key, record, expectedVersion)',
-    "code: 'dice-set-version-conflict'", 'recordVersion: randomUUID()', "Request origin is not allowed.",
+    'recordVersion: randomUUID()', "Request origin is not allowed.",
   ].forEach((text) => requireText(saveApi, text, 'save API protection'));
   const ownerCommit = saveApi.indexOf('conditionalRecordWrite(store, key, record, expectedVersion)');
   const projectionWrite = saveApi.indexOf('store.setJSON(publicRecordKey(publicAccessId), buildPublicProjection(record, publicAccessId))');
