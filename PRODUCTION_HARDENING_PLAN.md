@@ -92,12 +92,14 @@ Phase 6 evidence: exact head `01a3d95206fb5f72b3243100cde6ddaf5e8484fd` passed t
 
 ## Phase 9 — Repository and DevSecOps hygiene
 
-- [ ] Remove tracked `node_modules` from the repository while keeping `package-lock.json`.
-- [ ] Add `SECURITY.md` with vulnerability reporting guidance.
-- [ ] Add Dependabot configuration for npm and GitHub Actions.
-- [ ] Add CodeQL/static security scanning.
+- [x] Remove tracked `node_modules` from the repository while keeping `package-lock.json`. **A tree-level cleanup removed the vendored dependency directory; the normal release check runs `git ls-files` after `npm ci` to prove no installed dependency is tracked.**
+- [x] Add `SECURITY.md` with vulnerability reporting guidance. **Policy directs sensitive reports to private GitHub reporting/advisories and forbids posting credentials/exploit details publicly.**
+- [x] Add Dependabot configuration for npm and GitHub Actions. **Weekly version updates cover both ecosystems.**
+- [x] Add CodeQL/static security scanning. **Dedicated CodeQL v4 JavaScript workflow runs `security-extended` on PRs, main, weekly schedule, and manual dispatch.**
 - [ ] Review and retire legacy Theme Studio production surface after compatibility/migration verification.
 - [ ] Standardize server error responses so internal error details are not unnecessarily exposed.
+
+Phase 9 security evidence: exact dependency-cleaned head `400b34ab6b4c7cf5c4b0f6215d5aee04b56753b7` passed clean-checkout `npm ci`, the complete deterministic/build/browser release validation, the local DevSecOps contract, and the independent CodeQL `security-extended` analysis.
 
 ## Phase 10 — Performance, polish, and operations
 
@@ -116,7 +118,7 @@ Phase 6 evidence: exact head `01a3d95206fb5f72b3243100cde6ddaf5e8484fd` passed t
 - [x] `npm ci` succeeds from a clean GitHub Actions checkout.
 - [x] Full deterministic contract/build suite passes on the current hardening line.
 - [x] Browser/E2E suite passes on desktop and mobile targets.
-- [ ] Security/static-analysis workflow passes.
+- [x] Security/static-analysis workflow passes. **Exact head completed CodeQL `security-extended` successfully.**
 - [ ] Netlify Deploy Preview is green for the exact release head.
 - [ ] Manual visual acceptance passes on the exact Deploy Preview.
 - [ ] Authentication lifecycle passes.
