@@ -13,7 +13,7 @@ try {
     read('js/appearance/validation.mjs'), read('js/appearance/studio-cloud.mjs'), read('js/appearance/studio-visual-controls.mjs'),
   ]);
   [
-    'DICE & TRAY STUDIO', 'id="studio-library"', 'id="studio-preview-tray"', 'id="storage-mode"',
+    'DICE STUDIO', 'id="studio-library"', 'id="studio-preview-tray"', 'id="storage-mode"',
     'id="community-library"', 'id="publish-set"', 'id="reset-default"', 'id="lock-set"',
     'id="die-style-enabled"', 'id="face-mode"', 'RAW — standard numbers', 'id="face-map"',
     'id="logical-result-label"', 'short word', 'id="tray-image"', 'id="remove-tray-image"',
@@ -23,7 +23,7 @@ try {
   if (html.includes('Words and multi-character labels are not allowed.') || /id="logical-face"[^>]*type="number"/.test(html)) {
     throw new Error('Studio must support short visual labels without editable logical results.');
   }
-  if (index.includes('studio-preview-tray') || index.includes('DICE & TRAY STUDIO')) throw new Error('Advanced studio must not be embedded in the landing page.');
+  if (index.includes('studio-preview-tray') || index.includes('DICE STUDIO')) throw new Error('Advanced studio must not be embedded in the landing page.');
   requireText(drawers, "window.location.assign('/customize.html')", 'roller-to-studio navigation');
   if (app.includes('initThemeCommunity()')) throw new Error('Landing app must not inject the advanced Theme Studio.');
   requireText(studio, 'if (activeId === draft.id) setActiveDiceSet(draft);', 'active appearance snapshot refresh after save');
