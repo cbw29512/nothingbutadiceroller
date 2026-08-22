@@ -87,7 +87,7 @@ export default async (request, context) => {
     let publicAccessId = publicLocked && existingIsPublic ? previousPublicAccessId : null;
     if (publicLocked && !publicAccessId) publicAccessId = newPublicAccessId();
     const record = {
-      set, creator: user.userMetadata?.fullName || user.user_metadata?.full_name || 'Adventurer',
+      set, creator: 'Adventurer',
       trayImageKey, trayImageAccessToken, publicAccessId,
       createdAt: existing?.createdAt || now, updatedAt: now,
     };
