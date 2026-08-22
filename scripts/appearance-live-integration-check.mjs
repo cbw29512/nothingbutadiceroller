@@ -4,7 +4,7 @@ import { applyLiveTrayAppearance, buildLivePhysicsConfig, buildLiveTrayVisual, L
 
 const defaultConfig = buildLivePhysicsConfig({ mode: 'default' }, '#c026d3');
 assert.equal(defaultConfig.mode, 'default');
-assert.equal(defaultConfig.themeColor, '#c026d3');
+assert.equal(defaultConfig.themeColor, '#b91c1c', 'System Default must ignore legacy saved skin colors.');
 assert.equal(defaultConfig.runtimeThemes, null);
 assert.deepEqual(defaultConfig.diceBoxOptions, {}, 'System Default must not override DiceBox renderer or external themes.');
 
@@ -28,6 +28,7 @@ assert.deepEqual(customConfig.runtimeThemes, runtimeThemes);
 
 const malformedCustom = buildLivePhysicsConfig({ mode: 'custom', runtimeThemes: {}, externalThemes: {} }, '#c026d3');
 assert.equal(malformedCustom.mode, 'default');
+assert.equal(malformedCustom.themeColor, '#b91c1c', 'Malformed custom appearance must fall back to immutable Default Dice color.');
 assert.deepEqual(malformedCustom.diceBoxOptions, {});
 
 const tray = buildLiveTrayVisual(customRuntime);
@@ -35,7 +36,12 @@ assert.equal(tray.active, true); assert.equal(tray.imageUrl, imageUrl); assert.m
 assert.match(tray.background, /#102030/); assert.match(tray.shadow, /#abcdef/);
 const unsafe = buildLiveTrayVisual({ ...customRuntime, tray: { ...customRuntime.tray, image: { url: 'javascript:never' } } });
 assert.equal(unsafe.imageUrl, null); assert.doesNotMatch(JSON.stringify(unsafe), /javascript:/);
-assert.match(LIVE_TRAY_CSS, /!important/); assert.equal(buildLiveTrayVisual({ mode: 'default' }).active, false);
+assert.match(LIVE_TRAY_CSS, /!important/);
+const defaultTray = buildLiveTrayVisual({ mode: 'default', tray: { color: '#ffffff', image: { url: 'https://example.com/ignored.png' } } });
+assert.equal(defaultTray.active, true);
+assert.equal(defaultTray.imageUrl, null);
+assert.match(defaultTray.background, /#000000/);
+assert.doesNotMatch(defaultTray.background, /#ffffff|example\.com/);
 
 function fakeDocument() {
   const classes = new Set(); const values = new Map(); const ids = new Map();
@@ -51,8 +57,9 @@ assert.match(doc.body.style.getPropertyValue('--appearance-v2-tray-bg'), /dice-s
 assert.match(doc.body.style.getPropertyValue('--appearance-v2-tray-shadow'), /#abcdef/);
 assert.equal(doc.getElementById('appearance-v2-live-style').textContent, LIVE_TRAY_CSS);
 applyLiveTrayAppearance({ mode: 'default' }, { documentRef: doc });
-assert.equal(doc.body.classList.contains('appearance-v2-active'), false);
-assert.equal(doc.body.style.getPropertyValue('--appearance-v2-tray-bg'), '');
+assert.equal(doc.body.classList.contains('appearance-v2-active'), true, 'Default tray must stay under immutable V2 styling.');
+assert.match(doc.body.style.getPropertyValue('--appearance-v2-tray-bg'), /#000000/);
+assert.doesNotMatch(doc.body.style.getPropertyValue('--appearance-v2-tray-bg'), /dice-set-image/);
 
 const physicsSource = fs.readFileSync(new URL('../js/physics.js', import.meta.url), 'utf8');
 assert.match(physicsSource, /decorateDiceBoxNotation\(notation, liveRuntimeThemes\)/);
@@ -62,10 +69,12 @@ assert.match(physicsSource, /rollDefaultFallback\(notation, themeColor, err\)/);
 assert.match(physicsSource, /diceBox\.roll\(notation\)/, 'Appearance failure must retry the original notation unchanged.');
 assert.match(physicsSource, /theme:\s*'default'/);
 assert.match(physicsSource, /liveRuntimeThemes\s*=\s*null/);
+assert.match(physicsSource, /liveThemeColor\s*=\s*SYSTEM_DEFAULT_DICE_COLOR/);
+assert.match(physicsSource, /themeColor:\s*liveThemeColor/);
 for (const reference of [/gravity:\s*1/, /mass:\s*1/, /friction:\s*0\.8/, /restitution:\s*0\.15/, /startingHeight:\s*8/, /spinForce:\s*5/, /throwForce:\s*5/]) assert.match(physicsSource, reference);
 
 const appSource = fs.readFileSync(new URL('../js/app.js', import.meta.url), 'utf8');
 assert.match(appSource, /prepareActiveDiceAppearance/);
 assert.match(appSource, /applyLiveTrayAppearance\(appearanceRuntime\)/);
 assert.match(appSource, /initDicePhysics\([\s\S]*?appearanceRuntime,[\s\S]*?\);/);
-console.log('Appearance live integration passed: Default stays unchanged, custom visuals cannot block a roll, validated tray images render, and mechanics remain canonical.');
+console.log('Appearance live integration passed: immutable Default ignores legacy styles, custom visuals cannot block a roll, validated tray images render, and mechanics remain canonical.');

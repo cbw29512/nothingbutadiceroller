@@ -1,9 +1,12 @@
 import { decorateDiceBoxNotation } from './appearance/dicebox-visual-adapter.mjs';
+import { SYSTEM_DEFAULT_DICE_SET } from './appearance/defaults.mjs';
 import { buildLivePhysicsConfig } from './appearance/live-integration.mjs';
 
 let diceBox = null;
 let DiceBoxClass = null;
 let liveRuntimeThemes = null;
+const SYSTEM_DEFAULT_DICE_COLOR = SYSTEM_DEFAULT_DICE_SET.appearance.diceSet.defaultStyle.bodyColor;
+let liveThemeColor = SYSTEM_DEFAULT_DICE_COLOR;
 
 const DICEBOX_VERSION = '1.1.4';
 const DICEBOX_SOURCES = [
@@ -43,17 +46,18 @@ function getDiceScale() {
   }
 }
 
-export async function initDicePhysics(themeColor = '#b91c1c', appearanceRuntime = null) {
+export async function initDicePhysics(themeColor = SYSTEM_DEFAULT_DICE_COLOR, appearanceRuntime = null) {
   try {
     const DiceBox = await loadDiceBoxModule();
     const liveAppearance = buildLivePhysicsConfig(appearanceRuntime, themeColor);
     liveRuntimeThemes = liveAppearance.runtimeThemes;
+    liveThemeColor = liveAppearance.themeColor;
     diceBox = new DiceBox({
       container: '#dice-tray',
       assetPath: 'assets/',
       origin: `https://unpkg.com/@3d-dice/dice-box@${DICEBOX_VERSION}/dist/`,
       theme: 'default',
-      themeColor: liveAppearance.themeColor,
+      themeColor: liveThemeColor,
       gravity: 1,
       mass: 1,
       friction: 0.8,
@@ -73,6 +77,7 @@ export async function initDicePhysics(themeColor = '#b91c1c', appearanceRuntime 
   } catch (err) {
     diceBox = null;
     liveRuntimeThemes = null;
+    liveThemeColor = SYSTEM_DEFAULT_DICE_COLOR;
     console.error('DiceBox initialization failed:', err);
     throw err;
   }
@@ -83,17 +88,20 @@ export function isPhysicsReady() {
 }
 
 async function rollDefaultFallback(notation, themeColor, originalError) {
+  void themeColor;
   console.warn('Custom dice appearance failed; retrying the same roll with Default Dice.', originalError);
   liveRuntimeThemes = null;
+  liveThemeColor = SYSTEM_DEFAULT_DICE_COLOR;
   await Promise.resolve(diceBox.updateConfig({
     theme: 'default',
-    themeColor,
+    themeColor: liveThemeColor,
     scale: getDiceScale(),
   }));
   return diceBox.roll(notation);
 }
 
 export async function rollPhysics(notation, themeColor) {
+  void themeColor;
   if (!diceBox) throw new Error('DiceBox is not initialized.');
   if (!Array.isArray(notation) || notation.length === 0) {
     throw new Error('No valid dice notation to roll.');
@@ -102,7 +110,7 @@ export async function rollPhysics(notation, themeColor) {
   const usesCustomAppearance = Boolean(liveRuntimeThemes);
   try {
     await Promise.resolve(diceBox.updateConfig({
-      themeColor,
+      themeColor: liveThemeColor,
       scale: getDiceScale(),
     }));
     const liveNotation = usesCustomAppearance
