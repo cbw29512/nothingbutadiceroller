@@ -53,11 +53,13 @@ function fakeDocument() {
 const doc = fakeDocument();
 applyLiveTrayAppearance(customRuntime, { documentRef: doc });
 assert.equal(doc.body.classList.contains('appearance-v2-active'), true);
+assert.equal(doc.body.style.getPropertyValue('--appearance-v2-dice-color'), '#123456');
 assert.match(doc.body.style.getPropertyValue('--appearance-v2-tray-bg'), /dice-set-image/);
 assert.match(doc.body.style.getPropertyValue('--appearance-v2-tray-shadow'), /#abcdef/);
 assert.equal(doc.getElementById('appearance-v2-live-style').textContent, LIVE_TRAY_CSS);
 applyLiveTrayAppearance({ mode: 'default' }, { documentRef: doc });
 assert.equal(doc.body.classList.contains('appearance-v2-active'), true, 'Default tray must stay under immutable V2 styling.');
+assert.equal(doc.body.style.getPropertyValue('--appearance-v2-dice-color'), '#b91c1c', 'Default custom-roll token must use immutable Default Dice color.');
 assert.match(doc.body.style.getPropertyValue('--appearance-v2-tray-bg'), /#000000/);
 assert.doesNotMatch(doc.body.style.getPropertyValue('--appearance-v2-tray-bg'), /dice-set-image/);
 
@@ -77,4 +79,8 @@ const appSource = fs.readFileSync(new URL('../js/app.js', import.meta.url), 'utf
 assert.match(appSource, /prepareActiveDiceAppearance/);
 assert.match(appSource, /applyLiveTrayAppearance\(appearanceRuntime\)/);
 assert.match(appSource, /initDicePhysics\([\s\S]*?appearanceRuntime,[\s\S]*?\);/);
-console.log('Appearance live integration passed: immutable Default ignores legacy styles, custom visuals cannot block a roll, validated tray images render, and mechanics remain canonical.');
+
+const customRollSource = fs.readFileSync(new URL('../js/custom-roll.js', import.meta.url), 'utf8');
+assert.match(customRollSource, /var\(--appearance-v2-dice-color, #b91c1c\)/, 'Custom dN result token must inherit active V2 base color.');
+assert.doesNotMatch(customRollSource, /getSkinColor\(state\.dieSkin/, 'Custom dN result token must not use obsolete legacy skin state.');
+console.log('Appearance live integration passed: immutable Default ignores legacy styles, custom visuals cannot block a roll, custom dN tokens follow active V2 color, validated tray images render, and mechanics remain canonical.');

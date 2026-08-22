@@ -12,6 +12,9 @@ function cloneRecord(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
   return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, item && typeof item === 'object' ? { ...item } : item]));
 }
+function liveDiceColor(runtime) {
+  return runtime?.mode === 'custom' ? safeHex(runtime.defaultThemeColor, DEFAULT_DICE_COLOR) : DEFAULT_DICE_COLOR;
+}
 export function buildLivePhysicsConfig(runtime, legacyThemeColor = DEFAULT_DICE_COLOR) {
   void legacyThemeColor;
   const fallback = { mode: 'default', themeColor: DEFAULT_DICE_COLOR, runtimeThemes: null, diceBoxOptions: {} };
@@ -53,6 +56,7 @@ export function applyLiveTrayAppearance(runtime, { documentRef } = {}) {
   const visual = buildLiveTrayVisual(runtime); const doc = documentRef ?? (typeof document === 'undefined' ? null : document); const body = doc?.body;
   if (!body) return visual;
   ensureLiveTrayStyle(doc); body.classList.toggle('appearance-v2-active', visual.active);
+  body.style.setProperty('--appearance-v2-dice-color', liveDiceColor(runtime));
   if (visual.active) {
     body.style.setProperty('--appearance-v2-tray-bg', visual.background); body.style.setProperty('--appearance-v2-tray-shadow', visual.shadow);
   } else {
