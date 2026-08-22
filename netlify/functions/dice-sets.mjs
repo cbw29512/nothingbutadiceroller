@@ -1,6 +1,10 @@
 import { getUser, verifyRequestOrigin } from '@netlify/identity';
 import {
-  listLegacyPublicProjections, listPublicProjections, listUserRecords, openDiceSetStore,
+  conditionalRecordWrite, listVersionedUserRecords, normalizeExpectedVersion,
+  readVersionedRecord, versionConflict,
+} from './dice-set-concurrency.mjs';
+import {
+  listLegacyPublicProjections, listPublicProjections, openDiceSetStore,
   publicRecordKey, recordKey,
 } from './dice-set-store.mjs';
 
@@ -25,6 +29,9 @@ async function bestEffortDelete(store, key, label) {
   if (!key) return;
   try { await store.delete(key); } catch (error) { console.warn(`Failed to clean up ${label}:`, error); }
 }
+function versionMap(entries) {
+  return Object.fromEntries(entries.map((entry) => [entry.record.set.id, entry.version]));
+}
 
 export default async (request, context) => {
   try {
@@ -42,22 +49,29 @@ export default async (request, context) => {
     if (request.method === 'GET') {
       const setId = url.searchParams.get('id');
       if (setId) {
-        const record = await store.get(recordKey(user.id, setId), { type: 'json' }).catch(() => null);
-        if (!record) return json({ error: 'Dice set not found.' }, 404);
-        return json({ record, userId: user.id });
+        const entry = await readVersionedRecord(store, recordKey(user.id, setId));
+        if (!entry?.record?.set) return json({ error: 'Dice set not found.' }, 404);
+        return json({ record: entry.record, version: entry.version, userId: user.id });
       }
-      return json({ records: await listUserRecords(store, user.id), userId: user.id });
+      const entries = await listVersionedUserRecords(store, user.id);
+      return json({ records: entries.map((entry) => entry.record), versions: versionMap(entries), userId: user.id });
     }
     if (request.method === 'DELETE') {
       verifyRequestOrigin(request);
       const setId = url.searchParams.get('id');
       if (!setId) return json({ error: 'Dice set id is required.' }, 400);
+      const expectedVersion = normalizeExpectedVersion(request.headers.get('If-Match'));
       const key = recordKey(user.id, setId);
-      const existing = await store.get(key, { type: 'json' }).catch(() => null);
-      if (!existing) return json({ error: 'Dice set not found.' }, 404);
+      const existing = await readVersionedRecord(store, key);
+      if (!existing?.record?.set) return json({ error: 'Dice set not found.' }, 404);
+      if (expectedVersion !== existing.version) return json(versionConflict(existing), 409);
+
+      const tombstone = { deletionMarker: true, deletedAt: new Date().toISOString() };
+      const marked = await conditionalRecordWrite(store, key, tombstone, expectedVersion);
+      if (marked.conflict) return json(marked.conflict, 409);
       await store.delete(key);
-      if (existing.publicAccessId) await bestEffortDelete(store, publicRecordKey(existing.publicAccessId), 'public projection');
-      if (existing.trayImageKey) await bestEffortDelete(store, existing.trayImageKey, 'tray image');
+      if (existing.record.publicAccessId) await bestEffortDelete(store, publicRecordKey(existing.record.publicAccessId), 'public projection');
+      if (existing.record.trayImageKey) await bestEffortDelete(store, existing.record.trayImageKey, 'tray image');
       return json({ success: true });
     }
     return json({ error: 'Method Not Allowed' }, 405);
@@ -65,7 +79,7 @@ export default async (request, context) => {
     const status = Number(error?.status || error?.statusCode) || 500;
     if (status === 403) return json({ error: 'Request origin is not allowed.' }, 403);
     console.error('V2 dice-set API failed:', error);
-    return json({ error: error?.message || 'Dice-set request failed.' }, 500);
+    return json({ error: error?.message || 'Dice-set request failed.' }, status >= 400 && status < 600 ? status : 500);
   }
 };
 export const config = { path: '/api/dice-sets' };
