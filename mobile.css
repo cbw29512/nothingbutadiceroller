@@ -1,6 +1,8 @@
 .custom-die-popover{display:none}
 
 @media(max-width:700px){
+  body{padding-bottom:calc(170px + env(safe-area-inset-bottom))}
+
   .controls-panel{display:none!important}
 
   .mobile-dice-row{
