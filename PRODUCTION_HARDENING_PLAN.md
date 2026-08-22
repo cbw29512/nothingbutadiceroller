@@ -26,12 +26,14 @@ Phase 1 code status: implemented on the hardening branch. Branch protection rema
 
 ## Phase 2 — Browser-level release gates
 
-- [ ] Add real browser smoke tests for the built app.
-- [ ] Test desktop and mobile viewports.
-- [ ] Assert post-boot UI text so runtime DOM regressions are caught.
-- [ ] Assert no horizontal overflow on primary pages.
-- [ ] Add baseline automated accessibility checks.
-- [ ] Keep browser/E2E tests separate from dice mechanics and deterministic contract tests.
+- [x] Add real browser smoke tests for the built app. **Verified in hosted Google Chrome; includes a real physical d20 roll and mobile CUSTOM d37 roll.**
+- [x] Test desktop and mobile viewports.
+- [x] Assert post-boot UI text so runtime DOM regressions are caught.
+- [x] Assert no horizontal overflow on primary pages.
+- [x] Add baseline automated accessibility checks.
+- [x] Keep browser/E2E tests separate from dice mechanics and deterministic contract tests.
+
+Phase 2 evidence: exact hardening heads have completed the built-site Chrome matrix for `/`, Dice Studio, shortcut manager, How To, Privacy, and Legal on 1440×900 desktop and 390×844 mobile. The interaction suite also caught and permanently regressed a real `Bolean(active)` shortcut-integration typo that had blocked ordinary Roll clicks.
 
 ## Phase 3 — Public image and upload privacy hardening
 
@@ -39,7 +41,7 @@ Phase 1 code status: implemented on the hardening branch. Branch protection rema
 - [ ] Decode and re-encode accepted cloud tray images so metadata such as EXIF/GPS is removed.
 - [ ] Enforce safe maximum pixel dimensions / decode bounds.
 - [ ] Preserve PNG/JPEG/WebP support without allowing arbitrary payloads disguised as images.
-- [ ] Keep guest 512 KB and cloud 4 MB limits unless measurement justifies a change.
+- [x] Keep guest 512 KB and cloud 4 MB limits unless measurement justifies a change. **Current contract suite verifies both limits.**
 - [ ] Add an aggregate per-account image/storage quota.
 - [ ] Add regression tests proving metadata stripping / type rejection / dimension limits.
 
@@ -51,7 +53,7 @@ Phase 1 code status: implemented on the hardening branch. Branch protection rema
 - [ ] Add a user-facing Report Set path.
 - [ ] Add an administrative takedown/moderation path.
 - [ ] Add concise Community Acceptable Use rules.
-- [ ] Keep public projections anonymous (`Adventurer`) and opaque.
+- [x] Keep public projections anonymous (`Adventurer`) and opaque. **Current public-projection contract verifies opaque public identity and no account email/internal account IDs.**
 
 ## Phase 5 — Supply-chain and runtime resilience
 
@@ -66,9 +68,9 @@ Phase 1 code status: implemented on the hardening branch. Branch protection rema
 
 - [ ] Add optimistic concurrency/version protection to Dice Studio cloud records.
 - [ ] Add optimistic concurrency/version protection to saved configurations where appropriate.
-- [ ] Preserve the shortcut ETag/version conflict behavior already in place.
-- [ ] Make conflicts explicit and recoverable instead of silent last-write-wins.
-- [ ] Add conflict-path tests.
+- [x] Preserve the shortcut ETag/version conflict behavior already in place.
+- [ ] Make Dice Studio/configuration conflicts explicit and recoverable instead of silent last-write-wins.
+- [ ] Add conflict-path tests for newly protected cloud records.
 
 ## Phase 7 — Privacy lifecycle
 
@@ -80,11 +82,11 @@ Phase 1 code status: implemented on the hardening branch. Branch protection rema
 
 ## Phase 8 — Accessibility and ease of use
 
-- [ ] Add dialog focus placement, focus trap/containment, and focus restoration for drawers.
-- [ ] Prevent background interaction while modal drawers are open.
-- [ ] Add `prefers-reduced-motion` treatment for critical effects and nonessential animation.
-- [ ] Review primary mobile touch targets without making the interface larger than necessary.
-- [ ] Keep the primary roller flow: choose dice → roll → result.
+- [x] Add dialog focus placement, focus trap/containment, and focus restoration for drawers. **Chrome interaction test verifies History drawer focus entry, Tab containment, and focus return.**
+- [x] Prevent background interaction while modal drawers are open. **Background surfaces are `inert` and browser-tested while the drawer is active.**
+- [x] Add `prefers-reduced-motion` treatment for critical effects and nonessential animation. **CDP emulation verifies the critical banner computes to no animation.**
+- [x] Review primary mobile touch targets without making the interface larger than necessary. **d20, ADV/DIS, and Roll are browser-enforced at >=44 px while preserving the eight-column dice row.**
+- [x] Keep the primary roller flow: choose dice → roll → result. **The browser gate performs this flow against the real DiceBox-backed d20 path.**
 
 ## Phase 9 — Repository and DevSecOps hygiene
 
@@ -109,9 +111,9 @@ Phase 1 code status: implemented on the hardening branch. Branch protection rema
 
 ## Final 10/10 release gate
 
-- [ ] `npm ci` succeeds from a clean checkout.
-- [ ] Full deterministic contract/build suite passes.
-- [ ] Browser/E2E suite passes on desktop and mobile targets.
+- [x] `npm ci` succeeds from a clean GitHub Actions checkout.
+- [x] Full deterministic contract/build suite passes on the current hardening line.
+- [x] Browser/E2E suite passes on desktop and mobile targets.
 - [ ] Security/static-analysis workflow passes.
 - [ ] Netlify Deploy Preview is green for the exact release head.
 - [ ] Manual visual acceptance passes on the exact Deploy Preview.
@@ -120,9 +122,9 @@ Phase 1 code status: implemented on the hardening branch. Branch protection rema
 - [ ] Cloud save/edit/reload lifecycle passes.
 - [ ] Community publish/private/republish/delete lifecycle passes.
 - [ ] Public image privacy/revocation checks pass.
-- [ ] Default Dice immutable fallback checks pass.
-- [ ] RAW/ADV/DIS/critical/custom-dN/shortcut mechanics checks pass.
-- [ ] Production/nonproduction storage-isolation checks pass.
+- [x] Default Dice immutable fallback checks pass in the deterministic contract suite.
+- [x] RAW/ADV/DIS/critical/custom-dN/shortcut mechanics checks pass in the deterministic contract suite; normal d20 and custom d37 also pass the real-browser interaction gate.
+- [x] Production/nonproduction storage-isolation checks pass in the deterministic contract suite.
 - [ ] No unresolved PR review blockers.
 - [ ] `main` protection is verified enabled.
 - [ ] Final release review finds no P0/P1 findings and no unaccepted P2 findings.
