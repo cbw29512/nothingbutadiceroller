@@ -37,13 +37,13 @@ Phase 2 evidence: exact hardening heads have completed the built-site Chrome mat
 
 ## Phase 3 — Public image and upload privacy hardening
 
-- [ ] Validate actual image file signatures, not only data-URL MIME text.
-- [ ] Decode and re-encode accepted cloud tray images so metadata such as EXIF/GPS is removed.
-- [ ] Enforce safe maximum pixel dimensions / decode bounds.
-- [ ] Preserve PNG/JPEG/WebP support without allowing arbitrary payloads disguised as images.
+- [x] Validate actual image file signatures, not only data-URL MIME text. **Server-side binary detection must agree with the declared PNG/JPEG/WebP MIME before Blob storage.**
+- [ ] Decode and re-encode accepted cloud tray images so metadata such as EXIF/GPS is removed. **Known PNG/JPEG/WebP metadata containers are now stripped structurally, but full decode/re-encode remains intentionally open.**
+- [x] Enforce safe maximum pixel dimensions / decode bounds. **Uploads are bounded to 4096px per side and 16,777,216 pixels before storage.**
+- [ ] Preserve PNG/JPEG/WebP support without allowing arbitrary payloads disguised as images. **Structural image validation is now substantially stronger, but this remains open until a real decoder/re-encoder proves the pixel stream.**
 - [x] Keep guest 512 KB and cloud 4 MB limits unless measurement justifies a change. **Current contract suite verifies both limits.**
 - [ ] Add an aggregate per-account image/storage quota.
-- [ ] Add regression tests proving metadata stripping / type rejection / dimension limits.
+- [x] Add regression tests proving metadata stripping / type rejection / dimension limits. **Adversarial binary fixtures cover PNG text metadata, JPEG EXIF/IPTC/comments, WebP EXIF/XMP, MIME mismatch, unsupported bytes, and oversized dimensions.**
 
 ## Phase 4 — Community abuse and scale controls
 
@@ -74,7 +74,7 @@ Phase 2 evidence: exact hardening heads have completed the built-site Chrome mat
 
 ## Phase 7 — Privacy lifecycle
 
-- [ ] Stop storing unused Identity profile names in dice-set owner records.
+- [x] Stop storing unused Identity profile names in new dice-set owner records. **New writes store only the generic `Adventurer` creator label; historical-record cleanup remains a migration task and must not race cloud edits.**
 - [ ] Add self-service deletion of application cloud data.
 - [ ] Define/document data retention behavior.
 - [ ] Add a practical account/data export path if feasible for this product scope.
