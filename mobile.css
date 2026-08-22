@@ -9,7 +9,12 @@
   }
 
   .mobile-die-btn{
+    min-height:44px;
     font-size:.72rem;
+  }
+
+  .mobile-mode-btn{
+    min-height:44px;
   }
 
   .custom-die-btn{
