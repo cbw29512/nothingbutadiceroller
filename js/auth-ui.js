@@ -18,7 +18,7 @@ function ensureAuthMarkup() {
   if (!signedOut) return;
 
   signedOut.innerHTML = `
-    <p>Sign in to save dice configurations permanently and load them on other devices.</p>
+    <p>Sign in to save dice configurations to your account and load them on other devices.</p>
     <div class="save-config-form account-auth-form">
       <label for="account-auth-email" class="section-label">Email</label>
       <input id="account-auth-email" class="text-input" type="email" autocomplete="email" placeholder="you@example.com">

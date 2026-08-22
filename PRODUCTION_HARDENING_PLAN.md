@@ -16,11 +16,13 @@ This checklist is the release-readiness source of truth. An item is checked only
 
 ## Phase 1 — Immediate correctness and repository safety
 
-- [ ] Enable real GitHub branch protection/rules for `main` and require the full validation status before merge. **Operational GitHub setting; cannot be considered complete from source code alone.**
-- [ ] Stop runtime code from renaming `Dice Studio` back to `Customize`.
-- [ ] Stop runtime auth markup from restoring the misleading word `permanently`.
-- [ ] Fix exact-zero Homebrew shortcut damage/healing presentation so legal `0` values render as zero instead of `—` / `Grouped`.
-- [ ] Add regression checks for all three runtime/correctness defects above.
+- [ ] Enable real GitHub branch protection/rules for `main` and require the full validation status before merge. **Operational GitHub setting; source audit confirms this is still disabled.**
+- [x] Stop runtime code from renaming `Dice Studio` back to `Customize`.
+- [x] Stop runtime auth markup from restoring the misleading word `permanently`.
+- [x] Fix exact-zero Homebrew shortcut damage/healing presentation so legal `0` values render as zero instead of `—` / `Grouped`.
+- [x] Add regression checks for all three runtime/correctness defects above.
+
+Phase 1 code status: implemented on the hardening branch. Branch protection remains an external repository-setting gate and must be verified before release.
 
 ## Phase 2 — Browser-level release gates
 

@@ -146,9 +146,6 @@ async function boot() {
     initAccount();
     initShortcutRuntime();
 
-    const stylesButton = document.getElementById('open-styles-btn');
-    if (stylesButton) stylesButton.textContent = 'Customize';
-
     setStatus('Loading 3D physics…');
     const appearanceRuntime = await prepareActiveDiceAppearance();
     applyLiveTrayAppearance(appearanceRuntime);
