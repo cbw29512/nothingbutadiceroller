@@ -13,8 +13,8 @@ try {
     'const user = await getUser()', 'if (!user)', 'verifyRequestOrigin(request)', 'const rawSet = structuredClone',
     'extractTrayImageDataUrl', 'prepareCloudDiceSet(rawSet, user.id)',
     'assertLockedUpdateAllowed(existing.set, set)', "set.visibility === 'public' && set.locked",
-    'trayImageAccessToken', 'MAX_TRAY_IMAGE_BYTES', "|| 'Adventurer'", 'openDiceSetStore(context)',
-    'newPublicAccessId()', 'buildPublicProjection(record, publicAccessId)',
+    'trayImageAccessToken', 'MAX_TRAY_IMAGE_BYTES', "creator: 'Adventurer'", 'openDiceSetStore(context)',
+    'sanitizeTrayImageBytes(buffer, match[1].toLowerCase())', 'newPublicAccessId()', 'buildPublicProjection(record, publicAccessId)',
     'countUserRecords(store, user.id) >= MAX_USER_DICE_SETS', 'Post-save dice-set quota verification failed; rolling back new set:',
     'versionedImageKey(user.id, set.id, trayImageAccessToken)', 'previousTrayImageKey',
     'stagedTrayImageKey', 'stagedPublicKey', 'stagedPublicWasNew',
@@ -30,6 +30,7 @@ try {
   if (projectionStage < 0 || recordWrite <= projectionStage) throw new Error('Public projection must be staged before the authoritative owner record commit.');
   if (previousPublicCleanup <= recordWrite || previousImageCleanup <= recordWrite) throw new Error('Previous public/image blobs must be cleaned only after the owner record commits.');
   if (saveApi.includes('user.email')) throw new Error('Dice-set creator metadata must never fall back to account email.');
+  if (/user(?:Metadata|_metadata).*full.?name/i.test(saveApi)) throw new Error('Owner records must not store Identity profile names.');
   if (/COMMUNITY_INDEX|indexKey\(|setJSON\([^\n]*index/i.test(saveApi)) throw new Error('Save API must not write shared dice-set index blobs.');
 
   [
@@ -65,7 +66,7 @@ try {
     "record.publicAccessId === projection.publicAccessId", "record.set.visibility === 'public'",
     "=== 'production' ? STORE_NAME : `${STORE_NAME}-nonprod`",
   ].forEach((text) => requireText(storeLayer, text, 'opaque authoritative storage contract'));
-  console.log('Dice-set API contract passed: owner records are authoritative; mutations require trusted origins; production and preview stores are isolated; images/projections are staged or cleaned around owner commits; failed quota verification rolls back; public reads revalidate owner state; storage remains bounded and privacy-safe.');
+  console.log('Dice-set API contract passed: owner records are authoritative; mutations require trusted origins; Identity profile names are not stored; production and preview stores are isolated; images/projections are staged or cleaned around owner commits; failed quota verification rolls back; public reads revalidate owner state; storage remains bounded and privacy-safe.');
 } catch (error) {
   console.error('Dice-set API contract failed:', error);
   process.exitCode = 1;

@@ -12,6 +12,11 @@ import { hydrateShortcutSlot, normalizeShortcutSlots } from './persistence.mjs';
 import { compileRawCatalogEntry, getRawSpell } from './raw/index.mjs';
 import { renderShortcutToolbar } from './toolbar.mjs';
 import { assertPhysicalDiceBudget } from './dice-budget.mjs';
+import {
+  formatShortcutResult,
+  shortcutDisplayTotal,
+  shortcutHistoryTotal,
+} from './result-presentation.mjs';
 
 let slots = [];
 let hydratedSlots = [];
@@ -179,36 +184,6 @@ function activeCompiled() {
   return compileSlot(active.slot, active.variantId);
 }
 
-function formatInstanceRoll(instance, resolved) {
-  const values = (resolved?.dice || []).flatMap((die) => die.values.map((value) => `d${die.sides} ${value}`));
-  const rollText = values.join(' + ');
-  const modifier = instance.modifier
-    ? ` ${instance.modifier > 0 ? '+' : '−'} ${Math.abs(instance.modifier)}`
-    : '';
-  return `${rollText}${modifier} = ${instance.total}`;
-}
-
-function formatShortcutResult(execution) {
-  const resolvedById = new Map(execution.resolvedInstances.map((item) => [item.instanceId, item]));
-  const parts = [];
-  for (const group of execution.result.groups) {
-    group.instances.forEach((instance, index) => {
-      const suffix = group.instances.length > 1 ? ` ${index + 1}` : '';
-      const damageType = group.damageType ? ` ${group.damageType.toUpperCase()}` : '';
-      parts.push(`${group.label.toUpperCase()}${suffix}${damageType}: ${formatInstanceRoll(instance, resolvedById.get(instance.id))}`);
-    });
-  }
-  if (execution.result.damageTotal) parts.push(`TOTAL DAMAGE = ${execution.result.damageTotal}`);
-  if (execution.result.healingTotal) parts.push(`TOTAL HEALING = ${execution.result.healingTotal}`);
-  return parts.join(' | ');
-}
-
-function shortcutDisplayTotal(execution) {
-  if (execution.result.damageTotal) return execution.result.damageTotal;
-  if (execution.result.healingTotal) return execution.result.healingTotal;
-  return '—';
-}
-
 function historyFormula() {
   if (!active) return 'Shortcut';
   const compiled = activeCompiled();
@@ -220,11 +195,7 @@ function saveShortcutHistory(execution, breakdown) {
     time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
     formula: historyFormula(),
     breakdown,
-    total: execution.result.damageTotal
-      ? `Damage ${execution.result.damageTotal}`
-      : execution.result.healingTotal
-        ? `Healing ${execution.result.healingTotal}`
-        : 'Grouped',
+    total: shortcutHistoryTotal(execution),
   });
   if (state.history.length > 30) state.history.length = 30;
   savePreferences();
@@ -388,4 +359,3 @@ export function initShortcutRuntime() {
   identity.on('login', loadForSession);
   identity.on('logout', () => loadForSession(null));
 }
-
