@@ -1,6 +1,10 @@
-name: Appearance V2 Validation
+name: Full Release Validation
 
 on:
+  pull_request:
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
@@ -8,10 +12,11 @@ permissions:
 
 jobs:
   validate:
+    name: Full build and contracts
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Checkout feature branch
+      - name: Checkout repository
         uses: actions/checkout@v4
       - name: Use Node 22
         uses: actions/setup-node@v4

@@ -10,9 +10,13 @@ const dist = resolve(root, 'dist');
 const files = [
   'index.html',
   'customize.html',
+  'how-to.html',
+  'privacy.html',
+  'legal.html',
   'appearance-harness.html',
   'rolls.html',
   'styles.css',
+  'docs.css',
   'customize.css',
   'appearance-harness.css',
   'themes.css',
@@ -85,19 +89,39 @@ async function validateBuild() {
       readFile(resolve(dist, 'js/custom-roll.js'), 'utf8'), readFile(resolve(dist, 'js/tray-controls.js'), 'utf8'),
       readFile(resolve(dist, 'js/appearance/dicebox-proof-harness.js'), 'utf8'),
     ]);
+    const [howToHtml, privacyHtml, legalHtml] = await Promise.all([
+      readFile(resolve(dist, 'how-to.html'), 'utf8'),
+      readFile(resolve(dist, 'privacy.html'), 'utf8'),
+      readFile(resolve(dist, 'legal.html'), 'utf8'),
+    ]);
 
     requireReferences(html, [
       'href="/styles.css"', 'href="/themes.css"', 'href="/account.css"', 'href="/mobile.css"',
       'href="/community.css"', 'href="/custom.css"', 'src="/js/app.js"', 'id="desktop-custom-die-btn"',
       'popovertarget="desktop-custom-die-popover"', 'id="desktop-custom-die-popover"', 'popover="auto"',
       '>CUSTOM</button>', 'Keep dice after roll', 'id="tray-roll-hint"', 'CLICK / TAP TRAY TO ROLL',
-      'SECURE RANDOMIZATION ENGINE', 'Physics-resolved dice • Cryptographic custom rolls',
+      'SECURE RANDOMIZATION ENGINE', 'Physics-resolved dice • Cryptographic custom rolls', 'href="/how-to.html"',
+      'aria-label="Open Dice Studio">Dice Studio</button>',
+      'save dice configurations to your account and load them on other devices.',
     ], 'completed UI reference');
 
     requireReferences(studioHtml, [
-      'DICE & TRAY STUDIO', 'id="studio-library"', 'id="studio-preview-tray"', 'id="reset-default"',
-      'id="lock-set"', 'RAW — standard numbers', 'src="/js/appearance/studio.js"',
+      'DICE STUDIO', 'id="studio-library"', 'id="studio-preview-tray"', 'id="reset-default"',
+      'id="lock-set"', 'RAW — standard numbers', 'src="/js/appearance/studio.js"', 'href="/how-to.html"',
     ], 'Dice Studio reference');
+
+    requireReferences(howToHtml, [
+      'Roll first. Customize only when you want to.', 'Visual faces never change results.',
+      'From the main roller, choose <strong>Dice Studio</strong>', 'Dice Studio does not change mechanics.',
+      'href="/privacy.html"', 'href="/legal.html"', 'href="/customize.html"', 'href="/rolls.html"',
+    ], 'How To reference');
+    requireReferences(privacyHtml, [
+      'What the app stores and why.', 'Netlify Identity', 'Community projection', 'href="/legal.html"',
+    ], 'privacy reference');
+    requireReferences(legalHtml, [
+      'SRD ATTRIBUTION', 'System Reference Document 5.1', 'System Reference Document 5.2.1',
+      'Creative Commons Attribution 4.0 International', 'href="/privacy.html"',
+    ], 'legal/SRD reference');
 
     requireReferences(appearanceHarnessHtml, [
       'name="robots" content="noindex,nofollow"', 'ISOLATED V2 PROOF', 'id="appearance-proof-tray"',
@@ -112,7 +136,7 @@ async function validateBuild() {
       'name="robots" content="noindex,nofollow"', 'href="/rolls.css"', 'href="/shortcut-toolbar.css"',
       'id="manager-toolbar"', 'data-tab="2024"', 'data-tab="2014"', 'data-tab="homebrew"', 'data-tab="options"',
       'id="duplicate-shortcut"', 'id="validate-homebrew"', 'id="reset-shortcuts"', 'id="preferred-ruleset"',
-      'src="/js/rolls.js"',
+      'src="/js/rolls.js"', 'href="/how-to.html"',
     ], 'Phase 7 manager reference');
 
     requireReferences(harnessHtml, [
@@ -121,7 +145,7 @@ async function validateBuild() {
     ], 'Phase 4 harness reference');
 
     if (html.includes('shortcut-toolbar.css') || html.includes('shortcut-toolbar-harness')) throw new Error('Base HTML must keep shortcut UI as progressive enhancement.');
-    if (html.includes('studio-preview-tray') || html.includes('DICE & TRAY STUDIO') || html.includes('appearance-proof-tray')) {
+    if (html.includes('studio-preview-tray') || html.includes('DICE STUDIO') || html.includes('appearance-proof-tray')) {
       throw new Error('Advanced Dice Studio and proof harness must remain off the landing page.');
     }
 

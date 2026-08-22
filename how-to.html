@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#090c12">
+  <meta name="description" content="Learn how to use Nothing But A Dice Roller: standard dice, advantage and disadvantage, custom dN rolls, shortcuts, Dice Studio, accounts, and Community sets.">
+  <link rel="canonical" href="https://nothingbutattrpgdiceroller.netlify.app/how-to.html">
+  <title>How To Use Nothing But A Dice Roller</title>
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/docs.css">
+</head>
+<body class="docs-page">
+  <div class="docs-shell">
+    <header class="docs-header">
+      <div>
+        <p class="docs-kicker">HOW TO</p>
+        <h1>Roll first. Customize only when you want to.</h1>
+        <p>The core roller is intentionally fast: choose dice and roll. Accounts, shortcuts, custom appearances, and Community sets are optional layers.</p>
+      </div>
+      <nav class="docs-nav" aria-label="Help navigation">
+        <a class="btn primary" href="/">Open Roller</a>
+        <a class="btn secondary" href="/customize.html">Dice Studio</a>
+        <a class="btn secondary" href="/rolls.html">Shortcuts</a>
+        <a class="btn ghost" href="/privacy.html">Privacy</a>
+        <a class="btn ghost" href="/legal.html">Legal</a>
+      </nav>
+    </header>
+
+    <main class="docs-main">
+      <section class="docs-grid" aria-label="Quick start">
+        <article class="docs-card"><span class="docs-kicker">1 • CHOOSE</span><h2>Pick dice</h2><p>Tap d4, d6, d8, d10, d12, d20, or d100. Tap a die more than once to add more of that die to the pool.</p></article>
+        <article class="docs-card"><span class="docs-kicker">2 • ROLL</span><h2>Roll them</h2><p>Press <strong>Roll Dice</strong>, or click/tap the tray. With the tray focused on a keyboard, Enter or Space also rolls.</p></article>
+        <article class="docs-card"><span class="docs-kicker">3 • READ</span><h2>See the result</h2><p>The total and individual die results appear below the tray. Recent rolls are available in History.</p></article>
+      </section>
+
+      <section class="docs-section">
+        <span class="docs-kicker">CORE ROLLER</span>
+        <h2>Standard dice, ADV/DIS, and Keep Dice</h2>
+        <div class="docs-step"><div class="docs-step-number">A</div><div><h3>Standard dice use 3D physics</h3><p>The seven standard tabletop dice use the app's DiceBox physics engine. The numerical result returned by the physics roll is authoritative.</p></div></div>
+        <div class="docs-step"><div class="docs-step-number">B</div><div><h3>ADV and DIS are instant d20 rolls</h3><p><strong>ROLL ADV</strong> rolls two d20s and keeps the higher result. <strong>ROLL DIS</strong> rolls two d20s and keeps the lower result. These quick rolls do not consume a dice pool you were building.</p></div></div>
+        <div class="docs-step"><div class="docs-step-number">C</div><div><h3>Keep Dice changes what happens after a roll</h3><p>With Keep Dice on, the selected standard dice remain in the pool after rolling. With it off, the pool clears after the roll.</p></div></div>
+        <div class="docs-callout"><strong>Default Dice is always available.</strong> It is the permanent system fallback and cannot be edited or deleted.</div>
+      </section>
+
+      <section class="docs-section">
+        <span class="docs-kicker">CUSTOM dN</span>
+        <h2>Roll unusual dice such as d3, d37, or d1000</h2>
+        <p>Open <strong>CUSTOM</strong>, enter a number such as <span class="docs-code">37</span> or <span class="docs-code">d37</span>, then roll. Custom numerical dice are supported from d2 through d1,000,000.</p>
+        <p>The app does not pretend a physical d37 mesh exists. CUSTOM dN uses the browser's Web Crypto random generator with rejection sampling so every result from 1 through N has equal probability.</p>
+      </section>
+
+      <section class="docs-section">
+        <span class="docs-kicker">ROLL SHORTCUTS</span>
+        <h2>Save the rolls you use at the table</h2>
+        <p>Open the shortcut manager from the roller's shortcut gear. You can keep up to 24 shortcuts and arrange them in your toolbar.</p>
+        <table class="docs-table">
+          <thead><tr><th>Mode</th><th>What it is for</th><th>What stays protected</th></tr></thead>
+          <tbody>
+            <tr><td>2024 RAW</td><td>Verified roll-relevant examples from SRD 5.2.1.</td><td>RAW mechanics are locked.</td></tr>
+            <tr><td>2014 RAW</td><td>Verified roll-relevant examples from SRD 5.1.</td><td>RAW mechanics are locked.</td></tr>
+            <tr><td>Homebrew</td><td>Your own structured attack, damage, healing, check, or save groups.</td><td>The formula is validated before it can be saved.</td></tr>
+          </tbody>
+        </table>
+        <div class="docs-callout docs-warning"><strong>RAW is not a character sheet.</strong> RAW cards contain the verified roll mechanics they are designed to represent. Character-specific attack bonuses and extra modifiers belong on your own Homebrew shortcut.</div>
+      </section>
+
+      <section class="docs-section">
+        <span class="docs-kicker">DICE STUDIO</span>
+        <h2>Make the dice yours without changing how they roll</h2>
+        <p>From the main roller, choose <strong>Dice Studio</strong> in the top header. Dice Studio is the visual customization area for your standard RPG dice and tray. It is where you build, save, activate, lock, and optionally publish custom-looking dice sets.</p>
+        <p>You can change the color of the whole set or customize individual dice, turn dice glow on or off, change tray color and glow, add an optional tray image, and replace the visual marking on individual faces with a number, keyboard character, symbol, rune, icon, or short word.</p>
+        <ul>
+          <li><strong>Save Dice Set</strong> stores the current draft.</li>
+          <li><strong>Use This Set</strong> makes a clean saved set the active appearance on the roller.</li>
+          <li><strong>Reset to Default</strong> restores the permanent System Default without deleting your saved sets.</li>
+          <li><strong>Lock Set</strong> freezes the design so it can be published safely.</li>
+          <li><strong>Publish Set</strong> makes a locked copy available in Community. Other users can use the public copy but cannot edit your owned set.</li>
+          <li>Unsaved changes cannot be activated, locked, or published.</li>
+        </ul>
+        <div class="docs-callout"><strong>Visual faces never change results.</strong> If the logical 20 face is displayed as ☠, ★, CRIT, a rune, or another short label, it still rolls a numerical 20 underneath. RAW face mode always uses standard numbering.</div>
+        <div class="docs-callout docs-warning"><strong>Dice Studio does not change mechanics.</strong> It cannot change a die's number of sides, physical RPG shape, numerical odds, ADV/DIS behavior, shortcut math, critical-hit rules, or the result returned by the roller. It changes presentation only.</div>
+        <div class="docs-actions"><a class="btn secondary" href="/customize.html">Open Dice Studio</a></div>
+      </section>
+
+      <section class="docs-section">
+        <span class="docs-kicker">D100</span>
+        <h2>Percentile faces stay canonical</h2>
+        <p>The physical d100 mapping remains the standard percentile sequence <span class="docs-code">00 / 10 / 20 / … / 90</span>. A custom visual label can replace what you see on a face, but it cannot change the logical percentile result.</p>
+      </section>
+
+      <section class="docs-section">
+        <span class="docs-kicker">ACCOUNTS & SYNC</span>
+        <h2>Guest mode versus signed-in mode</h2>
+        <table class="docs-table">
+          <thead><tr><th>Feature</th><th>Guest</th><th>Signed in</th></tr></thead>
+          <tbody>
+            <tr><td>Standard roller</td><td>Yes</td><td>Yes</td></tr>
+            <tr><td>Browser dice sets</td><td>Stored on that browser</td><td>Still available for explicit import</td></tr>
+            <tr><td>Cloud dice sets</td><td>No</td><td>Yes, up to 100 sets per account</td></tr>
+            <tr><td>Tray image size</td><td>Up to 512 KB</td><td>Up to 4 MB per cloud set</td></tr>
+            <tr><td>Saved configurations / shortcuts</td><td>Local behavior only where supported</td><td>Account-backed sync</td></tr>
+          </tbody>
+        </table>
+        <p>Signing in never silently uploads or deletes your browser dice sets. If browser sets are present, Dice Studio offers an explicit import into your account.</p>
+      </section>
+
+      <section class="docs-section">
+        <span class="docs-kicker">LOCK & COMMUNITY</span>
+        <h2>Share a set without giving strangers edit access</h2>
+        <ol>
+          <li>Save the set.</li>
+          <li>Lock it. A public set must be locked.</li>
+          <li>Publish it to Community.</li>
+          <li>Other users can view/use the Community copy, but cannot edit or delete your owned set.</li>
+          <li>Make it private to remove public access. Republishing creates a fresh public identity.</li>
+        </ol>
+        <p>Public Community projections do not expose your account email or internal account ID. Public creator text is shown as <strong>Adventurer</strong>.</p>
+      </section>
+
+      <section class="docs-section">
+        <span class="docs-kicker">FAQ</span>
+        <h2>Common questions</h2>
+        <h3>Can custom dice change my odds?</h3><p>No. Appearance changes never alter standard die shapes or numerical semantics.</p>
+        <h3>Can I lose Default Dice?</h3><p>No. Default Dice is system-owned, locked, immutable, and always available as the fallback.</p>
+        <h3>Why does a CUSTOM dN look different from a standard 3D die?</h3><p>Because nonstandard shapes such as a d37 do not have a canonical physical mesh in the standard DiceBox set. The app shows the secure numerical result instead.</p>
+        <h3>Where is my account data used?</h3><p>See the <a href="/privacy.html">Privacy page</a> for browser storage, account sync, cloud sets, and Community publishing.</p>
+      </section>
+    </main>
+
+    <footer class="docs-footer"><span>Nothing But A Dice Roller</span><span><a href="/privacy.html">Privacy</a> · <a href="/legal.html">Legal & SRD</a> · <a href="https://github.com/cbw29512/nothingbutadiceroller">Source</a></span></footer>
+  </div>
+</body>
+</html>
