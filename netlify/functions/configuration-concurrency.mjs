@@ -25,20 +25,26 @@ export async function readVersionedConfigurations(store, key) {
   }
 }
 
-export function configurationConflict(latest) {
+export function configurationConflict(latest, project = (items) => items) {
   return publicError('Saved configurations changed in another session. Reload the latest list before trying again.', {
     status: 409,
     code: 'configuration-version-conflict',
     details: {
-      configurations: latest.configurations,
+      configurations: project(latest.configurations),
       version: latest.version,
     },
   });
 }
 
-export async function writeVersionedConfigurations(store, key, configurations, expectedVersion) {
+export async function writeVersionedConfigurations(
+  store,
+  key,
+  configurations,
+  expectedVersion,
+  { project = (items) => items } = {},
+) {
   const current = await readVersionedConfigurations(store, key);
-  if (current.version !== expectedVersion) throw configurationConflict(current);
+  if (current.version !== expectedVersion) throw configurationConflict(current, project);
 
   let result;
   try {
@@ -51,5 +57,5 @@ export async function writeVersionedConfigurations(store, key, configurations, e
   }
 
   if (result?.modified && result?.etag) return result.etag;
-  throw configurationConflict(await readVersionedConfigurations(store, key));
+  throw configurationConflict(await readVersionedConfigurations(store, key), project);
 }
