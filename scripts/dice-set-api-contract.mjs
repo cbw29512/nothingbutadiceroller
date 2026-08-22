@@ -41,9 +41,9 @@ try {
     "bestEffortDelete(store, publicRecordKey(existing.record.publicAccessId), 'public projection')",
   ].forEach((text) => requireText(libraryApi, text, 'library API protection'));
   const tombstoneWrite = libraryApi.indexOf('conditionalRecordWrite(store, key, tombstone, expectedVersion)');
-  const deleteRecord = libraryApi.indexOf('await store.delete(key);');
-  const deleteProjection = libraryApi.indexOf("bestEffortDelete(store, publicRecordKey(existing.record.publicAccessId), 'public projection')");
-  const deleteImage = libraryApi.indexOf("bestEffortDelete(store, existing.record.trayImageKey, 'tray image')");
+  const deleteRecord = libraryApi.indexOf('await store.delete(key);', tombstoneWrite);
+  const deleteProjection = libraryApi.indexOf("bestEffortDelete(store, publicRecordKey(existing.record.publicAccessId), 'public projection')", deleteRecord);
+  const deleteImage = libraryApi.indexOf("bestEffortDelete(store, existing.record.trayImageKey, 'tray image')", deleteRecord);
   if (tombstoneWrite < 0 || deleteRecord <= tombstoneWrite || deleteProjection <= deleteRecord || deleteImage <= deleteRecord) {
     throw new Error('Delete must win a conditional tombstone before owner deletion and child cleanup.');
   }
