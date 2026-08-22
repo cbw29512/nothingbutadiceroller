@@ -50,10 +50,14 @@ async function assertRuntimeSurfaces(client, origin, path, viewport) {
 
 async function run() {
   await access(resolve(dist, 'index.html'));
-  const server = await startBuiltSiteServer(dist);
-  const browser = await launchBrowser();
+  let server;
+  let browser;
   const completed = [];
+
   try {
+    server = await startBuiltSiteServer(dist);
+    browser = await launchBrowser();
+
     for (const viewport of viewports) {
       for (const path of pages) {
         const url = `${server.origin}${path}`;
@@ -66,8 +70,20 @@ async function run() {
     }
     console.log(`Browser smoke passed in ${browser.command}: ${completed.join(', ')}`);
   } finally {
-    await browser.close();
-    await server.close();
+    if (browser) {
+      try {
+        await browser.close();
+      } catch (error) {
+        console.warn('Browser cleanup failed:', error.message);
+      }
+    }
+    if (server) {
+      try {
+        await server.close();
+      } catch (error) {
+        console.warn('Static server cleanup failed:', error.message);
+      }
+    }
   }
 }
 
