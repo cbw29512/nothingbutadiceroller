@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 
 const app = await readFile(new URL('../js/app.js', import.meta.url), 'utf8');
 const runtime = await readFile(new URL('../js/shortcuts/runtime.js', import.meta.url), 'utf8');
+const presentation = await readFile(new URL('../js/shortcuts/result-presentation.mjs', import.meta.url), 'utf8');
 const markup = await readFile(new URL('../js/shortcuts/runtime-markup.js', import.meta.url), 'utf8');
 const tray = await readFile(new URL('../js/tray-controls.js', import.meta.url), 'utf8');
 const index = await readFile(new URL('../index.html', import.meta.url), 'utf8');
@@ -34,7 +35,10 @@ for (const required of [
   "compiled.entry?.scalingMode === 'slot'",
   'getNextRollChangingVariantId',
   'active = null;',
-  'TOTAL DAMAGE =',
+  "from './result-presentation.mjs'",
+  'formatShortcutResult(execution)',
+  'shortcutDisplayTotal(execution)',
+  'shortcutHistoryTotal(execution)',
   "showCrit('nat20')",
   'section.hidden = false',
   "title.textContent = 'Press ⚙ to configure'",
@@ -42,6 +46,16 @@ for (const required of [
 ]) {
   assert.ok(runtime.includes(required), `Phase 6 runtime contract missing: ${required}`);
 }
+
+for (const required of [
+  'TOTAL DAMAGE =',
+  'TOTAL HEALING =',
+  "hasResultKind(execution, 'damage')",
+  "hasResultKind(execution, 'healing')",
+]) {
+  assert.ok(presentation.includes(required), `Shortcut result presentation contract missing: ${required}`);
+}
+
 assert.ok(runtime.includes('state.selectedDice = [];'), 'Preparing a shortcut must replace the ordinary selected pool.');
 assert.ok(!runtime.includes('state.selectedDice.push'), 'Shortcut runtime must never encode shortcut dice into ordinary selectedDice.');
 assert.ok(runtime.includes('const available = true;'), 'Customization gear must remain available for local guest shortcuts.');
