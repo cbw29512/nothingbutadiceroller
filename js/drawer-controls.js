@@ -35,6 +35,7 @@ function setBackgroundInert(openDrawer) {
 
 function focusableIn(drawer) {
   return [...(drawer?.querySelectorAll(FOCUSABLE) || [])].filter((element) => {
+    if (element.classList.contains('drawer-backdrop')) return false;
     const style = getComputedStyle(element);
     return style.display !== 'none' && style.visibility !== 'hidden' && element.getClientRects().length > 0;
   });
@@ -105,6 +106,7 @@ export function initDrawerControls() {
     });
 
     document.querySelectorAll('.drawer-backdrop').forEach((backdrop) => {
+      backdrop.tabIndex = -1;
       backdrop.addEventListener('click', closeDrawers);
     });
     document.addEventListener('keydown', trapDrawerFocus);
