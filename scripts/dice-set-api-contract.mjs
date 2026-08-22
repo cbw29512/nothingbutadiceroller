@@ -10,7 +10,7 @@ try {
     read('netlify/functions/dice-set-store.mjs'),
   ]);
   [
-    'const user = await getUser()', 'if (!user)', 'const rawSet = structuredClone',
+    'const user = await getUser()', 'if (!user)', 'verifyRequestOrigin(request)', 'const rawSet = structuredClone',
     'extractTrayImageDataUrl', 'prepareCloudDiceSet(rawSet, user.id)',
     'assertLockedUpdateAllowed(existing.set, set)', "set.visibility === 'public' && set.locked",
     'trayImageAccessToken', 'MAX_TRAY_IMAGE_BYTES', "|| 'Adventurer'", 'openDiceSetStore(context)',
@@ -21,7 +21,7 @@ try {
     'bestEffortDelete(store, previousTrayImageKey', 'bestEffortDelete(store, publicRecordKey(previousPublicAccessId)',
     'Tray images must be uploaded through Dice Studio.', 'const rawTray = rawSet?.appearance?.tray;',
     'rawTray.image = ownerImage(user.id, rawSet.id, existing.trayImageAccessToken)',
-    'The save was rolled back; retry.',
+    'The save was rolled back; retry.', "Request origin is not allowed.",
   ].forEach((text) => requireText(saveApi, text, 'save API protection'));
   const projectionStage = saveApi.indexOf('await store.setJSON(stagedPublicKey, buildPublicProjection(record, publicAccessId));');
   const recordWrite = saveApi.indexOf('await store.setJSON(key, record);');
@@ -36,6 +36,7 @@ try {
     'const user = await getUser()', "scope === 'community'", 'listPublicProjections(store)',
     'listLegacyPublicProjections(store, sources)', 'listUserRecords(store, user.id)',
     'publicRecordKey(existing.publicAccessId)', 'publicRecordsFromProjections', 'openDiceSetStore(context)', 'await store.delete(key)',
+    'verifyRequestOrigin(request)', "Request origin is not allowed.",
     "bestEffortDelete(store, publicRecordKey(existing.publicAccessId), 'public projection')",
   ].forEach((text) => requireText(libraryApi, text, 'library API protection'));
   const deleteRecord = libraryApi.indexOf('await store.delete(key);');
@@ -64,7 +65,7 @@ try {
     "record.publicAccessId === projection.publicAccessId", "record.set.visibility === 'public'",
     "=== 'production' ? STORE_NAME : `${STORE_NAME}-nonprod`",
   ].forEach((text) => requireText(storeLayer, text, 'opaque authoritative storage contract'));
-  console.log('Dice-set API contract passed: owner records are authoritative; production and preview stores are isolated; images/projections are staged or cleaned around owner commits; failed quota verification rolls back; public reads revalidate owner state; storage remains bounded and privacy-safe.');
+  console.log('Dice-set API contract passed: owner records are authoritative; mutations require trusted origins; production and preview stores are isolated; images/projections are staged or cleaned around owner commits; failed quota verification rolls back; public reads revalidate owner state; storage remains bounded and privacy-safe.');
 } catch (error) {
   console.error('Dice-set API contract failed:', error);
   process.exitCode = 1;

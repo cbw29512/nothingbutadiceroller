@@ -1,4 +1,4 @@
-import { getUser } from '@netlify/identity';
+import { getUser, verifyRequestOrigin } from '@netlify/identity';
 import {
   listLegacyPublicProjections, listPublicProjections, listUserRecords, openDiceSetStore,
   publicRecordKey, recordKey,
@@ -49,6 +49,7 @@ export default async (request, context) => {
       return json({ records: await listUserRecords(store, user.id), userId: user.id });
     }
     if (request.method === 'DELETE') {
+      verifyRequestOrigin(request);
       const setId = url.searchParams.get('id');
       if (!setId) return json({ error: 'Dice set id is required.' }, 400);
       const key = recordKey(user.id, setId);
@@ -61,6 +62,8 @@ export default async (request, context) => {
     }
     return json({ error: 'Method Not Allowed' }, 405);
   } catch (error) {
+    const status = Number(error?.status || error?.statusCode) || 500;
+    if (status === 403) return json({ error: 'Request origin is not allowed.' }, 403);
     console.error('V2 dice-set API failed:', error);
     return json({ error: error?.message || 'Dice-set request failed.' }, 500);
   }

@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { getUser } from '@netlify/identity';
+import { getUser, verifyRequestOrigin } from '@netlify/identity';
 import { RegExpMatcher, englishDataset, englishRecommendedTransformers } from 'obscenity';
 import { assertLockedUpdateAllowed, collectModerationText, prepareCloudDiceSet } from '../../js/appearance/cloud-rules.mjs';
 import { extractTrayImageDataUrl, MAX_TRAY_IMAGE_BYTES } from '../../js/appearance/tray-image.mjs';
@@ -36,6 +36,7 @@ export default async (request, context) => {
   try {
     const user = await getUser();
     if (!user) return json({ error: 'Authentication required.' }, 401);
+    verifyRequestOrigin(request);
     const body = await request.json();
     const rawSet = structuredClone(body?.set || {});
     const incomingImage = rawSet?.appearance?.tray?.image ?? null;
@@ -125,6 +126,8 @@ export default async (request, context) => {
   } catch (error) {
     if (!recordCommitted && stagedTrayImageKey) await bestEffortDelete(cleanupStore, stagedTrayImageKey, 'staged tray image');
     if (!recordCommitted && stagedPublicWasNew && stagedPublicKey) await bestEffortDelete(cleanupStore, stagedPublicKey, 'staged public projection');
+    const status = Number(error?.status || error?.statusCode) || 400;
+    if (status === 403) return json({ error: 'Request origin is not allowed.' }, 403);
     console.error('Save V2 dice set failed:', error);
     return json({ error: error?.message || 'Unable to save dice set.' }, 400);
   }
