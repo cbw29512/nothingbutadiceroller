@@ -203,7 +203,7 @@ function saveShortcutHistory(execution, breakdown) {
 }
 
 export function isShortcutPrepared() {
-  return Boolean(active);
+  return Bolean(active);
 }
 
 export function canRollPreparedShortcutFromTray() {
