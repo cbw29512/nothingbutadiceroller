@@ -3,7 +3,6 @@ import { getSkinColor } from './utils.js';
 import { initDicePhysics } from './physics.js';
 import { addDie, clearPool, performRoll } from './roller.js';
 import { renderHistory, renderPool, setStatus } from './ui.js';
-import { initStylePicker } from './style-picker.js';
 import { assertStylesLoaded } from './deployment.js';
 import { initAccount } from './account.js';
 import { closeCustomDieControls, initCustomDieControls } from './custom-controls.js';
@@ -103,10 +102,7 @@ function bindEvents() {
     initTrayControls(performActiveRoll, canRollActiveFromTray);
     document.addEventListener('rollstatechange', syncControls);
     document.addEventListener('shortcutstatechange', syncControls);
-    document.addEventListener('configurationloaded', () => {
-      syncControls();
-      initStylePicker();
-    });
+    document.addEventListener('configurationloaded', syncControls);
 
     document.getElementById('keep-btn')?.addEventListener('click', () => {
       state.keepDice = !state.keepDice;
@@ -147,14 +143,11 @@ async function boot() {
     renderPool();
     renderHistory();
     bindEvents();
-    initStylePicker();
     initAccount();
     initShortcutRuntime();
 
     const stylesButton = document.getElementById('open-styles-btn');
     if (stylesButton) stylesButton.textContent = 'Customize';
-    const stylesTitle = document.getElementById('styles-title');
-    if (stylesTitle) stylesTitle.textContent = 'Customize Dice & Tray';
 
     setStatus('Loading 3D physics…');
     const appearanceRuntime = await prepareActiveDiceAppearance();

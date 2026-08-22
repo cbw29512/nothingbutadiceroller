@@ -38,8 +38,7 @@ export function renderAccountView({ user, configurations, onLoad, onDelete }) {
     const name = document.createElement('strong');
     name.textContent = `${config.name}${config.isDefault ? ' ★' : ''}`;
     const meta = document.createElement('span');
-    const tray = String(config.trayTheme || 'tray').replace('tray-', '').replaceAll('_', ' ');
-    meta.textContent = `${config.selectedDice?.length || 0} dice • ${tray}`;
+    meta.textContent = `${config.selectedDice?.length || 0} dice • Keep Dice ${config.keepDice ? 'on' : 'off'}`;
     copy.append(name, meta);
 
     const actions = document.createElement('div');
