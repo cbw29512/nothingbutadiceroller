@@ -1,6 +1,8 @@
 import { assertSafeDimensions, concatBuffers } from './common.mjs';
 
 const STRIP_CHUNKS = new Set(['EXIF', 'XMP ']);
+const VP8X_METADATA_FLAGS = 0x0c;
+const VP8X_ANIMATION_FLAG = 0x02;
 
 function readUint24LE(buffer, offset) {
   return buffer[offset] | (buffer[offset + 1] << 8) | (buffer[offset + 2] << 16);
@@ -9,6 +11,7 @@ function readUint24LE(buffer, offset) {
 function dimensionsFromChunk(type, payload) {
   if (type === 'VP8X') {
     if (payload.length < 10) throw new Error('WebP VP8X header is truncated.');
+    if (payload[0] & VP8X_ANIMATION_FLAG) throw new Error('Animated WebP tray images are not supported.');
     return {
       width: 1 + readUint24LE(payload, 4),
       height: 1 + readUint24LE(payload, 7),
@@ -31,6 +34,12 @@ function dimensionsFromChunk(type, payload) {
     };
   }
   return null;
+}
+
+function sanitizedChunk(buffer, offset, end, type) {
+  const chunk = Buffer.from(buffer.subarray(offset, end));
+  if (type === 'VP8X') chunk[8] &= ~VP8X_METADATA_FLAGS;
+  return chunk;
 }
 
 export function sanitizeWebp(input) {
@@ -61,7 +70,7 @@ export function sanitizeWebp(input) {
     if (!dimensions) dimensions = dimensionsFromChunk(type, payload);
     if (type === 'VP8 ' || type === 'VP8L') sawImagePayload = true;
     if (STRIP_CHUNKS.has(type)) strippedMetadata = true;
-    else chunks.push(buffer.subarray(offset, end));
+    else chunks.push(sanitizedChunk(buffer, offset, end, type));
     offset = end;
   }
 
