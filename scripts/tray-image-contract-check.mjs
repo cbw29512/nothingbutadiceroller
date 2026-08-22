@@ -54,7 +54,7 @@ assert.match(imageSource, /user\.id !== ownerId/);
 assert.match(imageSource, /'Cache-Control': 'no-store'/);
 assert.match(imageSource, /X-Content-Type-Options/);
 const deleteSource = fs.readFileSync(new URL('../netlify/functions/dice-sets.mjs', import.meta.url), 'utf8');
-const tombstoneWrite = deleteSource.indexOf('conditionalRecordWrite(store, key, tombstone, expectedVersion)');
+const tombstoneWrite = deleteSource.indexOf('conditionalRecordWrite(store, key, tombstone, version)');
 const ownerDelete = deleteSource.indexOf('await store.delete(key);', tombstoneWrite);
 const imageCleanup = deleteSource.indexOf("bestEffortDelete(store, existing.record.trayImageKey, 'tray image')", ownerDelete);
 assert.ok(tombstoneWrite >= 0 && ownerDelete > tombstoneWrite && imageCleanup > ownerDelete, 'Delete must win a conditional tombstone, delete the owner record, then clean the tray image.');
