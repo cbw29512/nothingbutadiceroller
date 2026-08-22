@@ -66,11 +66,13 @@ Phase 2 evidence: exact hardening heads have completed the built-site Chrome mat
 
 ## Phase 6 — Cloud concurrency and data integrity
 
-- [ ] Add optimistic concurrency/version protection to Dice Studio cloud records.
-- [ ] Add optimistic concurrency/version protection to saved configurations where appropriate.
+- [x] Add optimistic concurrency/version protection to Dice Studio cloud records. **Strong ETag reads plus atomic `onlyIfMatch` / `onlyIfNew` owner commits protect saves; stale deletes must first win a conditional tombstone write.**
+- [ ] Add optimistic concurrency/version protection to saved configurations where appropriate. **Shortcut workspaces already have version conflicts; other persistence surfaces still require an explicit scope review before this is closed.**
 - [x] Preserve the shortcut ETag/version conflict behavior already in place.
-- [ ] Make Dice Studio/configuration conflicts explicit and recoverable instead of silent last-write-wins.
-- [ ] Add conflict-path tests for newly protected cloud records.
+- [x] Make Dice Studio conflicts explicit and recoverable instead of silent last-write-wins. **A 409 refreshes the library's latest server copy while preserving the open stale draft/version, so repeated Save cannot silently force an overwrite.**
+- [x] Add conflict-path tests for newly protected cloud records. **The release suite injects another-device write between a strong read and conditional write and verifies the losing writer receives the newest server state/version.**
+
+Phase 6 evidence: exact head `01a3d95206fb5f72b3243100cde6ddaf5e8484fd` passed the full deterministic build/contracts, including the injected two-device race and conditional-delete ordering, followed by the rendered desktop/mobile Chrome interaction matrix. Community projections carry an owner-record revision marker and fail closed when stale.
 
 ## Phase 7 — Privacy lifecycle
 
