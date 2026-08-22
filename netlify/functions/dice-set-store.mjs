@@ -60,7 +60,14 @@ export function buildPublicProjection(record, publicAccessId, { legacy = false }
   try {
     const publicRecord = toPublicRecord(record, publicAccessId);
     if (!publicRecord) throw new Error('Unable to create public dice-set projection.');
-    return { publicAccessId, ownerId: record.set.ownerId, setId: record.set.id, legacy, publicRecord };
+    return {
+      publicAccessId,
+      ownerId: record.set.ownerId,
+      setId: record.set.id,
+      recordVersion: record.recordVersion || null,
+      legacy,
+      publicRecord,
+    };
   } catch (error) {
     console.error('Failed to build public dice-set projection:', error);
     throw error;
@@ -80,12 +87,14 @@ async function listRecords(store, prefix, predicate = () => true) {
   }
 }
 function isCurrentProjection(projection, record) {
+  const revisionMatches = !record?.recordVersion || projection?.recordVersion === record.recordVersion;
   return Boolean(
     projection?.publicAccessId && projection?.ownerId && projection?.setId
     && record?.set?.locked && record.set.visibility === 'public'
     && record.publicAccessId === projection.publicAccessId
     && record.set.ownerId === projection.ownerId
     && record.set.id === projection.setId
+    && revisionMatches
   );
 }
 export async function countUserRecords(store, userId) {
