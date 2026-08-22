@@ -2,7 +2,14 @@ import { validateDiceSet } from './validation.mjs';
 
 async function parse(response) {
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || 'Dice-set request failed.');
+  if (!response.ok) {
+    const error = new Error(data.error || 'Dice-set request failed.');
+    error.code = data.code || null;
+    error.record = data.record || null;
+    error.version = data.version ?? null;
+    error.status = response.status;
+    throw error;
+  }
   return data;
 }
 
@@ -24,16 +31,17 @@ export function validSetsFromRecords(records = []) {
 export async function loadCloudDiceSets() {
   try {
     const response = await fetch('/api/dice-sets', { credentials: 'include' });
-    if (response.status === 401) return { authenticated: false, userId: null, sets: [] };
+    if (response.status === 401) return { authenticated: false, userId: null, sets: [], versions: {} };
     const data = await parse(response);
     return {
       authenticated: true,
       userId: data.userId || null,
       sets: validSetsFromRecords(data.records),
+      versions: data.versions && typeof data.versions === 'object' ? data.versions : {},
     };
   } catch (error) {
     console.error('Failed to load cloud dice sets:', error);
-    return { authenticated: false, userId: null, sets: [], error };
+    return { authenticated: false, userId: null, sets: [], versions: {}, error };
   }
 }
 
@@ -48,20 +56,26 @@ export async function loadCommunityDiceSets() {
   }
 }
 
-export async function saveCloudDiceSet(set) {
+export async function saveCloudDiceSet(set, version = null) {
   const response = await fetch('/api/save-dice-set', {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ set }),
+    body: JSON.stringify({ set, version }),
   });
   const data = await parse(response);
-  return data.record?.set || set;
+  return {
+    set: data.record?.set || set,
+    version: data.version ?? null,
+    warning: data.warning || null,
+  };
 }
 
-export async function deleteCloudDiceSet(setId) {
+export async function deleteCloudDiceSet(setId, version) {
   const response = await fetch(`/api/dice-sets?id=${encodeURIComponent(setId)}`, {
-    method: 'DELETE', credentials: 'include',
+    method: 'DELETE',
+    credentials: 'include',
+    headers: version ? { 'If-Match': version } : {},
   });
   await parse(response);
   return true;
