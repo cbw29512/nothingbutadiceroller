@@ -15,6 +15,26 @@ const viewports = [
 ];
 const pages = ['/', '/customize.html', '/rolls.html', '/how-to.html', '/privacy.html', '/legal.html'];
 
+async function physicalRollDiagnostic(client) {
+  return client.evaluate(`(() => {
+    const canvas = document.querySelector('#dice-tray canvas');
+    let webgl = false;
+    try {
+      webgl = Boolean(canvas?.getContext('webgl2') || canvas?.getContext('webgl'));
+    } catch {}
+    return {
+      status: document.querySelector('#physics-status')?.textContent || '',
+      statusClass: document.querySelector('#physics-status')?.className || '',
+      rollDisabled: Boolean(document.querySelector('#roll-btn')?.disabled),
+      total: document.querySelector('#total-result')?.textContent || '',
+      breakdown: document.querySelector('#breakdown-text')?.textContent || '',
+      pool: document.querySelector('#pool-summary')?.textContent || '',
+      canvasCount: document.querySelectorAll('#dice-tray canvas').length,
+      webgl,
+    };
+  })()`);
+}
+
 async function assertDesktopRollInteraction(client) {
   await waitFor(
     client,
@@ -24,11 +44,17 @@ async function assertDesktopRollInteraction(client) {
   await client.evaluate("document.querySelector('.die-btn[data-type=\"d20\"]')?.click()");
   await waitFor(client, "document.querySelector('#pool-summary')?.textContent.includes('d20')");
   await client.evaluate("document.querySelector('#roll-btn')?.click()");
-  await waitFor(
-    client,
-    "Number(document.querySelector('#total-result')?.textContent) >= 1 && !document.querySelector('#roll-btn')?.disabled",
-    30000,
-  );
+
+  try {
+    await waitFor(
+      client,
+      "Number(document.querySelector('#total-result')?.textContent) >= 1 && !document.querySelector('#roll-btn')?.disabled",
+      30000,
+    );
+  } catch (error) {
+    const diagnostic = await physicalRollDiagnostic(client);
+    throw new Error(`Physical d20 browser roll did not settle: ${JSON.stringify(diagnostic)}. ${error.message}`);
+  }
 
   const result = await client.evaluate(`(() => ({
     total: Number(document.querySelector('#total-result')?.textContent),
