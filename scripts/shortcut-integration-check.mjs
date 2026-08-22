@@ -43,9 +43,12 @@ for (const required of [
   'section.hidden = false',
   "title.textContent = 'Press ⚙ to configure'",
   'note.hidden = !hasShortcuts',
+  'return Boolean(active);',
 ]) {
   assert.ok(runtime.includes(required), `Phase 6 runtime contract missing: ${required}`);
 }
+
+assert.ok(!runtime.includes('Bolean('), 'Shortcut prepared-state predicate must use the native Boolean constructor.');
 
 for (const required of [
   'TOTAL DAMAGE =',
