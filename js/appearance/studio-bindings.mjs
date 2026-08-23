@@ -21,14 +21,24 @@ export function bindStudioControls(context) {
         const type = previewFace.closest('[data-die]')?.dataset.die;
         const logicalFace = previewFace.dataset.previewFace;
         if (type && logicalFace) {
+          const startedFromDefault = draft.get()?.systemOwned === true;
+          if (startedFromDefault) {
+            actions.newSet();
+            if (draft.get()?.systemOwned === true) {
+              setStatus('Unable to create an editable copy of Default Dice. Reload and try again.', 'error');
+              return;
+            }
+          }
           q('logical-face').value = logicalFace;
           dice.select(type);
           const editor = q('face-value');
           if (editor && !editor.disabled) {
             editor.focus(); editor.select();
-            setStatus(`Face ${logicalFace} selected. Edit its display or color below; it will always roll ${logicalFace}.`, 'ready');
+            setStatus(startedFromDefault
+              ? `Editable copy created. Face ${logicalFace} is ready to customize; it will always roll ${logicalFace}.`
+              : `Face ${logicalFace} selected. Edit its display or color below; it will always roll ${logicalFace}.`, 'ready');
           } else {
-            setStatus('Default Dice is immutable. Click New Set to customize this face.', 'ready');
+            setStatus('This dice set is locked or read-only. Unlock or copy it before customizing this face.', 'ready');
           }
         }
         return;
