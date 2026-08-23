@@ -14,6 +14,7 @@ const screenshotsDir = resolve('artifacts', 'deploy-preview-acceptance');
 const desktop = { width: 1440, height: 900, mobile: false };
 const mobile = { width: 390, height: 844, mobile: true };
 const retryableStatuses = new Set([502, 503, 504]);
+const retryableNavigation = /ERR_(?:CONNECTION_CLOSED|CONNECTION_RESET|HTTP2_PROTOCOL_ERROR|NETWORK_CHANGED|TIMED_OUT)/;
 
 function previewPage(pathname = '/') {
   const url = new URL(pathname, `${origin}/`);
@@ -40,6 +41,20 @@ async function fetchWithRetry(url, options = {}, label = 'Deploy Preview request
     await sleep(attempt * 500);
   }
   throw lastError || new Error(`${label} failed without a response.`);
+}
+
+async function navigateWithRetry(client, url, viewport, label = 'Deploy Preview page') {
+  let lastError = null;
+  for (let attempt = 1; attempt <= 4; attempt += 1) {
+    try {
+      return await navigate(client, url, viewport);
+    } catch (error) {
+      lastError = error;
+      if (!retryableNavigation.test(String(error?.message || '')) || attempt === 4) throw error;
+    }
+    await sleep(attempt * 500);
+  }
+  throw lastError || new Error(`${label} navigation failed without an error.`);
 }
 
 async function screenshot(client, name) {
@@ -82,10 +97,10 @@ async function assertHostedSurface() {
 
 async function assertGuestPersistence(client) {
   const root = previewPage('/');
-  await navigate(client, root, desktop);
+  await navigateWithRetry(client, root, desktop, 'desktop homepage');
   await waitFor(client, "document.querySelector('#physics-status')?.textContent.includes('3D physics ready.')", 30000);
   await client.evaluate('localStorage.clear()');
-  await navigate(client, root, desktop);
+  await navigateWithRetry(client, root, desktop, 'desktop homepage reload');
   await waitFor(client, "document.querySelector('#physics-status')?.textContent.includes('3D physics ready.')", 30000);
 
   await client.evaluate(`(() => {
@@ -105,8 +120,8 @@ async function assertGuestPersistence(client) {
   assert.equal(stored.soundEnabled, 'false');
   assert.ok(Array.isArray(stored.history) && stored.history.length >= 1, 'Guest roll history must persist in browser storage.');
 
-  await navigate(client, previewPage('/how-to.html'), desktop);
-  await navigate(client, root, desktop);
+  await navigateWithRetry(client, previewPage('/how-to.html'), desktop, 'How To');
+  await navigateWithRetry(client, root, desktop, 'desktop homepage restore');
   await waitFor(client, "document.querySelector('#physics-status')?.textContent.includes('3D physics ready.')", 30000);
   const restored = await client.evaluate(`(() => ({
     keepPressed: document.querySelector('#keep-btn')?.getAttribute('aria-pressed'),
@@ -122,7 +137,7 @@ async function assertGuestPersistence(client) {
 
 async function assertStudio(client, viewport, name) {
   const url = previewPage('/customize.html');
-  await navigate(client, url, viewport);
+  await navigateWithRetry(client, url, viewport, `${name} Dice Studio`);
   await waitFor(client, "document.querySelector('#studio-status')?.textContent.includes('Dice Studio ready.')", 15000);
   assertPageAudit(await client.evaluate(PAGE_AUDIT_EXPRESSION), `live ${name} /customize.html`);
   const scripts = await client.evaluate(`performance.getEntriesByType('resource').map((entry) => new URL(entry.name).pathname).filter((path) => path.endsWith('.js') || path.endsWith('.mjs'))`);
@@ -133,7 +148,7 @@ async function assertStudio(client, viewport, name) {
 
 async function assertMobileRoll(client) {
   const root = previewPage('/');
-  await navigate(client, root, mobile);
+  await navigateWithRetry(client, root, mobile, 'mobile homepage');
   await waitFor(client, "document.querySelector('#physics-status')?.textContent.includes('3D physics ready.')", 30000);
   await assertMobileCustomInteraction(client);
   assertPageAudit(await client.evaluate(PAGE_AUDIT_EXPRESSION), 'live mobile /');
