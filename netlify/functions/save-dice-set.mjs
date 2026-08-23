@@ -11,7 +11,7 @@ import {
 import {
   imageQuotaWouldBeExceeded, MAX_USER_IMAGE_BYTES, userImageUsageBytes,
 } from './dice-set-image-quota.mjs';
-import { sanitizeTrayImageBytes } from './image-sanitizer/index.mjs';
+import { decodeAndReencodeTrayImage } from './image-sanitizer/reencode.mjs';
 import {
   buildPublicProjection, countUserRecords, MAX_USER_DICE_SETS, openDiceSetStore,
   publicRecordKey, recordKey, versionedImageKey,
@@ -19,14 +19,20 @@ import {
 
 const matcher = new RegExpMatcher({ ...englishDataset.build(), ...englishRecommendedTransformers });
 function json(body, status = 200) { return Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } }); }
-function parseImage(dataUrl) {
+async function parseImage(dataUrl) {
   if (!dataUrl) return null;
   const match = dataUrl.match(/^data:(image\/(?:png|jpeg|webp));base64,(.+)$/i);
   if (!match) throw publicError('Tray image must be PNG, JPEG, or WebP.', { code: 'invalid-tray-image-type' });
   const buffer = Buffer.from(match[2], 'base64');
   if (buffer.byteLength > MAX_TRAY_IMAGE_BYTES) throw publicError('Tray image must be 4 MB or smaller.', { code: 'tray-image-too-large' });
-  try { return sanitizeTrayImageBytes(buffer, match[1].toLowerCase()); }
-  catch (error) {
+  try {
+    const decoded = await decodeAndReencodeTrayImage(buffer, match[1].toLowerCase());
+    if (decoded.buffer.byteLength > MAX_TRAY_IMAGE_BYTES) {
+      throw publicError('Tray image is too large after safe processing. Use a smaller or simpler image.', { code: 'tray-image-too-large' });
+    }
+    return decoded;
+  } catch (error) {
+    if (error?.name === 'PublicApiError') throw error;
     console.warn('Rejected invalid tray image upload:', error);
     throw publicError('Tray image is invalid or unsupported.', { code: 'invalid-tray-image' });
   }
@@ -133,7 +139,7 @@ export default async (request, context) => {
     let trayImageKey = previousTrayImageKey;
     let trayImageAccessToken = existing?.trayImageAccessToken || null;
     let trayImageBytes = previousTrayImageKey ? (existing?.trayImageBytes ?? null) : 0;
-    const parsedImage = parseImage(incomingDataUrl);
+    const parsedImage = await parseImage(incomingDataUrl);
     if (parsedImage) {
       const otherImageBytes = await userImageUsageBytes(store, user.id, { excludeSetId: set.id });
       if (imageQuotaWouldBeExceeded(otherImageBytes, parsedImage.buffer.byteLength)) throw imageQuotaError();
