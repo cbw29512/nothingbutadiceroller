@@ -1,7 +1,8 @@
 import { CANONICAL_DICE } from './defaults.mjs';
 import { isValidFaceDisplayValue } from './face-display.mjs';
 
-export const RUNTIME_THEME_VERSION = 1;
+export const RUNTIME_THEME_VERSION = 2;
+const LEGACY_RUNTIME_THEME_VERSION = 1;
 const HEX = /^#[0-9a-f]{6}$/i;
 const FONT_IDS = new Set(['', 'default', 'fantasy', 'runic', 'mono']);
 const MAX_OPERATIONS = 24;
@@ -17,13 +18,25 @@ function base64UrlDecode(token) {
   const binary = atob(padded);
   return new TextDecoder().decode(Uint8Array.from(binary, (char) => char.charCodeAt(0)));
 }
+function validateGlow(glow, errors) {
+  if (!Array.isArray(glow) || glow.length !== 3) {
+    errors.push('Runtime glow settings are invalid.');
+    return;
+  }
+  const [enabled, color, intensity] = glow;
+  if (typeof enabled !== 'boolean') errors.push('Runtime glow enabled flag is invalid.');
+  if (!HEX.test(String(color || ''))) errors.push('Runtime glow color is invalid.');
+  if (!Number.isFinite(intensity) || intensity < 0 || intensity > 1) errors.push('Runtime glow intensity is invalid.');
+}
 export function validateRuntimeThemePayload(payload) {
   const errors = [];
   try {
     if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return { ok: false, errors: ['Payload must be an object.'] };
-    const extra = Object.keys(payload).filter((key) => !['v', 'd', 's', 'o'].includes(key));
+    const supportedVersion = payload.v === RUNTIME_THEME_VERSION || payload.v === LEGACY_RUNTIME_THEME_VERSION;
+    const allowedFields = payload.v === RUNTIME_THEME_VERSION ? ['v', 'd', 's', 'o', 'g'] : ['v', 'd', 's', 'o'];
+    const extra = Object.keys(payload).filter((key) => !allowedFields.includes(key));
     if (extra.length) errors.push(`Unsupported payload fields: ${extra.join(', ')}.`);
-    if (payload.v !== RUNTIME_THEME_VERSION) errors.push('Unsupported runtime theme version.');
+    if (!supportedVersion) errors.push('Unsupported runtime theme version.');
     if (!Object.hasOwn(CANONICAL_DICE, payload.d)) errors.push('Unsupported runtime theme die type.');
     if (!Number.isInteger(payload.s) || payload.s < 256 || payload.s > 2048) errors.push('Runtime atlas size is invalid.');
     if (!Array.isArray(payload.o) || payload.o.length < 1 || payload.o.length > MAX_OPERATIONS) errors.push('Runtime draw operations are invalid.');
@@ -36,6 +49,7 @@ export function validateRuntimeThemePayload(payload) {
       if (![x, y].every((value) => Number.isFinite(value) && value >= 0 && value <= payload.s)) errors.push(`Operation ${index} position is invalid.`);
       if (!Number.isFinite(fontPx) || fontPx < 6 || fontPx > 200) errors.push(`Operation ${index} font size is invalid.`);
     }
+    if (payload.v === RUNTIME_THEME_VERSION) validateGlow(payload.g, errors);
   } catch (error) {
     console.error('Runtime theme payload validation failed:', error); errors.push('Runtime theme payload validation failed.');
   }
