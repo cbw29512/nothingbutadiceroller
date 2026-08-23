@@ -45,11 +45,27 @@ export async function loadCloudDiceSets() {
   }
 }
 
+export async function loadCommunityDiceSetPage(page = 1, pageSize = 24) {
+  try {
+    const params = new URLSearchParams({ scope: 'community', page: String(page), pageSize: String(pageSize) });
+    const response = await fetch(`/api/dice-sets?${params}`, { credentials: 'include' });
+    const data = await parse(response);
+    return {
+      sets: validSetsFromRecords(data.records),
+      page: Number.isInteger(data.page) ? data.page : page,
+      pageSize: Number.isInteger(data.pageSize) ? data.pageSize : pageSize,
+      hasMore: data.hasMore === true,
+    };
+  } catch (error) {
+    console.error('Failed to load Community dice-set page:', error);
+    return { sets: [], page, pageSize, hasMore: false, error };
+  }
+}
+
 export async function loadCommunityDiceSets() {
   try {
-    const response = await fetch('/api/dice-sets?scope=community', { credentials: 'include' });
-    const data = await parse(response);
-    return validSetsFromRecords(data.records);
+    const result = await loadCommunityDiceSetPage();
+    return result.sets;
   } catch (error) {
     console.error('Failed to load community dice sets:', error);
     return [];
