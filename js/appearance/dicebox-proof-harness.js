@@ -5,9 +5,8 @@ import { buildDiceBoxGlyphPlan } from './dicebox-glyph-plan.mjs';
 import { buildDiceBoxRuntimeTheme } from './dicebox-runtime-theme.mjs';
 import { buildDiceBoxThemePlan } from './dicebox-theme-plan.mjs';
 import { APPEARANCE_DICEBOX_VERSION, loadCanonicalDiceBoxModel } from './dicebox-model-loader.mjs';
+import { DICEBOX_ASSET_PATH, diceBoxOrigin, loadSelfHostedDiceBox } from './dicebox-self-host.mjs';
 
-const DICEBOX_MODULE_URL = '/vendor/dice-box/dice-box.es.min.js';
-const DICEBOX_ORIGIN = '/vendor/dice-box/';
 const PROOF_ROLL_TIMEOUT_MS = 15000;
 
 let diceBox = null;
@@ -32,18 +31,6 @@ function proofSet() {
       : { kind: 'text', value: '1', color: '#a855f7' }];
   }));
   return set;
-}
-
-async function loadDiceBoxClass() {
-  try {
-    const module = await import(DICEBOX_MODULE_URL);
-    const candidate = module?.default || module?.DiceBox;
-    if (typeof candidate !== 'function') throw new Error('DiceBox constructor missing.');
-    return candidate;
-  } catch (error) {
-    console.error('Same-origin DiceBox proof module load failed:', error);
-    throw new Error(`Unable to load self-hosted DiceBox ${APPEARANCE_DICEBOX_VERSION}.`);
-  }
 }
 
 function scale() {
@@ -186,7 +173,7 @@ async function proofRoll(qty) {
 
 async function initialize() {
   try {
-    const [DiceBox, modelData] = await Promise.all([loadDiceBoxClass(), loadCanonicalDiceBoxModel()]);
+    const [DiceBox, modelData] = await Promise.all([loadSelfHostedDiceBox(), loadCanonicalDiceBoxModel()]);
     const renderPlan = buildAppearanceRenderPlan(proofSet());
     const themePlan = buildDiceBoxThemePlan(renderPlan);
     const glyphPlan = buildDiceBoxGlyphPlan(renderPlan, modelData);
@@ -195,8 +182,8 @@ async function initialize() {
     const preflightConfig = await preflightRuntimeTheme();
     diceBox = new DiceBox({
       container: '#appearance-proof-tray',
-      assetPath: 'assets/',
-      origin: DICEBOX_ORIGIN,
+      assetPath: DICEBOX_ASSET_PATH,
+      origin: diceBoxOrigin(window.location),
       theme: runtimeTheme.themeName,
       themeColor: runtimeTheme.themeColor,
       externalThemes: { [runtimeTheme.themeName]: runtimeTheme.basePath },
@@ -223,7 +210,7 @@ async function initialize() {
     q('proof-roll-one').addEventListener('click', () => proofRoll(1));
     q('proof-roll-ten').addEventListener('click', () => proofRoll(10));
     enableButtons(true);
-    q('proof-status').textContent = `DiceBox ${APPEARANCE_DICEBOX_VERSION} proof ready. External theme ${runtimeTheme.themeName} verified on canonical default mesh with a visible full-size canvas using the deterministic onscreen proof renderer. Roll until a natural 20 appears.`;
+    q('proof-status').textContent = `DiceBox ${APPEARANCE_DICEBOX_VERSION} proof ready. Same-origin pinned runtime, external theme ${runtimeTheme.themeName}, canonical default mesh, and visible full-size canvas verified. Roll until a natural 20 appears.`;
   } catch (error) {
     console.error('Appearance proof harness failed to initialize:', error);
     diceBox = null;

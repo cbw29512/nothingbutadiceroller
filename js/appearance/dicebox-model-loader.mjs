@@ -1,10 +1,9 @@
 import { CANONICAL_DICE } from './defaults.mjs';
 import { getCanonicalFaceResults } from './face-values.mjs';
+import { APPEARANCE_DICEBOX_VERSION, DICEBOX_DEFAULT_MODEL_URL } from './dicebox-self-host.mjs';
 
-export const APPEARANCE_DICEBOX_VERSION = '1.1.4';
-export const CANONICAL_MODEL_URLS = Object.freeze([
-  '/vendor/dice-box/assets/themes/default/default.json',
-]);
+export { APPEARANCE_DICEBOX_VERSION };
+export const CANONICAL_MODEL_URLS = Object.freeze([DICEBOX_DEFAULT_MODEL_URL]);
 
 let cachedModelPromise = null;
 function clone(value) { return structuredClone(value); }
@@ -53,7 +52,7 @@ async function fetchModel(fetchImpl) {
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return normalizeCanonicalDiceBoxModel(await response.json());
   } catch (error) {
-    throw new Error(`Unable to load self-hosted canonical DiceBox ${APPEARANCE_DICEBOX_VERSION} model: ${error?.message || error}`);
+    throw new Error(`Unable to load self-hosted canonical DiceBox ${APPEARANCE_DICEBOX_VERSION} model from ${url}. ${error?.message || error}`);
   }
 }
 

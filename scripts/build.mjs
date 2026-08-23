@@ -31,7 +31,19 @@ const files = [
   'shortcut-toolbar.css',
   'shortcut-harness.css',
 ];
-const directories = ['js'];
+const directories = ['js', 'vendor'];
+const diceBoxVendorFiles = [
+  'vendor/dice-box-1.1.4/dice-box.es.min.js',
+  'vendor/dice-box-1.1.4/LICENSE',
+  'vendor/dice-box-1.1.4/VENDOR_MANIFEST.sha256',
+  'vendor/dice-box-1.1.4/upstream-package.json',
+  'vendor/dice-box-1.1.4/assets/themes/default/default.json',
+  'vendor/dice-box-1.1.4/assets/themes/default/theme.config.json',
+  'vendor/dice-box-1.1.4/assets/themes/default/diffuse-dark.png',
+  'vendor/dice-box-1.1.4/assets/themes/default/diffuse-light.png',
+  'vendor/dice-box-1.1.4/assets/themes/default/normal.png',
+  'vendor/dice-box-1.1.4/assets/themes/default/specular.jpg',
+];
 
 async function copySite() {
   try {
@@ -73,11 +85,13 @@ async function validateBuild() {
   try {
     const required = [
       ...files,
+      ...diceBoxVendorFiles,
       'js/app.js', 'js/rolls.js', 'js/account.js', 'js/account-api.js', 'js/account-ui.js', 'js/auth-ui.js',
       'js/community-moderation.js', 'js/custom-controls.js', 'js/custom-roll.js', 'js/deployment.js', 'js/drawer-controls.js', 'js/physics.js',
       'js/roll-results.js', 'js/roller.js', 'js/style-picker.js', 'js/theme-community.js', 'js/tray-controls.js',
       'js/shortcut-harness.js', 'js/appearance/studio.js', 'js/appearance/studio-persistence.mjs',
       'js/appearance/studio-render.mjs', 'js/appearance/studio-community-report.mjs', 'js/appearance/dicebox-proof-harness.js', 'js/appearance/runtime-theme-codec.mjs',
+      'js/appearance/dicebox-self-host.mjs',
       'js/shortcuts/icons.mjs', 'js/shortcuts/manager-state.mjs', 'js/shortcuts/persistence.mjs', 'js/shortcuts/toolbar.mjs',
     ];
     await Promise.all(required.map(path => access(resolve(dist, path))));
@@ -91,11 +105,12 @@ async function validateBuild() {
       readFile(resolve(dist, 'js/custom-roll.js'), 'utf8'), readFile(resolve(dist, 'js/tray-controls.js'), 'utf8'),
       readFile(resolve(dist, 'js/appearance/dicebox-proof-harness.js'), 'utf8'),
     ]);
-    const [howToHtml, privacyHtml, legalHtml, moderationHtml] = await Promise.all([
+    const [howToHtml, privacyHtml, legalHtml, moderationHtml, upstreamDiceBox] = await Promise.all([
       readFile(resolve(dist, 'how-to.html'), 'utf8'),
       readFile(resolve(dist, 'privacy.html'), 'utf8'),
       readFile(resolve(dist, 'legal.html'), 'utf8'),
       readFile(resolve(dist, 'moderation.html'), 'utf8'),
+      readFile(resolve(dist, 'vendor/dice-box-1.1.4/upstream-package.json'), 'utf8'),
     ]);
 
     requireReferences(html, [
@@ -160,6 +175,12 @@ async function validateBuild() {
     requireReferences(customControls, ['supportsNativePopover', 'showPopover()', 'hidePopover()', "addEventListener('toggle'"], 'resilient custom-control behavior');
     requireReferences(customRoll, ['crypto.getRandomValues', 'SECURE CUSTOM ROLL', 'Web Crypto CSPRNG', 'MAX_CUSTOM_SIDES = 1_000_000'], 'secure custom-roll feature');
     requireReferences(trayControls, ["tray.addEventListener('click'", "['Enter', ' ']", 'canRollFromTray'], 'tray-roll feature');
+    requireReferences(browserApp, ['/vendor/dice-box-1.1.4/', 'dice-box.es.min.js'], 'self-hosted DiceBox browser bundle reference');
+
+    const diceBoxPackage = JSON.parse(upstreamDiceBox);
+    if (diceBoxPackage.name !== '@3d-dice/dice-box' || diceBoxPackage.version !== '1.1.4') {
+      throw new Error('Vendored DiceBox provenance does not match pinned @3d-dice/dice-box 1.1.4.');
+    }
 
     for (const reference of ['handleAuthCallback', 'processIdentityCallback', 'onAuthChange']) {
       if (!accountApi.includes(reference) && !authUi.includes(reference)) throw new Error(`Missing browser Identity callback behavior: ${reference}`);

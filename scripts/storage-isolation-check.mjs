@@ -75,7 +75,12 @@ for (const required of [
   'X-Content-Type-Options = "nosniff"',
   'Referrer-Policy = "strict-origin-when-cross-origin"',
   'Permissions-Policy = "camera=(), microphone=(), geolocation=()"',
-  'Content-Security-Policy = "object-src \'none\'; base-uri \'self\'"',
-]) assert.ok(netlifyConfig.includes(required), `Missing static security header: ${required}`);
+  "default-src 'self'",
+  "script-src 'self' 'wasm-unsafe-eval'",
+  "worker-src 'self' blob:",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "frame-ancestors 'self' https://app.netlify.com",
+]) assert.ok(netlifyConfig.includes(required), `Missing static security header/CSP directive: ${required}`);
 
-console.log('Release storage/surface checks passed: previews are isolated through shared account-store helpers, retired legacy writers/auth cannot handle credentials, public legacy output is opaque/no-store, and safe static security headers are enforced.');
+console.log('Release storage/surface checks passed: previews are isolated through shared account-store helpers, retired legacy writers/auth cannot handle credentials, public legacy output is opaque/no-store, and hardened same-origin CSP/frame controls are enforced.');

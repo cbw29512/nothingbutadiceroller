@@ -1,32 +1,17 @@
 import { decorateDiceBoxNotation } from './appearance/dicebox-visual-adapter.mjs';
 import { SYSTEM_DEFAULT_DICE_SET } from './appearance/defaults.mjs';
 import { buildLivePhysicsConfig } from './appearance/live-integration.mjs';
+import {
+  APPEARANCE_DICEBOX_VERSION as DICEBOX_VERSION,
+  DICEBOX_ASSET_PATH,
+  diceBoxOrigin,
+  loadSelfHostedDiceBox,
+} from './appearance/dicebox-self-host.mjs';
 
 let diceBox = null;
-let DiceBoxClass = null;
 let liveRuntimeThemes = null;
 const SYSTEM_DEFAULT_DICE_COLOR = SYSTEM_DEFAULT_DICE_SET.appearance.diceSet.defaultStyle.bodyColor;
 let liveThemeColor = SYSTEM_DEFAULT_DICE_COLOR;
-
-const DICEBOX_VERSION = '1.1.4';
-const DICEBOX_MODULE_URL = '/vendor/dice-box/dice-box.es.min.js';
-const DICEBOX_ORIGIN = '/vendor/dice-box/';
-
-async function loadDiceBoxModule() {
-  if (DiceBoxClass) return DiceBoxClass;
-
-  try {
-    const module = await import(DICEBOX_MODULE_URL);
-    const candidate = module?.default || module?.DiceBox;
-    if (typeof candidate !== 'function') throw new Error('DiceBox constructor was not exported.');
-    DiceBoxClass = candidate;
-    console.info(`DiceBox ${DICEBOX_VERSION} loaded from same-origin vendor assets.`);
-    return DiceBoxClass;
-  } catch (error) {
-    console.error('Same-origin DiceBox module load failed:', error);
-    throw new Error(`Unable to load self-hosted DiceBox ${DICEBOX_VERSION}.`);
-  }
-}
 
 function getDiceScale() {
   try {
@@ -39,14 +24,15 @@ function getDiceScale() {
 
 export async function initDicePhysics(themeColor = SYSTEM_DEFAULT_DICE_COLOR, appearanceRuntime = null) {
   try {
-    const DiceBox = await loadDiceBoxModule();
+    const DiceBox = await loadSelfHostedDiceBox();
+    console.info(`DiceBox ${DICEBOX_VERSION} loaded from same-origin vendor runtime.`);
     const liveAppearance = buildLivePhysicsConfig(appearanceRuntime, themeColor);
     liveRuntimeThemes = liveAppearance.runtimeThemes;
     liveThemeColor = liveAppearance.themeColor;
     diceBox = new DiceBox({
       container: '#dice-tray',
-      assetPath: 'assets/',
-      origin: DICEBOX_ORIGIN,
+      assetPath: DICEBOX_ASSET_PATH,
+      origin: diceBoxOrigin(window.location),
       theme: 'default',
       themeColor: liveThemeColor,
       gravity: 1,

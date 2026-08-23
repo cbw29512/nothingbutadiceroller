@@ -12,6 +12,14 @@ async function physicalRollDiagnostic(client) {
   }))()`);
 }
 
+async function assertSelfHostedDiceBoxResources(client) {
+  const resources = await client.evaluate(`performance.getEntriesByType('resource').map((entry) => entry.name)`);
+  assert.ok(resources.some((url) => url.includes('/vendor/dice-box-1.1.4/')),
+    `Physical DiceBox path did not load the pinned same-origin vendor files. Resources: ${JSON.stringify(resources.slice(-20))}`);
+  const remoteDiceBox = resources.filter((url) => /cdn\.jsdelivr\.net|unpkg\.com/i.test(url));
+  assert.deepEqual(remoteDiceBox, [], `Physical DiceBox path fetched forbidden CDN resources: ${remoteDiceBox.join(', ')}`);
+}
+
 export async function assertDesktopRollInteraction(client) {
   await waitFor(client, "document.querySelector('#physics-status')?.textContent.includes('3D physics ready.')", 30000);
   await client.evaluate("document.querySelector('.die-btn[data-type=\"d20\"]')?.click()");
@@ -31,6 +39,7 @@ export async function assertDesktopRollInteraction(client) {
   assert.ok(result.total >= 1 && result.total <= 20, `Physical d20 result must be 1-20; received ${result.total}.`);
   assert.match(result.breakdown, /d20/i);
   assert.match(result.historyFormula, /1d20/i);
+  await assertSelfHostedDiceBoxResources(client);
 }
 
 export async function assertMobileCustomInteraction(client) {

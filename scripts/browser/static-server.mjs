@@ -2,6 +2,7 @@ import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { extname, resolve, sep } from 'node:path';
 
+const PRODUCTION_CSP = "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; img-src 'self' data: blob:; connect-src 'self'; font-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self' https://app.netlify.com";
 const MIME = new Map([
   ['.html', 'text/html; charset=utf-8'],
   ['.css', 'text/css; charset=utf-8'],
@@ -16,8 +17,17 @@ const MIME = new Map([
   ['.woff2', 'font/woff2'],
 ]);
 
+function commonHeaders() {
+  return {
+    'Content-Security-Policy': PRODUCTION_CSP,
+    'X-Content-Type-Options': 'nosniff',
+    'Referrer-Policy': 'strict-origin-when-cross-origin',
+  };
+}
+
 function json(response, body, status = 200) {
   response.writeHead(status, {
+    ...commonHeaders(),
     'Content-Type': 'application/json; charset=utf-8',
     'Cache-Control': 'no-store',
   });
@@ -50,19 +60,20 @@ export async function startBuiltSiteServer(dist) {
       if (stubApi(url, response)) return;
       const target = safeTarget(dist, url.pathname);
       if (!target) {
-        response.writeHead(403);
+        response.writeHead(403, commonHeaders());
         response.end('Forbidden');
         return;
       }
       const data = await readFile(target);
       response.writeHead(200, {
+        ...commonHeaders(),
         'Content-Type': MIME.get(extname(target).toLowerCase()) || 'application/octet-stream',
         'Cache-Control': 'no-store',
       });
       response.end(data);
     } catch (error) {
       console.error('Built-site test server request failed:', error?.code || error?.name || 'unknown-error');
-      response.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+      response.writeHead(404, { ...commonHeaders(), 'Content-Type': 'text/plain; charset=utf-8' });
       response.end('Not Found');
     }
   });
