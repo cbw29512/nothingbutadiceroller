@@ -106,6 +106,18 @@ function handleCloudConflict(error, { dirty = false } = {}) {
   refresh();
   return true;
 }
+function handleImageQuota(error) {
+  if (error?.code !== 'tray-image-account-limit-reached') return false;
+  const rollbackVersion = error?.details?.version;
+  if (rollbackVersion) {
+    draftVersion = rollbackVersion;
+    cloudVersions.set(draft.id, rollbackVersion);
+  }
+  draftGuard.markDirty();
+  setStatus(error.message, 'error');
+  refresh();
+  return true;
+}
 async function persist(set) {
   if (cloudEnabled) {
     const result = await saveCloudDiceSet(set, draftVersion);
@@ -132,7 +144,9 @@ async function saveDraft() {
     const result = await persist(assertValidDiceSet(draft)); draft = result.set;
     if (activeId === draft.id) setActiveDiceSet(draft);
     draftGuard.markClean(); setStatus(result.warning || 'Dice set saved.', result.warning ? 'error' : 'ready'); refresh();
-  } catch (error) { if (!handleCloudConflict(error, { dirty: true })) setStatus(error.message, 'error'); }
+  } catch (error) {
+    if (!handleCloudConflict(error, { dirty: true }) && !handleImageQuota(error)) setStatus(error.message, 'error');
+  }
 }
 function newSet() {
   try {
