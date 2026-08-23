@@ -4,9 +4,10 @@ import { createUserDiceSet, cloneDiceSet } from './schema.mjs';
 import { lockDiceSet, makeDiceSetPrivate, publishDiceSet, unlockDiceSet } from './transitions.mjs';
 import { assertValidDiceSet } from './validation.mjs';
 import { createSecureId } from './secure-id.mjs';
-import { deleteCloudDiceSet, loadCloudDiceSets, loadCommunityDiceSetPage, saveCloudDiceSet } from './studio-cloud.mjs';
+import { deleteCloudDiceSet, loadCloudDiceSets, loadCommunityDiceSetPage, saveCloudDiceSet, submitCommunityReport } from './studio-cloud.mjs';
 import { getImportableBrowserSets, importBrowserSets } from './studio-browser-import.mjs';
 import { createStudioDraftGuard } from './studio-draft-guard.mjs';
+import { createCommunityReportController } from './studio-community-report.mjs';
 import { bindStudioControls } from './studio-bindings.mjs';
 import {
   deleteDiceSetLocal, getActiveDiceSetId, getActiveDiceSetSnapshot, getOrCreateLocalOwnerId,
@@ -32,6 +33,7 @@ let draft = cloneDiceSet(SYSTEM_DEFAULT_DICE_SET);
 let selectedDie = 'd20';
 const draftGuard = createStudioDraftGuard();
 const q = (id) => document.getElementById(id);
+const communityReport = createCommunityReportController({ q, submitReport: submitCommunityReport, setStatus });
 function findSet(id) {
   if (id === SYSTEM_DEFAULT_DICE_SET_ID) return SYSTEM_DEFAULT_DICE_SET;
   return savedSets.find((set) => set.id === id) || communitySets.find((set) => set.id === id) || null;
@@ -46,7 +48,7 @@ function selectSet(set, { force = false } = {}) {
 }
 function refresh() {
   renderLibrary([SYSTEM_DEFAULT_DICE_SET, ...savedSets], selectedId, selectSet);
-  renderCommunity(communitySets, selectedId, selectSet); renderPreview(draft, selectedDie);
+  renderCommunity(communitySets, selectedId, selectSet); communityReport.decorate(communitySets); renderPreview(draft, selectedDie);
   fillEditor(draft, selectedDie, activeId, ownerId, cloudEnabled); renderStorageMode(cloudEnabled, importableBrowserSets.length);
   const loadMore = q('load-more-community');
   if (loadMore) {
@@ -214,6 +216,7 @@ function bind() {
     dice: { get: () => selectedDie, select: (type) => { selectedDie = type; refresh(); } }, ownerId: () => ownerId,
     refresh, setStatus, draftGuard,
   });
+  communityReport.bind();
 }
 async function initialize() {
   try {
