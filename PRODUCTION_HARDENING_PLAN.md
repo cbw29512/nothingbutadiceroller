@@ -33,7 +33,7 @@ Phase 1 code status: implemented on the hardening branch. Branch protection rema
 - [x] Add baseline automated accessibility checks.
 - [x] Keep browser/E2E tests separate from dice mechanics and deterministic contract tests.
 
-Phase 2 evidence: exact hardening heads have completed the built-site Chrome matrix for `/`, Dice Studio, shortcut manager, How To, Privacy, and Legal on 1440×900 desktop and 390×844 mobile. The interaction suite also caught and permanently regressed a real `Bolean(active)` shortcut-integration typo that had blocked ordinary Roll clicks.
+Phase 2 evidence: exact hardening heads have completed the built-site Chrome matrix for `/`, Dice Studio, shortcut manager, How To, Privacy, Legal, and the admin moderation surface on 1440×900 desktop and 390×844 mobile. The interaction suite also caught and permanently regressed a real `Bolean(active)` shortcut-integration typo that had blocked ordinary Roll clicks.
 
 ## Phase 3 — Public image and upload privacy hardening
 
@@ -47,15 +47,15 @@ Phase 2 evidence: exact hardening heads have completed the built-site Chrome mat
 
 ## Phase 4 — Community abuse and scale controls
 
-- [x] Add application-level publication/upload abuse limits or verified Netlify rate-limit controls. **Deployed Netlify function rules cap dice-set save/upload mutations at 30 requests/minute and Community/library requests at 120 requests/minute per IP+domain.**
+- [x] Add application-level publication/upload abuse limits or verified Netlify rate-limit controls. **Deployed Netlify function rules cap dice-set save/upload mutations at 30 requests/minute, report submissions at 10 requests/minute, and Community/library requests at 120 requests/minute per IP+domain.**
 - [x] Add pagination/bounded page size for Community results. **Community returns 24 records by default, allows at most 48 per page, bounds page numbers, and Dice Studio exposes an explicit Load More flow.**
 - [x] Avoid unbounded public-record fan-out on every Community load. **Current Community Blob enumeration uses manual pagination and stops after one bounded candidate page; legacy migration reads are separately capped.**
-- [ ] Add a user-facing Report Set path.
-- [ ] Add an administrative takedown/moderation path.
-- [ ] Add concise Community Acceptable Use rules.
-- [x] Keep public projections anonymous (`Adventurer`) and opaque. **Current public-projection contract verifies opaque public identity and no account email/internal account IDs.**
+- [x] Add a user-facing Report Set path. **Signed-in users can report a public set from Dice Studio with a bounded reason/details form; duplicate reports from the same account/set collapse to one private server-side record.**
+- [x] Add an administrative takedown/moderation path. **A server-authorized Netlify Identity `admin` queue can take down or lift blocks; takedown writes the block before projection cleanup, blocked sets cannot republish, and lift clears stale public projection state before removing the block.**
+- [x] Add concise Community Acceptable Use rules. **Dice Studio states the sharing boundary before the Community list and directs users to report violations.**
+- [x] Keep public projections anonymous (`Adventurer`) and opaque. **Current public-projection contract verifies opaque public identity and no account email/internal account IDs; reporter identity also remains server-side and is not rendered to moderators.**
 
-Phase 4 scale evidence: exact head `002e39c69317c3bff18f06b3c27f1fa6d404351d` passed the full deterministic/build/browser release validation and its Netlify Deploy Preview. Regression fixtures prove the current Blob async iterator stops after the bounded page and legacy migration fan-out respects its cap.
+Phase 4 evidence: exact head `9e55ef7d2d5d990ef7b5378c01480f8669eba451` passed Full Release Validation, the desktop/mobile rendered-browser matrix, CodeQL `security-extended`, and the Netlify Deploy Preview. Regression fixtures prove bounded Blob enumeration, private report deduplication, fail-closed moderation blocks, blocked-set republish denial, safe lift ordering, and sanitized typed API errors. GitHub Advanced Security automatically resolved the insecure-randomness and static-server file-race review threads after the fixes landed.
 
 ## Phase 5 — Supply-chain and runtime resilience
 
@@ -99,7 +99,7 @@ Phase 6 evidence: Dice Studio exact head `01a3d95206fb5f72b3243100cde6ddaf5e8484
 - [x] Add Dependabot configuration for npm and GitHub Actions. **Weekly version updates cover both ecosystems.**
 - [x] Add CodeQL/static security scanning. **Dedicated CodeQL v4 JavaScript workflow runs `security-extended` on PRs, main, weekly schedule, and manual dispatch.**
 - [ ] Review and retire legacy Theme Studio production surface after compatibility/migration verification.
-- [ ] Standardize server error responses so internal error details are not unnecessarily exposed. **Saved configurations now use the shared typed public-error boundary; the remaining public Netlify endpoints are being audited before this is closed.**
+- [ ] Standardize server error responses so internal error details are not unnecessarily exposed. **Saved configurations and current Community/dice-set moderation endpoints use the shared typed public-error boundary; the remaining public Netlify endpoints are being audited before this is closed.**
 
 Phase 9 security evidence: exact dependency-cleaned head `400b34ab6b4c7cf5c4b0f6215d5aee04b56753b7` passed clean-checkout `npm ci`, the complete deterministic/build/browser release validation, the local DevSecOps contract, and the independent CodeQL `security-extended` analysis.
 
@@ -131,7 +131,7 @@ Phase 9 security evidence: exact dependency-cleaned head `400b34ab6b4c7cf5c4b0f6
 - [x] Default Dice immutable fallback checks pass in the deterministic contract suite.
 - [x] RAW/ADV/DIS/critical/custom-dN/shortcut mechanics checks pass in the deterministic contract suite; normal d20 and custom d37 also pass the real-browser interaction gate.
 - [x] Production/nonproduction storage-isolation checks pass in the deterministic contract suite.
-- [ ] No unresolved PR review blockers.
+- [x] No unresolved PR review blockers. **GitHub review-thread audit on the Phase 4 checkpoint shows both CodeQL threads resolved.**
 - [ ] `main` protection is verified enabled.
 - [ ] Final release review finds no P0/P1 findings and no unaccepted P2 findings.
 - [ ] Explicit approval is received before merge/release.
