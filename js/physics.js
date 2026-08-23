@@ -9,32 +9,23 @@ const SYSTEM_DEFAULT_DICE_COLOR = SYSTEM_DEFAULT_DICE_SET.appearance.diceSet.def
 let liveThemeColor = SYSTEM_DEFAULT_DICE_COLOR;
 
 const DICEBOX_VERSION = '1.1.4';
-const DICEBOX_SOURCES = [
-  `https://cdn.jsdelivr.net/npm/@3d-dice/dice-box@${DICEBOX_VERSION}/dist/dice-box.es.min.js`,
-  `https://unpkg.com/@3d-dice/dice-box@${DICEBOX_VERSION}/dist/dice-box.es.min.js`,
-];
+const DICEBOX_MODULE_URL = '/vendor/dice-box/dice-box.es.min.js';
+const DICEBOX_ORIGIN = '/vendor/dice-box/';
 
 async function loadDiceBoxModule() {
   if (DiceBoxClass) return DiceBoxClass;
 
-  const failures = [];
-  for (const source of DICEBOX_SOURCES) {
-    try {
-      const module = await import(source);
-      const candidate = module?.default || module?.DiceBox;
-      if (typeof candidate !== 'function') {
-        throw new Error('DiceBox constructor was not exported.');
-      }
-      DiceBoxClass = candidate;
-      console.info(`DiceBox ${DICEBOX_VERSION} loaded from ${source}`);
-      return DiceBoxClass;
-    } catch (err) {
-      failures.push(`${source}: ${err?.message || err}`);
-      console.warn('DiceBox source failed:', source, err);
-    }
+  try {
+    const module = await import(DICEBOX_MODULE_URL);
+    const candidate = module?.default || module?.DiceBox;
+    if (typeof candidate !== 'function') throw new Error('DiceBox constructor was not exported.');
+    DiceBoxClass = candidate;
+    console.info(`DiceBox ${DICEBOX_VERSION} loaded from same-origin vendor assets.`);
+    return DiceBoxClass;
+  } catch (error) {
+    console.error('Same-origin DiceBox module load failed:', error);
+    throw new Error(`Unable to load self-hosted DiceBox ${DICEBOX_VERSION}.`);
   }
-
-  throw new Error(`Unable to load DiceBox ${DICEBOX_VERSION}. ${failures.join(' | ')}`);
 }
 
 function getDiceScale() {
@@ -55,7 +46,7 @@ export async function initDicePhysics(themeColor = SYSTEM_DEFAULT_DICE_COLOR, ap
     diceBox = new DiceBox({
       container: '#dice-tray',
       assetPath: 'assets/',
-      origin: `https://unpkg.com/@3d-dice/dice-box@${DICEBOX_VERSION}/dist/`,
+      origin: DICEBOX_ORIGIN,
       theme: 'default',
       themeColor: liveThemeColor,
       gravity: 1,
