@@ -44,7 +44,9 @@ try {
   for (const marker of [
     'rel="icon" href="/favicon.svg"',
     'rel="manifest" href="/site.webmanifest"',
-    'property="og:image" content="https://nothingbutattrpgdiceroller.netlify.app/social-card.svg"',
+    'property="og:image" content="https://nothingbutattrpgdiceroller.netlify.app/social-card.png"',
+    'property="og:image:type" content="image/png"',
+    'name="twitter:image" content="https://nothingbutattrpgdiceroller.netlify.app/social-card.png"',
     'name="twitter:card" content="summary_large_image"',
   ]) assert.ok(index.includes(marker), `Production metadata is missing: ${marker}`);
 
@@ -56,7 +58,7 @@ try {
   assert.ok(sitemap.includes('https://nothingbutattrpgdiceroller.netlify.app/how-to.html'));
   assert.ok(robots.includes('Sitemap: https://nothingbutattrpgdiceroller.netlify.app/sitemap.xml'));
 
-  console.log('Production operations contract passed: scheduled synthetic monitoring, rollback/data-safety runbook, external-control checklist, app metadata, manifest, sitemap, and robots policy are all release-enforced.');
+  console.log('Production operations contract passed: scheduled synthetic monitoring, rollback/data-safety runbook, external-control checklist, crawler-compatible PNG social metadata, manifest, sitemap, and robots policy are all release-enforced.');
 } catch (error) {
   console.error('Production operations contract failed:', error);
   process.exitCode = 1;
