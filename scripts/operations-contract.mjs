@@ -38,7 +38,7 @@ try {
     'Do not run destructive bulk migrations against production Blob data',
     'GitHub `main` branch protection/rules',
     'Deploy-failure notifications',
-    'billing/spend controls',
+    'Billing/spend controls',
   ]) assert.ok(operations.includes(marker), `Operations runbook is missing: ${marker}`);
 
   for (const marker of [
