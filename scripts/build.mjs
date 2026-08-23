@@ -175,7 +175,7 @@ async function validateBuild() {
     requireReferences(customControls, ['supportsNativePopover', 'showPopover()', 'hidePopover()', "addEventListener('toggle'"], 'resilient custom-control behavior');
     requireReferences(customRoll, ['crypto.getRandomValues', 'SECURE CUSTOM ROLL', 'Web Crypto CSPRNG', 'MAX_CUSTOM_SIDES = 1_000_000'], 'secure custom-roll feature');
     requireReferences(trayControls, ["tray.addEventListener('click'", "['Enter', ' ']", 'canRollFromTray'], 'tray-roll feature');
-    requireReferences(browserApp, ['/vendor/dice-box-1.1.4/', 'dice-box.es.min.js'], 'self-hosted DiceBox browser bundle reference');
+    requireReferences(browserApp, ['dice-box.es.min.js', 'Unable to load self-hosted DiceBox'], 'self-hosted DiceBox browser bundle reference');
 
     const diceBoxPackage = JSON.parse(upstreamDiceBox);
     if (diceBoxPackage.name !== '@3d-dice/dice-box' || diceBoxPackage.version !== '1.1.4') {
