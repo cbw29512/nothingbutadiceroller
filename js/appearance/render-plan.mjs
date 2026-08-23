@@ -38,6 +38,7 @@ function faceInstructions(die) {
       color: face.color ?? null,
       fontId: face.fontId ?? null,
       scale: face.scale ?? 1,
+      position: face.position ?? 'center',
     },
   ]));
 }

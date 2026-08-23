@@ -1,5 +1,6 @@
 import { bindFaceSymbolPicker } from './face-symbol-picker.mjs';
 import { ensureStudioFaceFontControl } from './studio-face-font-controls.mjs';
+import { ensureStudioFacePositionControl } from './studio-face-position-controls.mjs';
 import { ensureStudioFaceScaleControl } from './studio-face-scale-controls.mjs';
 import { bindStudioInlayControls, ensureStudioInlayControls } from './studio-inlay-controls.mjs';
 import { bindStudioPatternControls } from './studio-pattern-controls.mjs';
@@ -16,6 +17,7 @@ export function bindStudioControls(context) {
     ensureStudioInlayControls(documentRef);
     ensureStudioFaceFontControl(documentRef);
     ensureStudioFaceScaleControl(documentRef);
+    ensureStudioFacePositionControl(documentRef);
     q('new-set').addEventListener('click', actions.newSet); q('save-set').addEventListener('click', actions.saveDraft);
     q('lock-set').addEventListener('click', actions.toggleLock); q('publish-set').addEventListener('click', actions.togglePublish);
     const useButton = q('use-set');
@@ -56,7 +58,7 @@ export function bindStudioControls(context) {
             editor.focus(); editor.select();
             setStatus(startedFromDefault
               ? `Editable copy created. Face ${logicalFace} is ready to customize; it will always roll ${logicalFace}.`
-              : `Face ${logicalFace} selected. Edit its display, color, font, or size below; it will always roll ${logicalFace}.`, 'ready');
+              : `Face ${logicalFace} selected. Edit its display, color, font, size, or position below; it will always roll ${logicalFace}.`, 'ready');
           } else {
             setStatus('This dice set is locked or read-only. Unlock or copy it before customizing this face.', 'ready');
           }

@@ -1,6 +1,7 @@
 import { CANONICAL_DICE } from './defaults.mjs';
 import { extractDiceBoxFaceRegions } from './dicebox-atlas-layout.mjs';
 import { extractD4VertexAnchors } from './dicebox-d4-layout.mjs';
+import { normalizeFaceGlyphPosition } from './face-glyph-position.mjs';
 import { normalizeFaceGlyphScale } from './face-glyph-scale.mjs';
 import { getCanonicalFaceLabel, getCanonicalFaceResults } from './face-values.mjs';
 
@@ -15,14 +16,16 @@ function centeredCommand(dieType, logicalResult, die, region) {
   const face = die.faces?.[String(logicalResult)] || null;
   return {
     dieType, logicalResult, strategy: 'centered-region', text: faceText(face, dieType, logicalResult),
-    color: faceColor(face, die.style), fontId: face?.fontId || null, scale: normalizeFaceGlyphScale(face?.scale), region: structuredClone(region),
+    color: faceColor(face, die.style), fontId: face?.fontId || null, scale: normalizeFaceGlyphScale(face?.scale),
+    position: normalizeFaceGlyphPosition(face?.position), region: structuredClone(region),
   };
 }
 function d4Command(logicalResult, die, anchor) {
   const face = die.faces?.[String(logicalResult)] || null;
   return {
     dieType: 'd4', logicalResult, strategy: 'tetrahedral-vertex-repeat', text: faceText(face, 'd4', logicalResult),
-    color: faceColor(face, die.style), fontId: face?.fontId || null, scale: normalizeFaceGlyphScale(face?.scale), marks: structuredClone(anchor.marks),
+    color: faceColor(face, die.style), fontId: face?.fontId || null, scale: normalizeFaceGlyphScale(face?.scale),
+    position: normalizeFaceGlyphPosition(face?.position), marks: structuredClone(anchor.marks),
   };
 }
 function needsEdgeInlay(die) { return Boolean(die?.style?.inlay?.type && die.style.inlay.type !== 'none'); }
