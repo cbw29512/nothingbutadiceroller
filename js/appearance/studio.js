@@ -3,6 +3,7 @@ import { canDeleteDiceSet, canEditDiceSet, canUseDiceSet } from './authorization
 import { createUserDiceSet, cloneDiceSet } from './schema.mjs';
 import { lockDiceSet, makeDiceSetPrivate, publishDiceSet, unlockDiceSet } from './transitions.mjs';
 import { assertValidDiceSet } from './validation.mjs';
+import { createSecureId } from './secure-id.mjs';
 import { deleteCloudDiceSet, loadCloudDiceSets, loadCommunityDiceSets, saveCloudDiceSet } from './studio-cloud.mjs';
 import { getImportableBrowserSets, importBrowserSets } from './studio-browser-import.mjs';
 import { createStudioDraftGuard } from './studio-draft-guard.mjs';
@@ -91,10 +92,15 @@ async function saveDraft() {
   } catch (error) { if (!handleCloudConflict(error, { dirty: true })) setStatus(error.message, 'error'); }
 }
 function newSet() {
-  if (!confirmDiscardDraft()) return;
-  const id = `set_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-  draft = createUserDiceSet({ id, ownerId, name: 'New Dice Set' }); selectedId = id; draftVersion = null; markDraftDirty();
-  setStatus('New set ready. Customize it, then Save Dice Set.'); refresh();
+  try {
+    if (!confirmDiscardDraft()) return;
+    const id = createSecureId('set');
+    draft = createUserDiceSet({ id, ownerId, name: 'New Dice Set' }); selectedId = id; draftVersion = null; markDraftDirty();
+    setStatus('New set ready. Customize it, then Save Dice Set.'); refresh();
+  } catch (error) {
+    console.error('Failed to create a new dice set:', error);
+    setStatus('Unable to create a secure dice-set id. Reload and try again.', 'error');
+  }
 }
 async function toggleLock() {
   try {
