@@ -9,8 +9,28 @@ import {
   publicRecordKey, recordKey,
 } from './dice-set-store.mjs';
 
+const DEFAULT_COMMUNITY_PAGE_SIZE = 24;
+const MAX_COMMUNITY_PAGE_SIZE = 48;
+const MAX_COMMUNITY_PAGE = 20;
+
 function json(body, status = 200) { return Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } }); }
-function publicRecordsFromProjections(current, legacy) {
+function communityPagination(url) {
+  try {
+    const page = Number(url.searchParams.get('page') || 1);
+    const pageSize = Number(url.searchParams.get('pageSize') || DEFAULT_COMMUNITY_PAGE_SIZE);
+    if (!Number.isInteger(page) || page < 1 || page > MAX_COMMUNITY_PAGE) {
+      throw publicError(`Community page must be an integer from 1 to ${MAX_COMMUNITY_PAGE}.`, { code: 'invalid-community-page' });
+    }
+    if (!Number.isInteger(pageSize) || pageSize < 1 || pageSize > MAX_COMMUNITY_PAGE_SIZE) {
+      throw publicError(`Community page size must be an integer from 1 to ${MAX_COMMUNITY_PAGE_SIZE}.`, { code: 'invalid-community-page-size' });
+    }
+    return { page, pageSize };
+  } catch (error) {
+    console.error('Failed to validate Community pagination:', error);
+    throw error;
+  }
+}
+function publicRecordsFromProjections(current, legacy, { page, pageSize }) {
   try {
     const records = new Map();
     for (const projection of [...legacy, ...current]) {
@@ -18,12 +38,19 @@ function publicRecordsFromProjections(current, legacy) {
       if (!record?.set?.locked || record.set.visibility !== 'public') continue;
       records.set(projection.publicAccessId, record);
     }
-    return [...records.values()]
-      .sort((a, b) => Date.parse(b.updatedAt || 0) - Date.parse(a.updatedAt || 0))
-      .slice(0, 500);
+    const ordered = [...records.values()]
+      .sort((a, b) => Date.parse(b.updatedAt || 0) - Date.parse(a.updatedAt || 0));
+    const start = (page - 1) * pageSize;
+    const end = start + pageSize;
+    return {
+      records: ordered.slice(start, end),
+      page,
+      pageSize,
+      hasMore: ordered.length > end,
+    };
   } catch (error) {
     console.error('Failed to render community dice-set projections:', error);
-    return [];
+    return { records: [], page, pageSize, hasMore: false };
   }
 }
 async function bestEffortDelete(store, key, label) {
@@ -43,10 +70,11 @@ export default async (request, context) => {
     const scope = url.searchParams.get('scope') || 'mine';
     const user = await getUser();
     if (request.method === 'GET' && scope === 'community') {
+      const pagination = communityPagination(url);
       const current = await listPublicProjections(store);
       const sources = new Set(current.map((projection) => JSON.stringify([projection?.ownerId, projection?.setId])));
       const legacy = await listLegacyPublicProjections(store, sources);
-      return json({ records: publicRecordsFromProjections(current, legacy) });
+      return json(publicRecordsFromProjections(current, legacy, pagination));
     }
     if (!user) return json({ error: 'Authentication required.', code: 'authentication-required' }, 401);
     if (request.method === 'GET') {
@@ -84,4 +112,11 @@ export default async (request, context) => {
     return json(safe.body, safe.status);
   }
 };
-export const config = { path: '/api/dice-sets' };
+export const config = {
+  path: '/api/dice-sets',
+  rateLimit: {
+    windowLimit: 120,
+    windowSize: 60,
+    aggregateBy: ['ip', 'domain'],
+  },
+};
