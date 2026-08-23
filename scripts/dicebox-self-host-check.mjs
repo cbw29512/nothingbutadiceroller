@@ -91,6 +91,7 @@ try {
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
+    "frame-src 'self' https://app.netlify.com",
     "frame-ancestors 'self' https://app.netlify.com",
   ]) assert.ok(netlify.includes(policy), `Missing hardened CSP directive: ${policy}`);
   assert.ok(netlify.includes('for = "/vendor/dice-box-1.1.4/*"'));
