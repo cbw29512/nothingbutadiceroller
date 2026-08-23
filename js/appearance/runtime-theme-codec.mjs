@@ -5,6 +5,7 @@ import { EDGE_INLAY_TYPES } from './inlay-style.mjs';
 import { SURFACE_PATTERN_TYPES } from './pattern-style.mjs';
 import { INTERIOR_EFFECT_TYPES } from './resin-style.mjs';
 import { SURFACE_FINISH_TYPES } from './surface-style.mjs';
+import { isPackedRuntimeThemeV6, packRuntimeThemeV6, unpackRuntimeThemeV6 } from './runtime-theme-wire.mjs';
 
 export const RUNTIME_THEME_VERSION = 6;
 const LEGACY_RUNTIME_THEME_VERSIONS = new Set([1, 2, 3, 4, 5]);
@@ -129,12 +130,16 @@ export function validateRuntimeThemePayload(payload) {
 export function encodeRuntimeThemePayload(payload) {
   const validation = validateRuntimeThemePayload(payload);
   if (!validation.ok) throw new Error(validation.errors.join(' | '));
-  return base64UrlEncode(JSON.stringify(payload));
+  const wirePayload = payload.v === RUNTIME_THEME_VERSION ? packRuntimeThemeV6(payload) : payload;
+  return base64UrlEncode(JSON.stringify(wirePayload));
 }
 export function decodeRuntimeThemePayload(token) {
   try {
     if (!token || String(token).length > 6000) throw new Error('Runtime theme token is invalid.');
-    const payload = JSON.parse(base64UrlDecode(token));
+    const decoded = JSON.parse(base64UrlDecode(token));
+    const payload = isPackedRuntimeThemeV6(decoded)
+      ? unpackRuntimeThemeV6(decoded, getCanonicalFaceResults(decoded[1]).length)
+      : decoded;
     const validation = validateRuntimeThemePayload(payload);
     if (!validation.ok) throw new Error(validation.errors.join(' | '));
     return payload;
