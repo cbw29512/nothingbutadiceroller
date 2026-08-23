@@ -6,10 +6,8 @@ import { buildDiceBoxRuntimeTheme } from './dicebox-runtime-theme.mjs';
 import { buildDiceBoxThemePlan } from './dicebox-theme-plan.mjs';
 import { APPEARANCE_DICEBOX_VERSION, loadCanonicalDiceBoxModel } from './dicebox-model-loader.mjs';
 
-const MODULE_SOURCES = [
-  `https://cdn.jsdelivr.net/npm/@3d-dice/dice-box@${APPEARANCE_DICEBOX_VERSION}/dist/dice-box.es.min.js`,
-  `https://unpkg.com/@3d-dice/dice-box@${APPEARANCE_DICEBOX_VERSION}/dist/dice-box.es.min.js`,
-];
+const DICEBOX_MODULE_URL = '/vendor/dice-box/dice-box.es.min.js';
+const DICEBOX_ORIGIN = '/vendor/dice-box/';
 const PROOF_ROLL_TIMEOUT_MS = 15000;
 
 let diceBox = null;
@@ -37,18 +35,15 @@ function proofSet() {
 }
 
 async function loadDiceBoxClass() {
-  const failures = [];
-  for (const source of MODULE_SOURCES) {
-    try {
-      const module = await import(source);
-      const candidate = module?.default || module?.DiceBox;
-      if (typeof candidate !== 'function') throw new Error('DiceBox constructor missing.');
-      return candidate;
-    } catch (error) {
-      failures.push(`${source}: ${error?.message || error}`);
-    }
+  try {
+    const module = await import(DICEBOX_MODULE_URL);
+    const candidate = module?.default || module?.DiceBox;
+    if (typeof candidate !== 'function') throw new Error('DiceBox constructor missing.');
+    return candidate;
+  } catch (error) {
+    console.error('Same-origin DiceBox proof module load failed:', error);
+    throw new Error(`Unable to load self-hosted DiceBox ${APPEARANCE_DICEBOX_VERSION}.`);
   }
-  throw new Error(`Unable to load DiceBox ${APPEARANCE_DICEBOX_VERSION}. ${failures.join(' | ')}`);
 }
 
 function scale() {
@@ -201,7 +196,7 @@ async function initialize() {
     diceBox = new DiceBox({
       container: '#appearance-proof-tray',
       assetPath: 'assets/',
-      origin: `https://unpkg.com/@3d-dice/dice-box@${APPEARANCE_DICEBOX_VERSION}/dist/`,
+      origin: DICEBOX_ORIGIN,
       theme: runtimeTheme.themeName,
       themeColor: runtimeTheme.themeColor,
       externalThemes: { [runtimeTheme.themeName]: runtimeTheme.basePath },
