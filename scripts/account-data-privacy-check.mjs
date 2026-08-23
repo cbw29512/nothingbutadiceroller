@@ -7,7 +7,7 @@ import {
 } from '../netlify/functions/community-moderation-store.mjs';
 import { publicRecordKey, recordKey } from '../netlify/functions/dice-set-store.mjs';
 import {
-  LEGACY_THEME_COMMUNITY_INDEX, legacyThemeIndexKey, legacyThemeKey,
+  LEGACY_THEME_COMMUNITY_INDEX, legacyThemeIndexKey, legacyThemeKey, legacyThemePrefix,
 } from '../netlify/functions/legacy-theme-store.mjs';
 import { configurationKey, shortcutKey } from '../netlify/functions/user-data-store.mjs';
 
@@ -60,7 +60,11 @@ try {
   const imageKey = `users/${encodeURIComponent(userId)}/dice-sets/${setId}_tray_secret`;
   const diceKey = recordKey(userId, setId);
   const legacyId = 'legacy_theme_1';
-  const legacyImageKey = `users/${encodeURIComponent(userId)}/themes/${legacyId}_image_secret`;
+  const legacyImageKey = `${legacyThemePrefix(userId)}${legacyId}_image_secret`;
+  const orphanLegacyId = 'legacy_orphan';
+  const orphanLegacyKey = legacyThemeKey(userId, orphanLegacyId);
+  const orphanLegacyImageKey = `${legacyThemePrefix(userId)}${orphanLegacyId}_image_secret`;
+  const unreferencedLegacyBlobKey = `${legacyThemePrefix(userId)}stale-upload.bin`;
   const authoredReportKey = communityReportKey('public_aaaaaaaaaaaaaaaa', userId);
   const ownedSetReportKey = `${COMMUNITY_REPORT_PREFIX}public_owned/owned-report.json`;
   const unrelatedReportKey = `${COMMUNITY_REPORT_PREFIX}public_other/unrelated.json`;
@@ -110,6 +114,14 @@ try {
       imageAccessToken: 'legacy-secret-token', isPublic: true, customStyles: { baseColor: '#112233' },
     },
     [legacyImageKey]: 'legacy-image-placeholder',
+    // Deliberately absent from the user index: privacy deletion must discover it by prefix.
+    [orphanLegacyKey]: {
+      ownerId: userId, themeId: orphanLegacyId, themeName: 'Orphan Legacy Theme', trayName: 'Orphan Tray',
+      imageKey: orphanLegacyImageKey, imageAccessToken: 'orphan-secret-token', isPublic: false,
+    },
+    [orphanLegacyImageKey]: 'orphan-image-placeholder',
+    // Deliberately referenced by no record at all: the final user-prefix sweep must remove it.
+    [unreferencedLegacyBlobKey]: 'stale-binary-placeholder',
     [LEGACY_THEME_COMMUNITY_INDEX]: [{ ownerId: userId, themeId: legacyId }, { ownerId: otherUserId, themeId: 'other_theme' }],
   });
 
@@ -147,7 +159,10 @@ try {
   for (const key of [diceKey, imageKey, publicRecordKey(publicId), authoredReportKey, ownedSetReportKey, ownedBlockKey]) {
     assert.equal(value(appStore, key), null, `Expected deleted Dice Studio/Community key: ${key}`);
   }
-  for (const key of [legacyThemeIndexKey(userId), legacyThemeKey(userId, legacyId), legacyImageKey]) {
+  for (const key of [
+    legacyThemeIndexKey(userId), legacyThemeKey(userId, legacyId), legacyImageKey,
+    orphanLegacyKey, orphanLegacyImageKey, unreferencedLegacyBlobKey,
+  ]) {
     assert.equal(value(legacyStore, key), null, `Expected deleted legacy theme key: ${key}`);
   }
   assert.equal(value(configurationStore, configurationKey(userId)), null, 'Saved configurations must be deleted from their own scoped store.');
@@ -169,8 +184,10 @@ try {
   assert.ok(saveApi.indexOf('current?.record?.deletionMarker') < saveApi.indexOf('version !== (current?.version || null)'), 'Deletion marker must be handled before normal version conflict serialization.');
   assert.ok(deleteSource.includes('stores.legacyStore || openLegacyThemeStore(context)'), 'Privacy deletion must use the separate legacy theme Blob store.');
   assert.ok(deleteSource.includes('deleteLegacyThemes(legacyStore, userId)'), 'Legacy theme cleanup must not run against the Dice Studio Blob store.');
+  assert.ok(deleteSource.includes('legacyThemePrefix(userId)'), 'Legacy privacy deletion must sweep the complete user-owned theme prefix.');
+  assert.ok(deleteSource.includes("deleteBlob(store, key, 'legacy theme orphan')"), 'Legacy privacy deletion must remove unindexed orphan blobs.');
 
-  console.log('Account privacy lifecycle passed: export omits capabilities, cloud deletion is fail-closed/retryable, isolated user app stores are removed, unrelated data remains, admin references anonymize, and the sign-in account/browser data remain untouched.');
+  console.log('Account privacy lifecycle passed: export omits capabilities, cloud deletion is fail-closed/retryable, isolated stores and legacy orphans are removed, unrelated data remains, admin references anonymize, and the sign-in account/browser data remain untouched.');
 } catch (error) {
   console.error('Account privacy lifecycle check failed:', error);
   process.exitCode = 1;
