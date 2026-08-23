@@ -107,12 +107,20 @@ export default async (request, context) => {
     const store = openDiceSetStore(context); cleanupStore = store;
     const key = recordKey(user.id, rawSet.id);
     const current = await readVersionedRecord(store, key);
+    if (current?.record?.deletionMarker) {
+      return json({
+        error: 'This dice set is being removed from cloud storage. Reload after deletion completes.',
+        code: 'dice-set-deleting',
+        record: null,
+        version: current.version || null,
+      }, 409);
+    }
     if (version !== (current?.version || null)) return json(versionConflict(current), 409);
     const existing = current?.record || null;
     const isNewSet = !existing;
     if (isNewSet && await countUserRecords(store, user.id) >= MAX_USER_DICE_SETS) throw quotaError();
     if (existing?.set?.locked && incomingDataUrl) {
-      throw publicError('Unlock the dice set before changing its tray image.', { code: 'locked-dice-set-image' });
+      throw publicError('Unlock this set before changing its tray image.', { code: 'locked-dice-set-image' });
     }
 
     const rawTray = rawSet?.appearance?.tray;
