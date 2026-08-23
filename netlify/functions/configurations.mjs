@@ -5,9 +5,8 @@ import {
   configurationConflict, normalizeConfigurationVersion,
   readVersionedConfigurations, writeVersionedConfigurations,
 } from './configuration-concurrency.mjs';
-import { openScopedStore } from './deploy-store.mjs';
+import { configurationKey, openConfigurationStore } from './user-data-store.mjs';
 
-const STORE_NAME = 'dice-user-configurations';
 const VALID_DICE = new Set(['d4', 'd6', 'd8', 'd10', 'd12', 'd20', 'd100']);
 const VALID_TRAY_THEMES = new Set(TRAY_THEMES.map((theme) => theme.id));
 const VALID_DIE_SKINS = new Set(DIE_SKINS.map((skin) => skin.id));
@@ -16,7 +15,6 @@ const DEFAULT_TRAY = 'tray-green_felt';
 const DEFAULT_SKIN = 'skin-ruby_red';
 
 function json(body, status = 200) { return Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } }); }
-function configKey(userId) { return `users/${encodeURIComponent(String(userId))}/configurations.json`; }
 function safeChoice(value, allowed, fallback) { const text = String(value || ''); return allowed.has(text) ? text : fallback; }
 function sanitizeDice(selectedDice) {
   if (!Array.isArray(selectedDice)) return [];
@@ -55,7 +53,7 @@ function sanitizeStoredConfiguration(raw) {
     return null;
   }
 }
-function projectConfigurations(raw = []) {
+export function projectConfigurations(raw = []) {
   return Array.isArray(raw) ? raw.map(sanitizeStoredConfiguration).filter(Boolean).slice(0, MAX_CONFIGS) : [];
 }
 async function requestJson(request) {
@@ -67,8 +65,8 @@ export default async (request, context) => {
   try {
     const user = await getUser();
     if (!user) return json({ error: 'Authentication required.', code: 'authentication-required' }, 401);
-    const store = openScopedStore(STORE_NAME, context);
-    const key = configKey(user.id);
+    const store = openConfigurationStore(context);
+    const key = configurationKey(user.id);
     const snapshot = await readVersionedConfigurations(store, key);
     const configurations = projectConfigurations(snapshot.configurations);
     const url = new URL(request.url);
