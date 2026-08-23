@@ -117,12 +117,12 @@ async function moderationForOwnedSets(store, userId) {
     }));
 }
 
-export async function exportAccountData(userId, context) {
+export async function exportAccountData(userId, context, stores = {}) {
   try {
-    const configurationStore = openConfigurationStore(context);
-    const shortcutStore = openShortcutStore(context);
-    const appStore = openDiceSetStore(context);
-    const legacyStore = openLegacyThemeStore(context);
+    const configurationStore = stores.configurationStore || openConfigurationStore(context);
+    const shortcutStore = stores.shortcutStore || openShortcutStore(context);
+    const appStore = stores.appStore || openDiceSetStore(context);
+    const legacyStore = stores.legacyStore || openLegacyThemeStore(context);
     const [configSnapshot, shortcutRaw, diceEntries, legacyThemes, reports, moderation] = await Promise.all([
       readVersionedConfigurations(configurationStore, configurationKey(userId)),
       shortcutStore.get(shortcutKey(userId), { type: 'json' }).catch(() => null),
