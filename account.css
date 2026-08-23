@@ -134,6 +134,65 @@
   font-size: .76rem;
 }
 
+.account-data-panel {
+  display: grid;
+  gap: .65rem;
+  padding: .9rem;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  background: #111827;
+}
+
+.account-data-copy,
+.account-data-dialog p,
+.account-data-dialog label {
+  margin: 0;
+  color: #cbd5e1;
+  font-size: .82rem;
+  line-height: 1.45;
+}
+
+.account-data-actions,
+.account-data-dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .55rem;
+}
+
+.account-data-actions .btn,
+.account-data-dialog-actions .btn {
+  flex: 1 1 180px;
+}
+
+.account-data-dialog {
+  width: min(520px, calc(100% - 28px));
+  border: 1px solid #475569;
+  border-radius: 16px;
+  padding: 0;
+  background: #0f172a;
+  color: #fff;
+  box-shadow: 0 24px 70px #000a;
+}
+
+.account-data-dialog::backdrop {
+  background: #020617cc;
+}
+
+.account-data-dialog form {
+  display: grid;
+  gap: .85rem;
+  padding: 1.1rem;
+}
+
+.account-data-dialog h3 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+#delete-cloud-data-status[data-kind=error] {
+  color: #fca5a5;
+}
+
 @media (max-width: 700px) {
   .app-header {
     flex-direction: column;
@@ -165,7 +224,9 @@
     grid-template-columns: 1fr;
   }
 
-  .saved-config-actions .btn {
+  .saved-config-actions .btn,
+  .account-data-actions .btn,
+  .account-data-dialog-actions .btn {
     flex: 1;
   }
 }
