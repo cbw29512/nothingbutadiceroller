@@ -1,0 +1,19 @@
+{
+  "id": "/",
+  "name": "Nothing But A Dice Roller",
+  "short_name": "Dice Roller",
+  "description": "Fast tabletop RPG dice roller with physical 3D standard dice and secure custom dN rolls.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#090c12",
+  "theme_color": "#090c12",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
