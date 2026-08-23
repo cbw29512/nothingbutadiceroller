@@ -80,6 +80,9 @@ jobs:
       - name: Verify live surface finishes
         run: node scripts/deploy-preview-surface-finish.mjs
 
+      - name: Verify live surface patterns
+        run: node scripts/deploy-preview-surface-pattern.mjs
+
       - name: Upload acceptance screenshots
         if: always()
         uses: actions/upload-artifact@v4
