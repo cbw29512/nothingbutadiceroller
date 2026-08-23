@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { getStore } from '@netlify/blobs';
+import { readModerationBlock } from './community-moderation-store.mjs';
 
 export const STORE_NAME = 'dice-trays-store';
 export const PUBLIC_DICE_SET_PREFIX = 'community/public-dice-sets/';
@@ -100,10 +101,11 @@ async function listRecords(store, prefix, predicate = () => true, options = {}) 
     throw error;
   }
 }
-function isCurrentProjection(projection, record) {
+function isCurrentProjection(projection, record, blocked = false) {
   const revisionMatches = !record?.recordVersion || projection?.recordVersion === record.recordVersion;
   return Boolean(
-    projection?.publicAccessId && projection?.ownerId && projection?.setId
+    !blocked
+    && projection?.publicAccessId && projection?.ownerId && projection?.setId
     && record?.set?.locked && record.set.visibility === 'public'
     && record.publicAccessId === projection.publicAccessId
     && record.set.ownerId === projection.ownerId
@@ -132,8 +134,11 @@ export async function listPublicProjections(store, maxCandidates = MAX_COMMUNITY
   );
   const current = await Promise.all(projections.map(async (projection) => {
     if (!projection?.ownerId || !projection?.setId) return null;
-    const record = await store.get(recordKey(projection.ownerId, projection.setId), { type: 'json' }).catch(() => null);
-    return isCurrentProjection(projection, record) ? projection : null;
+    const [record, moderation] = await Promise.all([
+      store.get(recordKey(projection.ownerId, projection.setId), { type: 'json' }).catch(() => null),
+      readModerationBlock(store, projection.ownerId, projection.setId),
+    ]);
+    return isCurrentProjection(projection, record, Boolean(moderation)) ? projection : null;
   }));
   return current.filter(Boolean);
 }
@@ -151,8 +156,11 @@ export async function listLegacyPublicProjections(store, excludedSources = new S
       scanned += 1;
       const sourceKey = JSON.stringify([item?.ownerId, item?.setId]);
       if (!item?.ownerId || !item?.setId || excludedSources.has(sourceKey)) continue;
-      const record = await store.get(recordKey(item.ownerId, item.setId), { type: 'json' }).catch(() => null);
-      if (!record?.set?.locked || record.set.visibility !== 'public' || record?.publicAccessId) continue;
+      const [record, moderation] = await Promise.all([
+        store.get(recordKey(item.ownerId, item.setId), { type: 'json' }).catch(() => null),
+        readModerationBlock(store, item.ownerId, item.setId),
+      ]);
+      if (moderation || !record?.set?.locked || record.set.visibility !== 'public' || record?.publicAccessId) continue;
       projections.push(buildPublicProjection(record, legacyPublicAccessId(item.ownerId, item.setId), { legacy: true }));
     }
     return projections;
@@ -165,14 +173,20 @@ export async function resolvePublicProjection(store, publicAccessId) {
   try {
     const current = await store.get(publicRecordKey(publicAccessId), { type: 'json' }).catch(() => null);
     if (current?.publicAccessId === publicAccessId) {
-      const record = await store.get(recordKey(current.ownerId, current.setId), { type: 'json' }).catch(() => null);
-      return isCurrentProjection(current, record) ? current : null;
+      const [record, moderation] = await Promise.all([
+        store.get(recordKey(current.ownerId, current.setId), { type: 'json' }).catch(() => null),
+        readModerationBlock(store, current.ownerId, current.setId),
+      ]);
+      return isCurrentProjection(current, record, Boolean(moderation)) ? current : null;
     }
     const legacyIndex = await readLegacyIndex(store);
     const legacy = legacyIndex.find((item) => item?.ownerId && item?.setId && legacyPublicAccessId(item.ownerId, item.setId) === publicAccessId);
     if (!legacy) return null;
-    const record = await store.get(recordKey(legacy.ownerId, legacy.setId), { type: 'json' }).catch(() => null);
-    if (!record?.set?.locked || record.set.visibility !== 'public' || record?.publicAccessId) return null;
+    const [record, moderation] = await Promise.all([
+      store.get(recordKey(legacy.ownerId, legacy.setId), { type: 'json' }).catch(() => null),
+      readModerationBlock(store, legacy.ownerId, legacy.setId),
+    ]);
+    if (moderation || !record?.set?.locked || record.set.visibility !== 'public' || record?.publicAccessId) return null;
     return buildPublicProjection(record, publicAccessId, { legacy: true });
   } catch (error) {
     console.error('Failed to resolve public dice-set projection:', error);
