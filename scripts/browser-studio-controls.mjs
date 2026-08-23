@@ -145,7 +145,8 @@ async function run() {
     const roll = await client.evaluate(`(() => ({
       total: Number(document.querySelector('#total-result')?.textContent),
       breakdown: document.querySelector('#breakdown-text')?.textContent || '',
-      diffuse: performance.getEntriesByType('resource').map((entry) => entry.name).filter((url) => /\/api\/dice-theme\/[^/]+\/diffuse\.svg/.test(url)),
+      diffuse: performance.getEntriesByType('resource').map((entry) => entry.name)
+        .filter((url) => url.includes('/api/dice-theme/') && url.endsWith('/diffuse.svg')),
     }))()`);
     assert.ok(roll.total >= 1 && roll.total <= 4, `Custom glowing d4 must still roll 1-4; received ${roll.total}.`);
     assert.match(roll.breakdown, /d4/i);
