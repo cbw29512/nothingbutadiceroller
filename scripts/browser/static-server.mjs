@@ -55,8 +55,10 @@ function safeTarget(dist, pathname) {
 
 export async function startBuiltSiteServer(dist) {
   const server = createServer(async (request, response) => {
+    let requestPath = request.url || '/';
     try {
-      const url = new URL(request.url || '/', 'http://127.0.0.1');
+      const url = new URL(requestPath, 'http://127.0.0.1');
+      requestPath = url.pathname;
       if (stubApi(url, response)) return;
       const target = safeTarget(dist, url.pathname);
       if (!target) {
@@ -72,7 +74,7 @@ export async function startBuiltSiteServer(dist) {
       });
       response.end(data);
     } catch (error) {
-      console.error('Built-site test server request failed:', error?.code || error?.name || 'unknown-error');
+      console.error('Built-site test server request failed:', requestPath, error?.code || error?.name || 'unknown-error');
       response.writeHead(404, { ...commonHeaders(), 'Content-Type': 'text/plain; charset=utf-8' });
       response.end('Not Found');
     }
