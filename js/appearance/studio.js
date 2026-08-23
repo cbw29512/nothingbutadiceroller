@@ -4,7 +4,7 @@ import { createUserDiceSet, cloneDiceSet } from './schema.mjs';
 import { lockDiceSet, makeDiceSetPrivate, publishDiceSet, unlockDiceSet } from './transitions.mjs';
 import { assertValidDiceSet } from './validation.mjs';
 import { createSecureId } from './secure-id.mjs';
-import { deleteCloudDiceSet, loadCloudDiceSets, loadCommunityDiceSets, saveCloudDiceSet } from './studio-cloud.mjs';
+import { deleteCloudDiceSet, loadCloudDiceSets, loadCommunityDiceSetPage, saveCloudDiceSet } from './studio-cloud.mjs';
 import { getImportableBrowserSets, importBrowserSets } from './studio-browser-import.mjs';
 import { createStudioDraftGuard } from './studio-draft-guard.mjs';
 import { bindStudioControls } from './studio-bindings.mjs';
@@ -13,6 +13,7 @@ import {
   loadSavedDiceSets, resetActiveToDefault, saveDiceSetLocal, setActiveDiceSet,
 } from './studio-persistence.mjs';
 import { fillEditor, renderCommunity, renderLibrary, renderPreview, renderStorageMode, setStatus } from './studio-render.mjs';
+const COMMUNITY_PAGE_SIZE = 24;
 const browserOwnerId = getOrCreateLocalOwnerId();
 const browserSavedSets = loadSavedDiceSets(localStorage, browserOwnerId);
 let ownerId = browserOwnerId;
@@ -22,6 +23,9 @@ let draftVersion = null;
 let savedSets = [...browserSavedSets];
 let importableBrowserSets = [];
 let communitySets = [];
+let communityPage = 1;
+let communityHasMore = false;
+let communityLoading = false;
 let activeId = getActiveDiceSetId();
 let selectedId = SYSTEM_DEFAULT_DICE_SET_ID;
 let draft = cloneDiceSet(SYSTEM_DEFAULT_DICE_SET);
@@ -44,10 +48,47 @@ function refresh() {
   renderLibrary([SYSTEM_DEFAULT_DICE_SET, ...savedSets], selectedId, selectSet);
   renderCommunity(communitySets, selectedId, selectSet); renderPreview(draft, selectedDie);
   fillEditor(draft, selectedDie, activeId, ownerId, cloudEnabled); renderStorageMode(cloudEnabled, importableBrowserSets.length);
+  const loadMore = q('load-more-community');
+  if (loadMore) {
+    loadMore.hidden = !communityHasMore;
+    loadMore.disabled = communityLoading;
+    loadMore.textContent = communityLoading ? 'Loading Community…' : 'Load More Community Sets';
+  }
 }
 function replaceSaved(set) {
   const index = savedSets.findIndex((item) => item.id === set.id);
   if (index >= 0) savedSets[index] = cloneDiceSet(set); else savedSets.unshift(cloneDiceSet(set));
+}
+function applyCommunityPage(result, { append = false } = {}) {
+  try {
+    const incoming = Array.isArray(result?.sets) ? result.sets : [];
+    if (append) {
+      const merged = new Map(communitySets.map((set) => [set.id, set]));
+      incoming.forEach((set) => merged.set(set.id, set));
+      communitySets = [...merged.values()];
+    } else communitySets = incoming;
+    communityPage = Number.isInteger(result?.page) ? result.page : (append ? communityPage + 1 : 1);
+    communityHasMore = result?.hasMore === true;
+  } catch (error) {
+    console.error('Failed to apply Community dice-set page:', error);
+    throw error;
+  }
+}
+async function loadCommunityPage(page, { append = false } = {}) {
+  if (communityLoading) return null;
+  communityLoading = true; refresh();
+  try {
+    const result = await loadCommunityDiceSetPage(page, COMMUNITY_PAGE_SIZE);
+    if (result.error) throw result.error;
+    applyCommunityPage(result, { append });
+    return result;
+  } catch (error) {
+    console.error('Failed to update Community dice sets:', error);
+    setStatus('Community sets could not be loaded. Try Refresh.', 'error');
+    return null;
+  } finally {
+    communityLoading = false; refresh();
+  }
 }
 function handleCloudConflict(error, { dirty = false } = {}) {
   if (error?.code !== 'dice-set-version-conflict') return false;
@@ -114,7 +155,7 @@ async function togglePublish() {
     requireCleanDraft('changing its community visibility');
     if (!cloudEnabled) throw new Error('Sign in to publish community dice sets.');
     draft = draft.visibility === 'public' ? makeDiceSetPrivate(draft, ownerId) : publishDiceSet(draft, ownerId);
-    const result = await persist(draft); draft = result.set; draftGuard.markClean(); communitySets = await loadCommunityDiceSets();
+    const result = await persist(draft); draft = result.set; draftGuard.markClean(); await reloadCommunity();
     const message = draft.visibility === 'public' ? 'Set published read-only to the community.' : 'Set is private.';
     setStatus(result.warning || message, result.warning ? 'error' : 'ready'); refresh();
   } catch (error) { if (!handleCloudConflict(error, { dirty: true })) setStatus(error.message, 'error'); }
@@ -156,7 +197,11 @@ async function importBrowserCollection() {
   } catch (error) { console.error('Failed to import browser dice sets:', error); setStatus(error.message, 'error'); }
   finally { if (button) button.disabled = false; }
 }
-async function reloadCommunity() { communitySets = await loadCommunityDiceSets(); refresh(); }
+async function reloadCommunity() { return loadCommunityPage(1); }
+async function loadMoreCommunity() {
+  if (!communityHasMore || communityLoading) return null;
+  return loadCommunityPage(communityPage + 1, { append: true });
+}
 function resetDefault() {
   if (!confirmDiscardDraft()) return;
   activeId = resetActiveToDefault(); draftGuard.markClean(); selectSet(SYSTEM_DEFAULT_DICE_SET, { force: true });
@@ -164,7 +209,7 @@ function resetDefault() {
 }
 function bind() {
   bindStudioControls({
-    q, actions: { newSet, saveDraft, toggleLock, togglePublish, activateDraft, deleteDraft, importBrowserCollection, reloadCommunity, resetDefault },
+    q, actions: { newSet, saveDraft, toggleLock, togglePublish, activateDraft, deleteDraft, importBrowserCollection, reloadCommunity, loadMoreCommunity, resetDefault },
     draft: { canEdit: () => canEditDiceSet(draft, ownerId), markDirty: markDraftDirty, update: updateDraft, get: () => draft, set: (next) => { draft = next; markDraftDirty(); } },
     dice: { get: () => selectedDie, select: (type) => { selectedDie = type; refresh(); } }, ownerId: () => ownerId,
     refresh, setStatus, draftGuard,
@@ -172,7 +217,8 @@ function bind() {
 }
 async function initialize() {
   try {
-    const [cloud, community] = await Promise.all([loadCloudDiceSets(), loadCommunityDiceSets()]); communitySets = community;
+    const [cloud, community] = await Promise.all([loadCloudDiceSets(), loadCommunityDiceSetPage(1, COMMUNITY_PAGE_SIZE)]);
+    applyCommunityPage(community);
     if (cloud.authenticated && cloud.userId) {
       cloudEnabled = true; ownerId = cloud.userId; savedSets = cloud.sets; cloudVersions = new Map(Object.entries(cloud.versions || {}));
       importableBrowserSets = getImportableBrowserSets(browserSavedSets, savedSets);
