@@ -31,24 +31,34 @@ assert.equal(serialized.includes('internal_user_123'), false);
 assert.equal(serialized.includes('private@example.com'), false);
 assert.equal(validateTrayImage({ kind: 'legacy', url: projected.imageUrl }).ok, true);
 
-const [configs, shortcuts, saveTheme, themes, themeImage, authApi, netlifyConfig] = await Promise.all([
+const [configs, shortcuts, userDataStore, saveTheme, themes, themeImage, authApi, netlifyConfig] = await Promise.all([
   read('netlify/functions/configurations.mjs'),
   read('netlify/functions/shortcuts.mjs'),
+  read('netlify/functions/user-data-store.mjs'),
   read('netlify/functions/save-theme.mjs'),
   read('netlify/functions/themes.mjs'),
   read('netlify/functions/theme-image.mjs'),
   read('netlify/functions/auth.mjs'),
   read('netlify.toml'),
 ]);
-for (const source of [configs, themes, themeImage]) {
+for (const source of [configs, shortcuts, themes, themeImage]) {
   assert.match(source, /context/, 'Scoped APIs must receive Netlify function context.');
 }
-assert.match(configs, /openScopedStore\(STORE_NAME, context\)/);
+assert.match(configs, /openConfigurationStore\(context\)/);
+assert.match(configs, /configurationKey\(user\.id\)/);
 assert.match(configs, /verifyRequestOrigin\(request\)/);
 assert.match(configs, /VALID_TRAY_THEMES/);
 assert.match(configs, /VALID_DIE_SKINS/);
-assert.match(shortcuts, /\$\{STORE_NAME\}-nonprod/);
-assert.match(shortcuts, /shortcutStore\(context\)/);
+assert.match(shortcuts, /openShortcutStore\(context\)/);
+assert.match(shortcuts, /shortcutKey\(user\.id\)/);
+for (const text of [
+  "CONFIGURATION_STORE_NAME = 'dice-user-configurations'",
+  "SHORTCUT_STORE_NAME = 'dice-user-shortcuts-v1'",
+  'openScopedStore(CONFIGURATION_STORE_NAME, context)',
+  'openScopedStore(SHORTCUT_STORE_NAME, context)',
+  "return `users/${userPart(userId)}/configurations.json`",
+  "return `users/${userPart(userId)}/shortcuts-v1.json`",
+]) assert.ok(userDataStore.includes(text), `Shared user-data store contract missing: ${text}`);
 assert.match(saveTheme, /legacy-theme-retired/);
 assert.match(saveTheme, /410/);
 assert.doesNotMatch(saveTheme, /setJSON|user\.email|getStore/);
@@ -68,4 +78,4 @@ for (const required of [
   'Content-Security-Policy = "object-src \'none\'; base-uri \'self\'"',
 ]) assert.ok(netlifyConfig.includes(required), `Missing static security header: ${required}`);
 
-console.log('Release storage/surface checks passed: previews are isolated, retired legacy writers/auth cannot handle credentials, public legacy output is opaque/no-store, and safe static security headers are enforced.');
+console.log('Release storage/surface checks passed: previews are isolated through shared account-store helpers, retired legacy writers/auth cannot handle credentials, public legacy output is opaque/no-store, and safe static security headers are enforced.');
