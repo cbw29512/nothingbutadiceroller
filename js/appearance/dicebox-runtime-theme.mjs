@@ -3,6 +3,7 @@ import { buildDiceBoxAtlasDrawOperations } from './dicebox-atlas-renderer.mjs';
 import { buildRuntimeThemeIdentity } from './runtime-theme-identity.mjs';
 import { RUNTIME_THEME_VERSION, encodeRuntimeThemePayload } from './runtime-theme-codec.mjs';
 import { normalizeInterior, normalizeTranslucency, simulatedResinBodyColor } from './resin-style.mjs';
+import { normalizeSurfaceFinish } from './surface-style.mjs';
 
 function round(value) {
   return Math.round(Number(value) * 100) / 100;
@@ -21,6 +22,7 @@ export function buildDiceBoxRuntimeTheme(glyphPlan, themePlan, dieType, { size =
     const glow = material.glowHint || {};
     const translucency = normalizeTranslucency(material.translucency, material.bodyColor);
     const interior = normalizeInterior(material.interior);
+    const finish = normalizeSurfaceFinish(material.finish);
     const payload = {
       v: RUNTIME_THEME_VERSION,
       d: dieType,
@@ -46,6 +48,7 @@ export function buildDiceBoxRuntimeTheme(glyphPlan, themePlan, dieType, { size =
         round(clamp01(interior.density)),
         round(clamp01(interior.intensity)),
       ],
+      f: [finish.type, finish.accentColor, round(clamp01(finish.intensity))],
     };
     const token = encodeRuntimeThemePayload(payload);
     return {

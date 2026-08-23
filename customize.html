@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="robots" content="noindex,nofollow">
   <meta name="theme-color" content="#090c12">
-  <meta name="description" content="Customize dice colors, faces, symbols, glow, clear resin interiors, and tray appearance without changing tabletop RPG roll mechanics.">
+  <meta name="description" content="Customize dice colors, faces, symbols, glow, clear resin interiors, surface finishes, and tray appearance without changing tabletop RPG roll mechanics.">
   <title>Dice Studio • Nothing But A Dice Roller</title>
   <link rel="stylesheet" href="/styles.css">
   <link rel="stylesheet" href="/customize.css">
@@ -110,6 +110,31 @@
             <span class="range-field"><input id="interior-density" data-edit-control type="range" min="0" max="1" step="0.05" value="0.45"><output id="interior-density-output" for="interior-density">45%</output></span>
           </label>
           <p class="studio-note">Try clear resin with glitter, flakes, smoke, nebula, or bubbles. These are visual effects only; the physical die shape and result never change.</p>
+        </fieldset>
+        <fieldset id="surface-finish-group" class="studio-group">
+          <legend>Surface finish</legend>
+          <label class="studio-field">Apply to
+            <select id="finish-scope" data-edit-control>
+              <option value="set">Whole set</option>
+              <option value="selected">Selected die only</option>
+            </select>
+          </label>
+          <p id="finish-scope-note" class="studio-note">This surface finish becomes the default for every die in the set.</p>
+          <label class="studio-field">Finish
+            <select id="surface-finish" data-edit-control>
+              <option value="standard">Standard</option>
+              <option value="matte">Matte</option>
+              <option value="satin">Satin</option>
+              <option value="gloss">Gloss</option>
+              <option value="metallic">Metallic</option>
+              <option value="pearl">Pearl / iridescent</option>
+            </select>
+          </label>
+          <label class="studio-field">Finish accent<input id="finish-accent-color" data-edit-control type="color" value="#ffffff"></label>
+          <label class="studio-field">Finish intensity
+            <span class="range-field"><input id="finish-intensity" data-edit-control type="range" min="0" max="1" step="0.05" value="0.55"><output id="finish-intensity-output" for="finish-intensity">55%</output></span>
+          </label>
+          <p class="studio-note">Matte, satin, gloss, metallic, and pearl finishes change only the generated surface artwork. Shape, physical result, and roll rules stay untouched.</p>
         </fieldset>
         <fieldset class="studio-group">
           <legend>Selected die faces</legend>

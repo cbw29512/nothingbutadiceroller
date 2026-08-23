@@ -1,6 +1,7 @@
 import { RUNTIME_THEME_VERSION } from './runtime-theme-codec.mjs';
 import { encodeRuntimeThemePayload, validateRuntimeThemePayload } from './runtime-theme-codec.mjs';
 import { buildRuntimeThemeIdentity } from './runtime-theme-identity.mjs';
+import { runtimeSurfaceArtwork, runtimeSurfaceDefs, runtimeSurfaceSettings } from './runtime-surface-artwork.mjs';
 
 const FONT_STACKS = Object.freeze({
   '': 'Arial, sans-serif',
@@ -29,7 +30,7 @@ function glowSettings(payload) {
   return { enabled: payload.g[0] === true, color: payload.g[1], intensity: Number(payload.g[2]) };
 }
 function resinSettings(payload) {
-  if (payload.v !== RUNTIME_THEME_VERSION || !Array.isArray(payload.r)) {
+  if (payload.v < 3 || !Array.isArray(payload.r)) {
     return {
       clearEnabled: false, opacity: 1, frost: 0, tintColor: '#ffffff',
       interiorEnabled: false, type: 'none', primary: '#ffffff', secondary: '#ffffff', density: 0, intensity: 0,
@@ -171,11 +172,12 @@ export function buildRuntimeThemeSvg(payload) {
   const valid = assertPayload(payload);
   const glow = glowSettings(valid);
   const resin = resinSettings(valid);
+  const surface = runtimeSurfaceSettings(valid);
   const filterAttribute = glow.enabled && glow.intensity > 0 ? ' filter="url(#numberGlow)"' : '';
-  const defs = glowFilter(glow) + resinDefs(resin);
+  const defs = glowFilter(glow) + resinDefs(resin) + runtimeSurfaceDefs(surface);
   const text = valid.o.map(([value, color, fontId, x, y, fontPx]) => {
     const family = FONT_STACKS[fontId] || FONT_STACKS.default;
     return `<text x="${x}" y="${y}" fill="${color}" font-family="${family}" font-size="${fontPx}" font-weight="700" text-anchor="middle" dominant-baseline="central"${filterAttribute}>${escapeXml(value)}</text>`;
   }).join('');
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${valid.s}" height="${valid.s}" viewBox="0 0 ${valid.s} ${valid.s}">${defs ? `<defs>${defs}</defs>` : ''}${resinArtwork(resin, valid)}${text}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${valid.s}" height="${valid.s}" viewBox="0 0 ${valid.s} ${valid.s}">${defs ? `<defs>${defs}</defs>` : ''}${resinArtwork(resin, valid)}${runtimeSurfaceArtwork(surface)}${text}</svg>`;
 }

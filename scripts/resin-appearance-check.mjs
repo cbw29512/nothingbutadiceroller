@@ -42,6 +42,7 @@ const payload = {
   o: [['20', '#ffffff', '', 512, 512, 64]],
   g: [false, '#ffffff', 0],
   r: [true, 0.65, 0.1, '#8b5cf6', true, 'nebula', '#7c3aed', '#22d3ee', 0.7, 0.8],
+  f: ['standard', '#ffffff', 0.55],
 };
 assert.equal(validateRuntimeThemePayload(payload).ok, true);
 assert.ok(encodeRuntimeThemePayload(payload).length < 6000);
@@ -53,10 +54,15 @@ assert.ok(svgA.includes('interiorBlur'));
 assert.ok(svgA.includes('#7c3aed') && svgA.includes('#22d3ee'));
 assert.ok(buildRuntimeThemeConfig(payload).material.diffuseLevel < 1);
 
+const legacyV3Payload = { ...payload, v: 3 };
+delete legacyV3Payload.f;
+assert.equal(validateRuntimeThemePayload(legacyV3Payload).ok, true, 'Existing v3 resin tokens must remain readable.');
+assert.ok(buildRuntimeThemeSvg(legacyV3Payload).includes('resinSheen'));
+
 const invalidSet = structuredClone(set);
 invalidSet.appearance.diceSet.defaultStyle.interior.type = 'unsupported-effect';
 assert.equal(validateDiceSet(invalidSet).ok, false, 'Unknown interior presets must fail closed.');
 const invalidRuntime = { ...payload, r: [...payload.r] };
 invalidRuntime.r[5] = 'unsupported-effect';
 assert.equal(validateRuntimeThemePayload(invalidRuntime).ok, false);
-console.log('Resin appearance contract passed: clear resin, five bounded interior presets, per-die overrides, deterministic texture generation, legacy saved-set compatibility, and fail-closed validation are protected.');
+console.log('Resin appearance contract passed: clear resin, five bounded interior presets, per-die overrides, deterministic texture generation, legacy saved-set/runtime compatibility, and fail-closed validation are protected.');

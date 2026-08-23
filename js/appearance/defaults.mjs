@@ -48,6 +48,7 @@ const defaultAppearance = {
         density: 0.45,
         intensity: 0.7,
       },
+      finish: { type: 'standard', accentColor: '#ffffff', intensity: 0.55 },
     },
     dice: canonicalDiceMap(),
   },

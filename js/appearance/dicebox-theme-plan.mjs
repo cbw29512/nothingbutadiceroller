@@ -47,6 +47,7 @@ function compileDie(type, die) {
       glowHint: { ...die.style.glow },
       translucency: structuredClone(die.style.translucency),
       interior: structuredClone(die.style.interior),
+      finish: structuredClone(die.style.finish),
       diffuseAtlas: { mode: 'generated-transparent-face-artwork' },
       bumpMap: { mode: 'none' },
       specularMap: { mode: 'none' },

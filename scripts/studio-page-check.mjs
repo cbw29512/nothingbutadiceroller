@@ -7,17 +7,19 @@ async function read(path) { return readFile(new URL(`../${path}`, import.meta.ur
 function requireText(source, text, label) { if (!source.includes(text)) throw new Error(`Missing ${label}: ${text}`); }
 
 try {
-  const [html, index, app, drawers, studio, persistence, render, validation, cloud, visualControls, bindings, communityReport] = await Promise.all([
+  const [html, index, app, drawers, studio, persistence, render, validation, cloud, visualControls, bindings, communityReport, surfaceControls] = await Promise.all([
     read('customize.html'), read('index.html'), read('js/app.js'), read('js/drawer-controls.js'),
     read('js/appearance/studio.js'), read('js/appearance/studio-persistence.mjs'), read('js/appearance/studio-render.mjs'),
     read('js/appearance/validation.mjs'), read('js/appearance/studio-cloud.mjs'), read('js/appearance/studio-visual-controls.mjs'),
-    read('js/appearance/studio-bindings.mjs'), read('js/appearance/studio-community-report.mjs'),
+    read('js/appearance/studio-bindings.mjs'), read('js/appearance/studio-community-report.mjs'), read('js/appearance/studio-surface-controls.mjs'),
   ]);
   [
     'DICE STUDIO', 'id="studio-library"', 'id="studio-preview-tray"', 'id="storage-mode"',
     'id="community-library"', 'id="publish-set"', 'id="reset-default"', 'id="lock-set"',
     'id="die-style-enabled"', 'id="die-glow-enabled"', 'Enable number glow for this die', 'id="face-mode"',
     'RAW — standard numbers', 'id="face-map"', 'id="logical-result-label"', 'short word',
+    'id="surface-finish-group"', 'id="finish-scope"', 'id="surface-finish"', 'value="metallic"', 'value="pearl"',
+    'id="finish-accent-color"', 'id="finish-intensity"', 'generated surface artwork',
     'id="tray-image"', 'id="remove-tray-image"', 'image/png,image/jpeg,image/webp',
     'Guest browser sets: up to 512 KB', 'Signed-in cloud sets: up to 4 MB', 'src="/js/appearance/studio.js"',
   ].forEach((text) => requireText(html, text, 'studio contract'));
@@ -34,18 +36,25 @@ try {
   requireText(render, 'renderFaceMap', 'shape-based face map');
   requireText(render, 'safeTrayImageUrl', 'validated tray-image preview');
   requireText(render, 'numberGlowShadow', 'Studio number-glow preview');
+  requireText(render, 'buildSurfacePreviewBackground', 'surface-finish preview');
+  requireText(render, 'fillStudioSurfaceControls', 'surface-finish editor state');
   requireText(render, 'faceText.dataset.previewFace', 'direct visible-face edit target');
   requireText(bindings, "event.target.closest('[data-preview-face]')", 'direct visible-face click binding');
   requireText(bindings, "q('logical-face').value = logicalFace", 'direct visible-face logical selection');
   requireText(bindings, 'editor.focus(); editor.select();', 'direct visible-face editor focus');
+  requireText(bindings, 'bindStudioSurfaceControls', 'surface-finish binding');
   if (render.includes('die.faceMode === RAW_FACE_MODE')) {
     throw new Error('Editable RAW labels must not disable direct face customization; Apply Face safely enters custom appearance mode.');
   }
   requireText(validation, 'short visible label', 'short-label validation');
+  requireText(validation, 'SURFACE_FINISH_TYPES', 'surface-finish allowlist validation');
   requireText(visualControls, 'MAX_BROWSER_TRAY_IMAGE_BYTES', 'browser tray-image size limit');
   requireText(visualControls, 'MAX_TRAY_IMAGE_BYTES', 'cloud tray-image size limit');
   requireText(visualControls, "kind: 'text'", 'visual-only face storage');
   requireText(visualControls, "q('die-glow-enabled').addEventListener('change'", 'selected-die glow handler');
+  requireText(surfaceControls, "q('surface-finish').addEventListener('change'", 'surface-finish change handler');
+  requireText(surfaceControls, "q('finish-accent-color').addEventListener('input'", 'surface accent handler');
+  requireText(surfaceControls, "q('finish-intensity').addEventListener('input'", 'surface intensity handler');
 
   const expectedButtonIds = [
     'new-set', 'import-browser-sets', 'reset-default', 'refresh-community', 'load-more-community',
@@ -81,7 +90,7 @@ try {
   const invalid = cloneDiceSet(valid); invalid.id = 'cloud_invalid'; invalid.appearance.extra = true;
   assert.deepEqual(validSetsFromRecords([{ set: valid }, { set: invalid }, null, {}]).map((set) => set.id), ['cloud_valid']);
   assert.deepEqual(validSetsFromRecords(null), []);
-  console.log('Studio page contract passed: every explicit button is handler-audited; direct visible-face editing, glow, face, tray, library, navigation, cloud/community, save/use/lock/delete, and default fallback paths are protected.');
+  console.log('Studio page contract passed: every explicit button is handler-audited; surface finishes, direct face editing, glow, tray, library, navigation, cloud/community, save/use/lock/delete, and default fallback paths are protected.');
 } catch (error) {
   console.error('Studio page contract failed:', error);
   process.exitCode = 1;

@@ -3,9 +3,10 @@ import { getCanonicalFaceLabel, getCanonicalFaceResults } from './face-values.mj
 import { getSupportedFaceEditorDice } from './face-layouts.mjs';
 import { getVisualFace } from './face-customization.mjs';
 import { buildAppearanceRenderPlan } from './render-plan.mjs';
-import { buildResinPreviewBackground, buildResinPreviewShadow } from './resin-preview.mjs';
 import { renderFaceMap } from './studio-face-map.mjs';
 import { fillStudioResinControls } from './studio-resin-controls.mjs';
+import { fillStudioSurfaceControls } from './studio-surface-controls.mjs';
+import { buildSurfacePreviewBackground, buildSurfacePreviewShadow } from './surface-preview.mjs';
 import { safeTrayImageUrl } from './tray-image.mjs';
 
 const LEGACY_ICONS = { skull: '☠', star: '★', flame: '🔥', shield: '◆', heart: '♥', sword: '⚔' };
@@ -61,10 +62,11 @@ export function renderPreview(set, selectedDie) {
     if (FACE_EDITOR_DICE.has(type)) die.dataset.die = type;
     die.dataset.clearResin = style.translucency?.enabled ? 'true' : 'false';
     die.dataset.interiorEffect = style.interior?.enabled ? style.interior.type : 'none';
-    die.style.background = buildResinPreviewBackground(style);
+    die.dataset.surfaceFinish = style.finish?.type || 'standard';
+    die.style.background = buildSurfacePreviewBackground(style);
     die.style.color = style.faceColor;
     die.style.opacity = style.translucency?.enabled ? '1' : String(style.opacity);
-    die.style.boxShadow = buildResinPreviewShadow(style);
+    die.style.boxShadow = buildSurfacePreviewShadow(style);
     const results = getCanonicalFaceResults(type); const previewResult = type === 'd100' ? 0 : results.at(-1);
     const face = getVisualFace(set, type, previewResult);
     die.innerHTML = `<span></span><small>${type}</small>`;
@@ -94,6 +96,7 @@ export function fillEditor(set, selectedDie, activeId, ownerId, cloudEnabled) {
   document.querySelectorAll('[data-edit-control]').forEach((el) => { el.disabled = !editable; });
   if (editable && !hasDieOverride) document.querySelectorAll('[data-die-style-control]').forEach((el) => { el.disabled = true; });
   fillStudioResinControls({ q, set, selectedDie, editable });
+  fillStudioSurfaceControls({ q, set, selectedDie, editable });
   q('remove-tray-image').disabled = !editable || !set.appearance.tray.image;
   q('save-set').disabled = !editable; q('delete-set').disabled = system || !owner; q('lock-set').disabled = system || !owner;
   q('lock-set').textContent = locked ? 'Unlock Set' : 'Lock Set'; q('publish-set').disabled = system || !owner || !locked || !cloudEnabled;
