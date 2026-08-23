@@ -7,10 +7,11 @@ async function read(path) { return readFile(new URL(`../${path}`, import.meta.ur
 function requireText(source, text, label) { if (!source.includes(text)) throw new Error(`Missing ${label}: ${text}`); }
 
 try {
-  const [html, index, app, drawers, studio, persistence, render, validation, cloud, visualControls] = await Promise.all([
+  const [html, index, app, drawers, studio, persistence, render, validation, cloud, visualControls, build] = await Promise.all([
     read('customize.html'), read('index.html'), read('js/app.js'), read('js/drawer-controls.js'),
     read('js/appearance/studio.js'), read('js/appearance/studio-persistence.mjs'), read('js/appearance/studio-render.mjs'),
     read('js/appearance/validation.mjs'), read('js/appearance/studio-cloud.mjs'), read('js/appearance/studio-visual-controls.mjs'),
+    read('scripts/build.mjs'),
   ]);
   [
     'DICE STUDIO', 'id="studio-library"', 'id="studio-preview-tray"', 'id="storage-mode"',
@@ -18,8 +19,11 @@ try {
     'id="die-style-enabled"', 'id="face-mode"', 'RAW — standard numbers', 'id="face-map"',
     'id="logical-result-label"', 'short word', 'id="tray-image"', 'id="remove-tray-image"',
     'image/png,image/jpeg,image/webp', 'Guest browser sets: up to 512 KB', 'Signed-in cloud sets: up to 4 MB',
-    'src="/js/appearance/studio.js"',
+    'src="/js/studio.js"',
   ].forEach((text) => requireText(html, text, 'studio contract'));
+  assert.equal(html.includes('src="/js/appearance/studio.js"'), false, 'Production Dice Studio must load the bundled entry rather than the source module graph.');
+  requireText(build, "studio: resolve(root, 'js/appearance/studio.js')", 'Dice Studio bundle entry');
+  requireText(build, "'js/studio.js'", 'Dice Studio bundled release artifact');
   if (html.includes('Words and multi-character labels are not allowed.') || /id="logical-face"[^>]*type="number"/.test(html)) {
     throw new Error('Studio must support short visual labels without editable logical results.');
   }
@@ -41,7 +45,7 @@ try {
   const invalid = cloneDiceSet(valid); invalid.id = 'cloud_invalid'; invalid.appearance.extra = true;
   assert.deepEqual(validSetsFromRecords([{ set: valid }, { set: invalid }, null, {}]).map((set) => set.id), ['cloud_valid']);
   assert.deepEqual(validSetsFromRecords(null), []);
-  console.log('Studio page contract passed: short face labels, browser/cloud tray-image limits, validated cloud/community ingestion, active-set save sync, saved sets, and default fallback are protected.');
+  console.log('Studio page contract passed: production uses one bundled Studio entry while source contracts, visual-only face labels, browser/cloud image limits, validated cloud/community ingestion, active-set save sync, and Default fallback remain protected.');
 } catch (error) {
   console.error('Studio page contract failed:', error);
   process.exitCode = 1;
