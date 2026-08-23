@@ -74,6 +74,9 @@ jobs:
       - name: Verify live face symbol picker
         run: node scripts/deploy-preview-face-symbol-picker.mjs
 
+      - name: Verify live clear resin and interior effects
+        run: node scripts/deploy-preview-resin-customization.mjs
+
       - name: Upload acceptance screenshots
         if: always()
         uses: actions/upload-artifact@v4
