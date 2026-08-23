@@ -1,3 +1,4 @@
+import { buildInlayPreviewShadow } from './inlay-preview.mjs';
 import { buildPatternPreviewLayers } from './pattern-preview.mjs';
 import { buildResinPreviewBackground, buildResinPreviewShadow } from './resin-preview.mjs';
 import { normalizeSurfaceFinish } from './surface-style.mjs';
@@ -56,11 +57,13 @@ export function buildSurfacePreviewShadow(style = {}) {
   try {
     const finish = normalizeSurfaceFinish(style.finish);
     const resin = buildResinPreviewShadow(style);
-    if (finish.type === 'standard' || finish.type === 'matte') return resin;
-    const extra = finish.type === 'gloss'
-      ? `inset 0 10px 18px ${rgba('#ffffff', 0.08 + finish.intensity * 0.12)}`
-      : `inset 0 0 16px ${rgba(finish.accentColor, 0.05 + finish.intensity * 0.12)}`;
-    return [resin === 'none' ? '' : resin, extra].filter(Boolean).join(', ') || 'none';
+    const finishShadow = finish.type === 'standard' || finish.type === 'matte'
+      ? ''
+      : finish.type === 'gloss'
+        ? `inset 0 10px 18px ${rgba('#ffffff', 0.08 + finish.intensity * 0.12)}`
+        : `inset 0 0 16px ${rgba(finish.accentColor, 0.05 + finish.intensity * 0.12)}`;
+    const inlay = buildInlayPreviewShadow(style.inlay);
+    return [resin === 'none' ? '' : resin, finishShadow, inlay].filter(Boolean).join(', ') || 'none';
   } catch (error) {
     console.error('Failed to build surface preview shadow:', error);
     return buildResinPreviewShadow(style);

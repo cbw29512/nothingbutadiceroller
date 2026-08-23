@@ -4,6 +4,7 @@ import { getSupportedFaceEditorDice } from './face-layouts.mjs';
 import { getVisualFace } from './face-customization.mjs';
 import { buildAppearanceRenderPlan } from './render-plan.mjs';
 import { renderFaceMap } from './studio-face-map.mjs';
+import { fillStudioInlayControls } from './studio-inlay-controls.mjs';
 import { fillStudioPatternControls } from './studio-pattern-controls.mjs';
 import { fillStudioResinControls } from './studio-resin-controls.mjs';
 import { fillStudioSurfaceControls } from './studio-surface-controls.mjs';
@@ -65,6 +66,7 @@ export function renderPreview(set, selectedDie) {
     die.dataset.interiorEffect = style.interior?.enabled ? style.interior.type : 'none';
     die.dataset.surfaceFinish = style.finish?.type || 'standard';
     die.dataset.surfacePattern = style.pattern?.type || 'none';
+    die.dataset.edgeInlay = style.inlay?.type || 'none';
     die.style.background = buildSurfacePreviewBackground(style);
     die.style.color = style.faceColor;
     die.style.opacity = style.translucency?.enabled ? '1' : String(style.opacity);
@@ -100,6 +102,7 @@ export function fillEditor(set, selectedDie, activeId, ownerId, cloudEnabled) {
   fillStudioResinControls({ q, set, selectedDie, editable });
   fillStudioSurfaceControls({ q, set, selectedDie, editable });
   fillStudioPatternControls({ q, set, selectedDie, editable });
+  fillStudioInlayControls({ q, set, selectedDie, editable });
   q('remove-tray-image').disabled = !editable || !set.appearance.tray.image;
   q('save-set').disabled = !editable; q('delete-set').disabled = system || !owner; q('lock-set').disabled = system || !owner;
   q('lock-set').textContent = locked ? 'Unlock Set' : 'Lock Set'; q('publish-set').disabled = system || !owner || !locked || !cloudEnabled;

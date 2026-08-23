@@ -49,6 +49,7 @@ function compileDie(type, die) {
       interior: structuredClone(die.style.interior),
       finish: structuredClone(die.style.finish),
       pattern: structuredClone(die.style.pattern),
+      inlay: structuredClone(die.style.inlay),
       diffuseAtlas: { mode: 'generated-transparent-face-artwork' },
       bumpMap: { mode: 'none' },
       specularMap: { mode: 'none' },

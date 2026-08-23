@@ -83,6 +83,9 @@ jobs:
       - name: Verify live surface patterns
         run: node scripts/deploy-preview-surface-pattern.mjs
 
+      - name: Verify live face-edge inlays
+        run: node scripts/deploy-preview-edge-inlay.mjs
+
       - name: Upload acceptance screenshots
         if: always()
         uses: actions/upload-artifact@v4

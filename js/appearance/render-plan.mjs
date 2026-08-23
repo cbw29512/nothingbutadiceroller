@@ -1,4 +1,5 @@
 import { CANONICAL_DICE, CUSTOM_FACE_MODE } from './defaults.mjs';
+import { normalizeEdgeInlay } from './inlay-style.mjs';
 import { normalizeSurfacePattern } from './pattern-style.mjs';
 import { normalizeInterior, normalizeTranslucency } from './resin-style.mjs';
 import { normalizeSurfaceFinish } from './surface-style.mjs';
@@ -10,6 +11,7 @@ function mergeStyle(base, overrides = {}) {
   const baseInterior = normalizeInterior(base.interior);
   const baseFinish = normalizeSurfaceFinish(base.finish);
   const basePattern = normalizeSurfacePattern(base.pattern);
+  const baseInlay = normalizeEdgeInlay(base.inlay);
   return {
     bodyColor,
     faceColor: overrides.faceColor ?? base.faceColor,
@@ -21,6 +23,7 @@ function mergeStyle(base, overrides = {}) {
     interior: overrides.interior ? normalizeInterior(overrides.interior) : normalizeInterior(baseInterior),
     finish: overrides.finish ? normalizeSurfaceFinish(overrides.finish) : normalizeSurfaceFinish(baseFinish),
     pattern: overrides.pattern ? normalizeSurfacePattern(overrides.pattern) : normalizeSurfacePattern(basePattern),
+    inlay: overrides.inlay ? normalizeEdgeInlay(overrides.inlay) : normalizeEdgeInlay(baseInlay),
   };
 }
 

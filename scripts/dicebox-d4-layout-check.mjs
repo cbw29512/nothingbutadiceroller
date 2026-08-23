@@ -35,7 +35,9 @@ for (const result of [1, 2, 3, 4]) {
   marks.forEach((mark) => {
     assert.ok(mark.u > 0 && mark.u < 1, 'd4 U anchor should be inset from the texture edge.');
     assert.ok(mark.v > 0 && mark.v < 1, 'd4 V anchor should be inset from the texture edge.');
+    assert.equal(mark.region.outline.length, 3, 'Each canonical d4 render face must expose its true triangular UV perimeter.');
+    assert.ok(mark.region.outline.every((point) => Array.isArray(point) && point.length === 2));
   });
 }
 assert.deepEqual(anchors['1'].marks.map((mark) => mark.faceId).sort(), [1, 2, 3]);
-console.log('DiceBox d4 layout passed: each result is repeated around the opposite readable vertex, never painted only on the hidden bottom face.');
+console.log('DiceBox d4 layout passed: each result repeats around three visible faces and every render triangle exposes a true UV perimeter for edge inlays.');

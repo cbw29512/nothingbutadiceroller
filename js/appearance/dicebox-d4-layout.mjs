@@ -38,7 +38,11 @@ function findOppositeVertex(collider, bottomFaceId) {
 function region(vertices) {
   const us = vertices.map((vertex) => vertex.uv[0]);
   const vs = vertices.map((vertex) => vertex.uv[1]);
-  return { minU: Math.min(...us), maxU: Math.max(...us), minV: Math.min(...vs), maxV: Math.max(...vs) };
+  return {
+    minU: Math.min(...us), maxU: Math.max(...us),
+    minV: Math.min(...vs), maxV: Math.max(...vs),
+    outline: vertices.map((vertex) => [...vertex.uv]),
+  };
 }
 
 function insetUv(vertices, target, ratio = 0.28) {

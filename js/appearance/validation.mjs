@@ -9,6 +9,7 @@ import {
 import { countFaceDisplayGraphemes, isValidFaceDisplayValue } from './face-display.mjs';
 import { isCanonicalFaceResult } from './face-values.mjs';
 import { isValidDiceSetId } from './identifiers.mjs';
+import { validateEdgeInlay } from './inlay-style.mjs';
 import { validateSurfacePattern } from './pattern-style.mjs';
 import { INTERIOR_EFFECT_TYPES } from './resin-style.mjs';
 import { SURFACE_FINISH_TYPES } from './surface-style.mjs';
@@ -25,7 +26,7 @@ const FINISH_TYPES = new Set(SURFACE_FINISH_TYPES);
 const SET_KEYS = new Set(['schemaVersion', 'id', 'ownerId', 'name', 'systemOwned', 'locked', 'visibility', 'appearance']);
 const APPEARANCE_KEYS = new Set(['diceSet', 'tray']);
 const DICE_SET_KEYS = new Set(['defaultStyle', 'dice']);
-const BASE_STYLE_KEYS = new Set(['bodyColor', 'faceColor', 'opacity', 'glow', 'translucency', 'interior', 'finish', 'pattern']);
+const BASE_STYLE_KEYS = new Set(['bodyColor', 'faceColor', 'opacity', 'glow', 'translucency', 'interior', 'finish', 'pattern', 'inlay']);
 const TRAY_KEYS = new Set(['color', 'image', 'glow']);
 const DIE_KEYS = new Set(['shapeId', 'logicalDie', 'faceMode', 'styleOverrides', 'faces']);
 const FACE_KEYS = new Set(['kind', 'value', 'color', 'fontId']);
@@ -33,7 +34,7 @@ const GLOW_KEYS = new Set(['enabled', 'color', 'intensity']);
 const TRANSLUCENCY_KEYS = new Set(['enabled', 'opacity', 'frost', 'tintColor']);
 const INTERIOR_KEYS = new Set(['enabled', 'type', 'primaryColor', 'secondaryColor', 'density', 'intensity']);
 const FINISH_KEYS = new Set(['type', 'accentColor', 'intensity']);
-const STYLE_OVERRIDE_KEYS = new Set(['bodyColor', 'faceColor', 'opacity', 'glow', 'translucency', 'interior', 'finish', 'pattern']);
+const STYLE_OVERRIDE_KEYS = new Set(['bodyColor', 'faceColor', 'opacity', 'glow', 'translucency', 'interior', 'finish', 'pattern', 'inlay']);
 
 function isPlainObject(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
@@ -90,6 +91,7 @@ function checkStyleOverrides(overrides, path, errors) {
   if (overrides.interior != null) checkInterior(overrides.interior, `${path}.interior`, errors);
   if (overrides.finish != null) checkFinish(overrides.finish, `${path}.finish`, errors);
   if (overrides.pattern != null) validateSurfacePattern(overrides.pattern, `${path}.pattern`, errors);
+  if (overrides.inlay != null) validateEdgeInlay(overrides.inlay, `${path}.inlay`, errors);
 }
 function checkFace(face, path, errors) {
   if (!isPlainObject(face)) return errors.push(`${path} must be an object.`);
@@ -135,6 +137,7 @@ function checkAppearance(appearance, errors) {
   if (style.interior != null) checkInterior(style.interior, 'appearance.diceSet.defaultStyle.interior', errors);
   if (style.finish != null) checkFinish(style.finish, 'appearance.diceSet.defaultStyle.finish', errors);
   if (style.pattern != null) validateSurfacePattern(style.pattern, 'appearance.diceSet.defaultStyle.pattern', errors);
+  if (style.inlay != null) validateEdgeInlay(style.inlay, 'appearance.diceSet.defaultStyle.inlay', errors);
   const dice = diceSet.dice;
   if (!isPlainObject(dice)) return errors.push('appearance.diceSet.dice is required.');
   const unsupportedDice = Object.keys(dice).filter((type) => !Object.hasOwn(CANONICAL_DICE, type));

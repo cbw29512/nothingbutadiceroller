@@ -56,6 +56,12 @@ const defaultAppearance = {
         intensity: 0.55,
         scale: 0.5,
       },
+      inlay: {
+        type: 'none',
+        color: '#f8fafc',
+        intensity: 0.8,
+        width: 0.5,
+      },
     },
     dice: canonicalDiceMap(),
   },

@@ -1,5 +1,3 @@
-import { RUNTIME_THEME_VERSION } from './runtime-theme-codec.mjs';
-
 function escapeXml(value) {
   return String(value)
     .replaceAll('&', '&amp;')
@@ -11,7 +9,7 @@ function escapeXml(value) {
 
 export function runtimeSurfaceSettings(payload) {
   try {
-    if (payload?.v !== RUNTIME_THEME_VERSION || !Array.isArray(payload.f)) {
+    if (!payload || payload.v < 4 || !Array.isArray(payload.f)) {
       return { type: 'standard', accentColor: '#ffffff', intensity: 0.55 };
     }
     return {

@@ -1,4 +1,5 @@
 import { bindFaceSymbolPicker } from './face-symbol-picker.mjs';
+import { bindStudioInlayControls, ensureStudioInlayControls } from './studio-inlay-controls.mjs';
 import { bindStudioPatternControls } from './studio-pattern-controls.mjs';
 import { bindStudioResinControls } from './studio-resin-controls.mjs';
 import { bindStudioSurfaceControls } from './studio-surface-controls.mjs';
@@ -10,6 +11,7 @@ export function bindStudioControls(context) {
     documentRef = document, windowRef = window,
   } = context;
   try {
+    ensureStudioInlayControls(documentRef);
     q('new-set').addEventListener('click', actions.newSet); q('save-set').addEventListener('click', actions.saveDraft);
     q('lock-set').addEventListener('click', actions.toggleLock); q('publish-set').addEventListener('click', actions.togglePublish);
     const useButton = q('use-set');
@@ -72,6 +74,9 @@ export function bindStudioControls(context) {
       q, updateDraft: draft.update, getSelectedDie: dice.get, refresh, setStatus,
     });
     bindStudioPatternControls({
+      q, updateDraft: draft.update, getSelectedDie: dice.get, refresh, setStatus,
+    });
+    bindStudioInlayControls({
       q, updateDraft: draft.update, getSelectedDie: dice.get, refresh, setStatus,
     });
     draftGuard.bindBeforeUnload(windowRef);

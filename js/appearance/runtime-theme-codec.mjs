@@ -1,17 +1,21 @@
 import { CANONICAL_DICE } from './defaults.mjs';
 import { isValidFaceDisplayValue } from './face-display.mjs';
+import { getCanonicalFaceResults } from './face-values.mjs';
+import { EDGE_INLAY_TYPES } from './inlay-style.mjs';
 import { SURFACE_PATTERN_TYPES } from './pattern-style.mjs';
 import { INTERIOR_EFFECT_TYPES } from './resin-style.mjs';
 import { SURFACE_FINISH_TYPES } from './surface-style.mjs';
 
-export const RUNTIME_THEME_VERSION = 5;
-const LEGACY_RUNTIME_THEME_VERSIONS = new Set([1, 2, 3, 4]);
+export const RUNTIME_THEME_VERSION = 6;
+const LEGACY_RUNTIME_THEME_VERSIONS = new Set([1, 2, 3, 4, 5]);
 const HEX = /^#[0-9a-f]{6}$/i;
 const FONT_IDS = new Set(['', 'default', 'fantasy', 'runic', 'mono']);
 const INTERIOR_TYPES = new Set(INTERIOR_EFFECT_TYPES);
 const FINISH_TYPES = new Set(SURFACE_FINISH_TYPES);
 const PATTERN_TYPES = new Set(SURFACE_PATTERN_TYPES);
+const INLAY_TYPES = new Set(EDGE_INLAY_TYPES);
 const MAX_OPERATIONS = 24;
+const MAX_BOUNDARY_POINTS = 24;
 
 function base64UrlEncode(text) {
   const bytes = new TextEncoder().encode(text); let binary = '';
@@ -73,6 +77,35 @@ function validatePattern(pattern, errors) {
   if (!Number.isFinite(intensity) || intensity < 0 || intensity > 1) errors.push('Runtime surface pattern intensity is invalid.');
   if (!Number.isFinite(scale) || scale < 0 || scale > 1) errors.push('Runtime surface pattern scale is invalid.');
 }
+function validateBoundaries(boundaries, payload, errors) {
+  if (!Array.isArray(boundaries) || boundaries.length !== getCanonicalFaceResults(payload.d).length) {
+    errors.push('Runtime edge-inlay boundaries do not cover every physical face.');
+    return;
+  }
+  for (const [index, loop] of boundaries.entries()) {
+    if (!Array.isArray(loop) || loop.length < 6 || loop.length > MAX_BOUNDARY_POINTS * 2 || loop.length % 2 !== 0) {
+      errors.push(`Runtime edge-inlay boundary ${index} is invalid.`); continue;
+    }
+    if (!loop.every((value) => Number.isFinite(value) && value >= 0 && value <= payload.s)) {
+      errors.push(`Runtime edge-inlay boundary ${index} contains invalid coordinates.`);
+    }
+  }
+}
+function validateInlay(inlay, payload, errors) {
+  if (!Array.isArray(inlay) || (inlay.length !== 4 && inlay.length !== 5)) {
+    errors.push('Runtime edge-inlay settings are invalid.');
+    return;
+  }
+  const [type, color, intensity, width, boundaries] = inlay;
+  if (!INLAY_TYPES.has(String(type || ''))) errors.push('Runtime edge-inlay type is invalid.');
+  if (!HEX.test(String(color || ''))) errors.push('Runtime edge-inlay color is invalid.');
+  if (!Number.isFinite(intensity) || intensity < 0 || intensity > 1) errors.push('Runtime edge-inlay intensity is invalid.');
+  if (!Number.isFinite(width) || width < 0 || width > 1) errors.push('Runtime edge-inlay width is invalid.');
+  if (type === 'none') {
+    if (inlay.length !== 4) errors.push('Disabled runtime edge inlay must not carry face geometry.');
+  } else if (inlay.length !== 5) errors.push('Enabled runtime edge inlay requires face boundaries.');
+  else validateBoundaries(boundaries, payload, errors);
+}
 export function validateRuntimeThemePayload(payload) {
   const errors = [];
   try {
@@ -82,7 +115,8 @@ export function validateRuntimeThemePayload(payload) {
     if (payload.v === 2) allowedFields = [...allowedFields, 'g'];
     if (payload.v === 3) allowedFields = [...allowedFields, 'g', 'r'];
     if (payload.v === 4) allowedFields = [...allowedFields, 'g', 'r', 'f'];
-    if (payload.v === RUNTIME_THEME_VERSION) allowedFields = [...allowedFields, 'g', 'r', 'f', 'p'];
+    if (payload.v === 5) allowedFields = [...allowedFields, 'g', 'r', 'f', 'p'];
+    if (payload.v === RUNTIME_THEME_VERSION) allowedFields = [...allowedFields, 'g', 'r', 'f', 'p', 'i'];
     const extra = Object.keys(payload).filter((key) => !allowedFields.includes(key));
     if (extra.length) errors.push(`Unsupported payload fields: ${extra.join(', ')}.`);
     if (!supportedVersion) errors.push('Unsupported runtime theme version.');
@@ -98,10 +132,11 @@ export function validateRuntimeThemePayload(payload) {
       if (![x, y].every((value) => Number.isFinite(value) && value >= 0 && value <= payload.s)) errors.push(`Operation ${index} position is invalid.`);
       if (!Number.isFinite(fontPx) || fontPx < 6 || fontPx > 200) errors.push(`Operation ${index} font size is invalid.`);
     }
-    if ([2, 3, 4, RUNTIME_THEME_VERSION].includes(payload.v)) validateGlow(payload.g, errors);
-    if ([3, 4, RUNTIME_THEME_VERSION].includes(payload.v) && payload.r != null) validateResin(payload.r, errors);
-    if ([4, RUNTIME_THEME_VERSION].includes(payload.v)) validateFinish(payload.f, errors);
-    if (payload.v === RUNTIME_THEME_VERSION) validatePattern(payload.p, errors);
+    if ([2, 3, 4, 5, RUNTIME_THEME_VERSION].includes(payload.v)) validateGlow(payload.g, errors);
+    if ([3, 4, 5, RUNTIME_THEME_VERSION].includes(payload.v) && payload.r != null) validateResin(payload.r, errors);
+    if ([4, 5, RUNTIME_THEME_VERSION].includes(payload.v)) validateFinish(payload.f, errors);
+    if ([5, RUNTIME_THEME_VERSION].includes(payload.v)) validatePattern(payload.p, errors);
+    if (payload.v === RUNTIME_THEME_VERSION) validateInlay(payload.i, payload, errors);
   } catch (error) {
     console.error('Runtime theme payload validation failed:', error); errors.push('Runtime theme payload validation failed.');
   }

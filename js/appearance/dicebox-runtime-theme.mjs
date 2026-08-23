@@ -1,5 +1,7 @@
 import { CANONICAL_DICE } from './defaults.mjs';
 import { buildDiceBoxAtlasDrawOperations } from './dicebox-atlas-renderer.mjs';
+import { buildDiceBoxInlayBoundaries } from './dicebox-inlay-boundaries.mjs';
+import { normalizeEdgeInlay } from './inlay-style.mjs';
 import { normalizeSurfacePattern } from './pattern-style.mjs';
 import { buildRuntimeThemeIdentity } from './runtime-theme-identity.mjs';
 import { RUNTIME_THEME_VERSION, encodeRuntimeThemePayload } from './runtime-theme-codec.mjs';
@@ -25,6 +27,9 @@ export function buildDiceBoxRuntimeTheme(glyphPlan, themePlan, dieType, { size =
     const interior = normalizeInterior(material.interior);
     const finish = normalizeSurfaceFinish(material.finish);
     const pattern = normalizeSurfacePattern(material.pattern);
+    const inlay = normalizeEdgeInlay(material.inlay);
+    const inlayPayload = [inlay.type, inlay.color, round(clamp01(inlay.intensity)), round(clamp01(inlay.width))];
+    if (inlay.type !== 'none') inlayPayload.push(buildDiceBoxInlayBoundaries(glyphPlan, dieType, size));
     const payload = {
       v: RUNTIME_THEME_VERSION,
       d: dieType,
@@ -58,6 +63,7 @@ export function buildDiceBoxRuntimeTheme(glyphPlan, themePlan, dieType, { size =
         round(clamp01(pattern.intensity)),
         round(clamp01(pattern.scale)),
       ],
+      i: inlayPayload,
     };
     const token = encodeRuntimeThemePayload(payload);
     return {

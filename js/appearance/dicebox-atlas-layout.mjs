@@ -26,14 +26,55 @@ function triangleUv(mesh, faceId) {
   });
 }
 
+function pointKey([u, v]) {
+  return `${u.toFixed(6)}:${v.toFixed(6)}`;
+}
+
 function uniquePoints(points) {
   const seen = new Set();
-  return points.filter(([u, v]) => {
-    const key = `${u.toFixed(6)}:${v.toFixed(6)}`;
+  return points.filter((point) => {
+    const key = pointKey(point);
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
   });
+}
+
+function boundaryLoop(triangles) {
+  const points = new Map();
+  const edges = new Map();
+  for (const triangle of triangles) {
+    for (const point of triangle) points.set(pointKey(point), point);
+    for (const [a, b] of [[triangle[0], triangle[1]], [triangle[1], triangle[2]], [triangle[2], triangle[0]]]) {
+      const aKey = pointKey(a); const bKey = pointKey(b);
+      const key = [aKey, bKey].sort().join('|');
+      const edge = edges.get(key) || { aKey, bKey, count: 0 };
+      edge.count += 1; edges.set(key, edge);
+    }
+  }
+  const boundary = [...edges.values()].filter((edge) => edge.count === 1);
+  if (boundary.length < 3) throw new Error('Face UV region has no closed outer boundary.');
+  const adjacency = new Map();
+  for (const { aKey, bKey } of boundary) {
+    if (!adjacency.has(aKey)) adjacency.set(aKey, new Set());
+    if (!adjacency.has(bKey)) adjacency.set(bKey, new Set());
+    adjacency.get(aKey).add(bKey); adjacency.get(bKey).add(aKey);
+  }
+  if ([...adjacency.values()].some((neighbors) => neighbors.size !== 2)) {
+    throw new Error('Face UV boundary is not a single closed perimeter.');
+  }
+  const start = [...adjacency.keys()].sort()[0];
+  const ordered = [];
+  let previous = null; let current = start;
+  for (let guard = 0; guard <= boundary.length; guard += 1) {
+    ordered.push(points.get(current));
+    const neighbors = [...adjacency.get(current)].sort();
+    const next = neighbors.find((candidate) => candidate !== previous) || neighbors[0];
+    previous = current; current = next;
+    if (current === start) break;
+  }
+  if (current !== start || ordered.length !== boundary.length) throw new Error('Face UV perimeter did not close cleanly.');
+  return ordered;
 }
 
 function triangleAreaAndCentroid(points) {
@@ -96,7 +137,12 @@ export function extractDiceBoxFaceRegions(modelData, dieType) {
     return Object.fromEntries(expected.map((logicalResult) => {
       const triangles = grouped.get(logicalResult);
       const points = uniquePoints(triangles.flat());
-      return [String(logicalResult), { logicalResult, points, ...regionMetrics(points, triangles) }];
+      return [String(logicalResult), {
+        logicalResult,
+        points,
+        outline: boundaryLoop(triangles),
+        ...regionMetrics(points, triangles),
+      }];
     }));
   } catch (error) {
     console.error('Failed to extract DiceBox face UV regions:', error);

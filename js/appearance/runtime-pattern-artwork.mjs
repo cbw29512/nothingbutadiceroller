@@ -1,4 +1,3 @@
-import { RUNTIME_THEME_VERSION } from './runtime-theme-codec.mjs';
 import { DEFAULT_SURFACE_PATTERN } from './pattern-style.mjs';
 
 function escapeXml(value) {
@@ -33,7 +32,7 @@ function randomFactory(seed) {
 
 export function runtimePatternSettings(payload) {
   try {
-    if (payload?.v !== RUNTIME_THEME_VERSION || !Array.isArray(payload.p)) {
+    if (!payload || payload.v < 5 || !Array.isArray(payload.p)) {
       return { ...DEFAULT_SURFACE_PATTERN };
     }
     return {
