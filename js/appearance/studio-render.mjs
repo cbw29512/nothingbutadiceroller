@@ -10,6 +10,12 @@ const LEGACY_ICONS = { skull: '☠', star: '★', flame: '🔥', shield: '◆', 
 const FACE_EDITOR_DICE = new Set(getSupportedFaceEditorDice());
 function q(id) { return document.getElementById(id); }
 function visualText(face) { return face.kind === 'icon' ? (LEGACY_ICONS[face.value] || String(face.value || '◆')) : String(face.value); }
+function numberGlowShadow(glow) {
+  if (!glow?.enabled) return 'none';
+  const intensity = Number.isFinite(glow.intensity) ? Math.max(0, Math.min(1, glow.intensity)) : 0;
+  const blur = Math.round(5 + (13 * intensity));
+  return `0 0 ${blur}px ${glow.color}, 0 0 ${Math.max(2, Math.round(blur / 2))}px ${glow.color}`;
+}
 function makeSetCard(set, selectedId, onSelect, subtitle) {
   const button = document.createElement('button');
   button.type = 'button'; button.className = `studio-set-card${set.id === selectedId ? ' active' : ''}`;
@@ -55,7 +61,9 @@ export function renderPreview(set, selectedDie) {
     die.style.boxShadow = style.glow.enabled ? `0 0 18px ${style.glow.color}` : 'none';
     const results = getCanonicalFaceResults(type); const previewResult = type === 'd100' ? 0 : results.at(-1);
     const face = getVisualFace(set, type, previewResult);
-    die.innerHTML = `<span></span><small>${type}</small>`; die.querySelector('span').textContent = visualText(face); return die;
+    die.innerHTML = `<span></span><small>${type}</small>`;
+    const faceText = die.querySelector('span'); faceText.textContent = visualText(face); faceText.style.textShadow = numberGlowShadow(style.glow);
+    return die;
   }));
 }
 export function fillEditor(set, selectedDie, activeId, ownerId, cloudEnabled) {
