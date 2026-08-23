@@ -4,28 +4,38 @@ on:
   push:
     branches:
       - audit/live-identity-diagnostic-20260823
+    paths:
+      - .github/workflows/live-identity-diagnostic.yml
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   diagnostic:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
+      - name: Checkout audit branch
+        uses: actions/checkout@v7
+        with:
+          ref: audit/live-identity-diagnostic-20260823
+
       - name: Read public preview configuration
         env:
           ORIGIN: https://deploy-preview-19--nothingbutattrpgdiceroller.netlify.app
         run: |
-          node <<'NODE'
+          node <<'NODE' > LIVE_IDENTITY_DIAGNOSTIC.txt
           const origin = process.env.ORIGIN;
           const fetchJson = async (path) => {
             const response = await fetch(`${origin}${path}`, { redirect: 'error' });
             const text = await response.text();
             let body = null;
             try { body = JSON.parse(text); } catch {}
-            return { response, body, text };
+            return { response, body };
           };
+
+          console.log(`release_candidate=a375f373ff8f4430c0ae34439fe5823bce301b81`);
+          console.log(`preview_origin=${origin}`);
 
           const identity = await fetchJson('/.netlify/identity/settings');
           console.log(`identity_settings_status=${identity.response.status}`);
@@ -54,3 +64,11 @@ jobs:
           console.log(`anonymous_account_status=${account.response.status}`);
           console.log(`anonymous_account_code=${account.body?.code || 'none'}`);
           NODE
+
+      - name: Commit sanitized diagnostic result
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add LIVE_IDENTITY_DIAGNOSTIC.txt
+          git commit -m "audit: record live Identity diagnostic"
+          git push
