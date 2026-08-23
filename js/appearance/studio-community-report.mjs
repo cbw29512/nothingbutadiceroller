@@ -32,6 +32,24 @@ export function createCommunityReportController({ q, submitReport, setStatus }) 
       console.error('Failed to close Community report dialog:', error);
     }
   }
+  function decorate(sets = []) {
+    try {
+      const host = q('community-library');
+      if (!host) return;
+      const cards = [...host.querySelectorAll(':scope > .studio-set-card')];
+      cards.forEach((card, index) => {
+        const set = sets[index];
+        if (!set || card.closest('.community-set-row')) return;
+        const row = document.createElement('div'); row.className = 'community-set-row';
+        const report = document.createElement('button');
+        report.type = 'button'; report.className = 'btn ghost community-report-btn'; report.textContent = 'Report';
+        report.setAttribute('aria-label', `Report ${set.name}`); report.addEventListener('click', () => open(set));
+        card.replaceWith(row); row.append(card, report);
+      });
+    } catch (error) {
+      console.error('Failed to add Community report controls:', error);
+    }
+  }
   async function submit(event) {
     event.preventDefault();
     const button = q('community-report-submit');
@@ -63,5 +81,5 @@ export function createCommunityReportController({ q, submitReport, setStatus }) 
     }
   }
 
-  return { bind, open };
+  return { bind, decorate, open };
 }
