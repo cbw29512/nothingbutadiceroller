@@ -4,6 +4,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { launchBrowser, navigate, waitFor } from './browser/chromium.mjs';
 import {
+  assertAccountDataControls,
   assertDesktopRollInteraction,
   assertDrawerAccessibility,
   assertMobileCustomInteraction,
@@ -38,6 +39,7 @@ async function assertRuntimeSurfaces(client, origin, path, viewport) {
     assert.equal(snapshot.mobileDice, 7);
     assert.equal(snapshot.customButtons, true);
 
+    await assertAccountDataControls(client);
     if (viewport.mobile) {
       const sizes = await client.evaluate(`(() => ({
         roll: document.querySelector('#mobile-roll-btn')?.getBoundingClientRect().height || 0,
