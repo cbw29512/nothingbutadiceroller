@@ -14,7 +14,8 @@ try {
     'const user = await getUser()', 'if (!user)', 'verifyRequestOrigin(request)', 'const rawSet = structuredClone',
     'extractTrayImageDataUrl', 'prepareCloudDiceSet(rawSet, userId)', 'assertLockedUpdateAllowed(existing, next)',
     "set.visibility === 'public' && set.locked", 'trayImageAccessToken', 'MAX_TRAY_IMAGE_BYTES', "creator: 'Adventurer'",
-    'sanitizeTrayImageBytes(buffer, match[1].toLowerCase())', 'newPublicAccessId()', 'buildPublicProjection(record, publicAccessId)',
+    'decodeAndReencodeTrayImage(buffer, match[1].toLowerCase())', 'decoded.buffer.byteLength > MAX_TRAY_IMAGE_BYTES',
+    'newPublicAccessId()', 'buildPublicProjection(record, publicAccessId)',
     'countUserRecords(store, user.id) >= MAX_USER_DICE_SETS', 'Post-save dice-set quota verification failed; rolling back new set:',
     'versionedImageKey(user.id, set.id, trayImageAccessToken)', 'previousTrayImageKey', 'stagedTrayImageKey',
     'bestEffortDelete(store, previousTrayImageKey', 'bestEffortDelete(store, publicRecordKey(previousPublicAccessId)',
@@ -85,7 +86,7 @@ try {
     'set.appearance.tray.image = null', "record.publicAccessId === projection.publicAccessId", "record.set.visibility === 'public'",
     'projection?.recordVersion === record.recordVersion', "=== 'production' ? STORE_NAME : `${STORE_NAME}-nonprod`",
   ].forEach((text) => requireText(storeLayer, text, 'opaque authoritative storage contract'));
-  console.log('Dice-set API contract passed: optimistic concurrency, safe API errors, fail-closed Community revisions, safe stale-delete handling, anonymous owner metadata, storage isolation, image lifecycle, and recoverable Studio conflicts are enforced.');
+  console.log('Dice-set API contract passed: optimistic concurrency, safe API errors, decoded image storage, fail-closed Community revisions, safe stale-delete handling, anonymous owner metadata, storage isolation, image lifecycle, and recoverable Studio conflicts are enforced.');
 } catch (error) {
   console.error('Dice-set API contract failed:', error);
   process.exitCode = 1;
