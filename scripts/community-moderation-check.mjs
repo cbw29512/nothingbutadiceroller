@@ -76,7 +76,7 @@ try {
   assert.equal((await listPublicProjections(store)).length, 0, 'Moderation block must hide a projection even when the projection Blob still exists.');
   await deleteModerationBlock(store, report.ownerId, report.setId);
   assert.equal(await readModerationBlock(store, report.ownerId, report.setId), null);
-  assert.equal((await listPublicProjections(store)).length, 1, 'Lifting the block may restore an otherwise-current projection in the storage fixture.');
+  assert.equal((await listPublicProjections(store)).length, 1, 'The raw block primitive alone does not clean projections; the admin lift path must do that first.');
 
   const moderationSource = readFileSync(new URL('../netlify/functions/community-moderation.mjs', import.meta.url), 'utf8');
   const saveSource = readFileSync(new URL('../netlify/functions/save-dice-set.mjs', import.meta.url), 'utf8');
@@ -91,6 +91,11 @@ try {
     moderationSource.indexOf('await writeModerationBlock') < moderationSource.indexOf('await store.delete(publicRecordKey(publicAccessId))'),
     'Takedown must persist the fail-closed block before best-effort projection cleanup.',
   );
+  const liftSource = moderationSource.slice(moderationSource.indexOf('async function liftBlock'));
+  assert.ok(
+    liftSource.indexOf('await store.delete(publicRecordKey(publicAccessId))') < liftSource.indexOf('await deleteModerationBlock'),
+    'Lift must remove any stale public projection before deleting the moderation block.',
+  );
   assert.match(saveSource, /community-publication-blocked/, 'Save path must reject republishing a moderated set.');
   assert.match(reportSource, /Sign in to report a Community dice set/, 'Report endpoint must require authentication.');
   assert.match(reportSource, /windowLimit: 10/, 'Report endpoint must have a low abuse rate limit.');
@@ -99,7 +104,7 @@ try {
   assert.match(studioHtml, /id="community-report-dialog"/, 'Dice Studio must ship the report dialog.');
   assert.match(adminHtml, /Community Moderation/, 'A browser moderation queue must ship for administrators.');
 
-  console.log('Community moderation passed: reports deduplicate privately, moderation blocks fail closed, republishing is blocked, reporter ids stay server-side, and user/admin UI paths are present.');
+  console.log('Community moderation passed: reports deduplicate privately, takedown and lift stay fail-closed, republishing is blocked, reporter ids stay server-side, and user/admin UI paths are present.');
 } catch (error) {
   console.error('Community moderation check failed:', error);
   process.exitCode = 1;
