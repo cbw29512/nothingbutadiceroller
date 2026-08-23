@@ -114,13 +114,13 @@ try {
       imageAccessToken: 'legacy-secret-token', isPublic: true, customStyles: { baseColor: '#112233' },
     },
     [legacyImageKey]: 'legacy-image-placeholder',
-    // Deliberately absent from the user index: privacy deletion must discover it by prefix.
+    // Deliberately absent from the user index: privacy deletion/export must discover it by prefix.
     [orphanLegacyKey]: {
       ownerId: userId, themeId: orphanLegacyId, themeName: 'Orphan Legacy Theme', trayName: 'Orphan Tray',
       imageKey: orphanLegacyImageKey, imageAccessToken: 'orphan-secret-token', isPublic: false,
     },
     [orphanLegacyImageKey]: 'orphan-image-placeholder',
-    // Deliberately referenced by no record at all: the final user-prefix sweep must remove it.
+    // Deliberately referenced by no record at all: deletion must sweep it; export must never leak it.
     [unreferencedLegacyBlobKey]: 'stale-binary-placeholder',
     [LEGACY_THEME_COMMUNITY_INDEX]: [{ ownerId: userId, themeId: legacyId }, { ownerId: otherUserId, themeId: 'other_theme' }],
   });
@@ -132,10 +132,14 @@ try {
   assert.equal(exported.diceSets[0].hadTrayImage, true);
   assert.equal(exported.diceSets[0].set.ownerId, undefined);
   assert.equal(exported.diceSets[0].set.appearance.tray.image, null);
-  assert.equal(exported.legacyThemes[0].hadServerImage, true);
+  assert.equal(exported.legacyThemes.some((theme) => theme.themeId === legacyId && theme.hadServerImage), true);
+  assert.equal(exported.legacyThemes.some((theme) => theme.themeId === orphanLegacyId && theme.hadServerImage), true, 'Export must recover unindexed legacy theme records by user prefix.');
   assert.equal(exported.authoredCommunityReports[0].details, 'My authored report');
   const serializedExport = JSON.stringify(exported);
-  for (const secret of [userId, 'secret-capability', 'secret-image-capability', imageKey, legacyImageKey, 'legacy-secret-token']) {
+  for (const secret of [
+    userId, 'secret-capability', 'secret-image-capability', imageKey, legacyImageKey, 'legacy-secret-token',
+    orphanLegacyImageKey, 'orphan-secret-token', unreferencedLegacyBlobKey,
+  ]) {
     assert.equal(serializedExport.includes(secret), false, `Export must omit capability/storage detail: ${secret}`);
   }
   assert.match(exported.scope, /sign-in account and browser-local data are not included/i);
@@ -175,6 +179,7 @@ try {
   const endpoint = await readFile(new URL('../netlify/functions/account-data.mjs', import.meta.url), 'utf8');
   const saveApi = await readFile(new URL('../netlify/functions/save-dice-set.mjs', import.meta.url), 'utf8');
   const deleteSource = await readFile(new URL('../netlify/functions/account-data-delete.mjs', import.meta.url), 'utf8');
+  const exportSource = await readFile(new URL('../netlify/functions/account-data-export.mjs', import.meta.url), 'utf8');
   for (const text of [
     'const user = await getUser()', 'verifyRequestOrigin(request)', "DELETE_CONFIRMATION = 'DELETE MY CLOUD DATA'",
     "path: '/api/account-data'", 'Content-Disposition', 'exportAccountData(user.id, context)', 'deleteAccountData(user.id, context)',
@@ -186,8 +191,9 @@ try {
   assert.ok(deleteSource.includes('deleteLegacyThemes(legacyStore, userId)'), 'Legacy theme cleanup must not run against the Dice Studio Blob store.');
   assert.ok(deleteSource.includes('legacyThemePrefix(userId)'), 'Legacy privacy deletion must sweep the complete user-owned theme prefix.');
   assert.ok(deleteSource.includes("deleteBlob(store, key, 'legacy theme orphan')"), 'Legacy privacy deletion must remove unindexed orphan blobs.');
+  assert.ok(exportSource.includes('legacyThemePrefix(userId)'), 'Legacy export must discover recoverable unindexed theme records by user prefix.');
 
-  console.log('Account privacy lifecycle passed: export omits capabilities, cloud deletion is fail-closed/retryable, isolated stores and legacy orphans are removed, unrelated data remains, admin references anonymize, and the sign-in account/browser data remain untouched.');
+  console.log('Account privacy lifecycle passed: export omits capabilities and recovers unindexed themes, cloud deletion is fail-closed/retryable, isolated stores and legacy orphans are removed, unrelated data remains, admin references anonymize, and the sign-in account/browser data remain untouched.');
 } catch (error) {
   console.error('Account privacy lifecycle check failed:', error);
   process.exitCode = 1;
