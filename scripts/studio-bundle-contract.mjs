@@ -4,24 +4,24 @@ import { readFile } from 'node:fs/promises';
 async function read(path) { return readFile(new URL(`../${path}`, import.meta.url), 'utf8'); }
 
 try {
-  const [pkgSource, bundler, studioHtml] = await Promise.all([
+  const [pkgSource, buildSource, studioHtml] = await Promise.all([
     read('package.json'),
-    read('scripts/bundle-studio.mjs'),
+    read('scripts/build.mjs'),
     read('customize.html'),
   ]);
   const pkg = JSON.parse(pkgSource);
-  const build = pkg.scripts?.build || '';
+  const buildCommand = pkg.scripts?.build || '';
 
-  assert.ok(build.includes('node scripts/build.mjs'), 'Main static build must run before Dice Studio bundling.');
-  assert.ok(build.includes('node scripts/bundle-studio.mjs'), 'Production build must bundle Dice Studio.');
-  assert.ok(build.indexOf('node scripts/build.mjs') < build.indexOf('node scripts/bundle-studio.mjs'), 'Dice Studio bundling must run after the static copy build.');
-  assert.ok(build.indexOf('node scripts/bundle-studio.mjs') < build.indexOf('node scripts/release-strip.mjs'), 'Dice Studio bundling must finish before release stripping.');
-  assert.ok(bundler.includes("entryPoints: [resolve(root, 'js/appearance/studio.js')]"), 'Bundler must use the audited Dice Studio entry point.');
-  assert.ok(bundler.includes("outfile = resolve(root, 'dist/js/appearance/studio.js')"), 'Bundler must overwrite the production Dice Studio entry path.');
-  assert.ok(bundler.includes('bundle: true'), 'Dice Studio entry must be bundled, not copied as a module graph.');
-  assert.ok(studioHtml.includes('src="/js/appearance/studio.js"'), 'Dice Studio page must load the bundled production entry path.');
+  assert.ok(buildCommand.includes('node scripts/build.mjs'), 'Production build must run the integrated browser bundler.');
+  assert.equal(buildCommand.includes('bundle-studio.mjs'), false, 'Production must not run a second Dice Studio bundle pass.');
+  assert.ok(buildSource.includes("studio: resolve(root, 'js/appearance/studio.js')"), 'Integrated build must use the audited Dice Studio source entry.');
+  assert.ok(buildSource.includes("outdir: resolve(dist, 'js')"), 'Integrated build must emit browser entries under dist/js.');
+  assert.ok(buildSource.includes('bundle: true'), 'Integrated browser entries must be bundled.');
+  assert.ok(buildSource.includes("readFile(resolve(dist, 'js/studio.js'), 'utf8')"), 'Build validation must inspect the produced Dice Studio bundle.');
+  assert.ok(studioHtml.includes('src="/js/studio.js"'), 'Dice Studio page must load the single production bundle.');
+  assert.equal(studioHtml.includes('src="/js/appearance/studio.js"'), false, 'Dice Studio page must not load the source module graph in production.');
 
-  console.log('Dice Studio bundle contract passed: the audited entry is bundled into the existing production URL before release stripping.');
+  console.log('Dice Studio bundle contract passed: one integrated esbuild pass produces /js/studio.js from the audited modular source entry.');
 } catch (error) {
   console.error('Dice Studio bundle contract failed:', error);
   process.exitCode = 1;
