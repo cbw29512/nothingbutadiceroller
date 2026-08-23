@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">Nothing But A Dice Roller</title>
+  <desc id="desc">A stylized twenty-sided die.</desc>
+  <rect width="64" height="64" rx="14" fill="#090c12"/>
+  <path d="M32 8 52 20v24L32 56 12 44V20Z" fill="#151b27" stroke="#72e6ff" stroke-width="3"/>
+  <path d="m32 8 9 20-9 28-9-28Zm-20 12 11 8h18l11-8M12 44l11-16m29 16L41 28" fill="none" stroke="#c96cff" stroke-width="2" stroke-linejoin="round"/>
+  <text x="32" y="36" text-anchor="middle" font-family="system-ui,sans-serif" font-size="13" font-weight="800" fill="#ffffff">20</text>
+</svg>
