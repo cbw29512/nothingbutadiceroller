@@ -80,6 +80,29 @@ export async function assertDrawerAccessibility(client) {
   assert.equal(await client.evaluate("document.querySelector('main')?.inert === false"), true);
 }
 
+export async function assertAccountDataControls(client) {
+  await waitFor(client, "document.querySelector('#export-cloud-data-btn') && document.querySelector('#delete-cloud-data-btn') && document.querySelector('#delete-cloud-data-dialog')");
+  await client.evaluate(`(() => {
+    document.querySelector('#account-signed-in')?.classList.remove('hidden');
+    document.querySelector('#delete-cloud-data-btn')?.click();
+  })()`);
+  await waitFor(client, "document.querySelector('#delete-cloud-data-dialog')?.open === true && document.activeElement?.id === 'delete-cloud-data-confirmation'");
+
+  await client.evaluate(`(() => {
+    const input = document.querySelector('#delete-cloud-data-confirmation');
+    input.value = 'DELETE';
+    document.querySelector('#delete-cloud-data-form')?.requestSubmit();
+  })()`);
+  await waitFor(client, "document.querySelector('#delete-cloud-data-status')?.textContent.includes('DELETE MY CLOUD DATA exactly')");
+  assert.equal(await client.evaluate("document.querySelector('#delete-cloud-data-dialog')?.open === true"), true, 'Invalid confirmation must not close the destructive dialog.');
+
+  await client.evaluate(`(() => {
+    document.querySelector('#cancel-delete-cloud-data')?.click();
+    document.querySelector('#account-signed-in')?.classList.add('hidden');
+  })()`);
+  await waitFor(client, "document.querySelector('#delete-cloud-data-dialog')?.open === false");
+}
+
 export async function assertReducedMotion(client) {
   await client.send('Emulation.setEmulatedMedia', {
     features: [{ name: 'prefers-reduced-motion', value: 'reduce' }],
