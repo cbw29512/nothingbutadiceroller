@@ -42,8 +42,10 @@ Phase 2 evidence: exact hardening heads have completed the built-site Chrome mat
 - [x] Enforce safe maximum pixel dimensions / decode bounds. **Uploads are bounded to 4096px per side and 16,777,216 pixels before storage.**
 - [ ] Preserve PNG/JPEG/WebP support without allowing arbitrary payloads disguised as images. **Structural image validation is now substantially stronger, but this remains open until a real decoder/re-encoder proves the pixel stream.**
 - [x] Keep guest 512 KB and cloud 4 MB limits unless measurement justifies a change. **Current contract suite verifies both limits.**
-- [ ] Add an aggregate per-account image/storage quota.
+- [x] Add an aggregate per-account image/storage quota. **Cloud tray images are capped at 64 MB total per account. New uploads store byte-length metadata; legacy images are safely measured when needed; preflight checks are backed by post-commit verification and conditional rollback so concurrent uploads on different sets cannot leave the account over quota.**
 - [x] Add regression tests proving metadata stripping / type rejection / dimension limits. **Adversarial binary fixtures cover PNG text metadata, JPEG EXIF/IPTC/comments, WebP EXIF/XMP, MIME mismatch, unsupported bytes, and oversized dimensions.**
+
+Phase 3 quota evidence: exact head `4b47a45ad8b32ee6afa4c54ceacb6474aabd6a1e` passed the full deterministic/build/browser release validation, CodeQL `security-extended`, and the Netlify Deploy Preview. Regression coverage verifies 64 MB aggregate accounting, metadata-backed sizing, legacy-image fallback measurement, replacement exclusion, preflight rejection, post-commit rollback wiring, and Studio version recovery after a race rollback.
 
 ## Phase 4 — Community abuse and scale controls
 
