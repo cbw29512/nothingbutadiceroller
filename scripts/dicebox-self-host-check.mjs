@@ -33,6 +33,7 @@ try {
   const lockJson = JSON.parse(await source('package-lock.json'));
   assert.equal(packageJson.dependencies?.['@3d-dice/dice-box'], APPEARANCE_DICEBOX_VERSION, 'DiceBox build source must be pinned exactly.');
   assert.equal(lockJson.packages?.['node_modules/@3d-dice/dice-box']?.version, APPEARANCE_DICEBOX_VERSION, 'Lockfile must pin the exact DiceBox build source.');
+  await readFile(resolve(root, 'node_modules/@3d-dice/dice-box/dist/Dice.min.js'));
 
   const upstream = JSON.parse(await readFile(resolve(vendorRoot, 'upstream-package.json'), 'utf8'));
   assert.equal(upstream.name, '@3d-dice/dice-box');
@@ -79,6 +80,7 @@ try {
   assert.ok(build.includes('Vendored DiceBox provenance does not match pinned @3d-dice/dice-box 1.1.4.'));
   assert.ok(packageJson.scripts?.build?.includes('scripts/vendor-dicebox-runtime.mjs'), 'Release build must copy required DiceBox worker/WASM assets.');
   assert.ok(runtimeVendor.includes("node_modules/@3d-dice/dice-box/dist"), 'Runtime assets must come from the exact locked DiceBox package.');
+  assert.ok(runtimeVendor.includes("Dice.min.js"), 'Release must include DiceBox onscreen runtime required by custom external themes.');
   assert.ok(runtimeVendor.includes("world.offscreen.min.js"), 'Release must include DiceBox offscreen worker.');
   assert.ok(runtimeVendor.includes("assets/ammo"), 'Release must include DiceBox Ammo runtime directory.');
   assert.ok(runtimeVendor.includes("ammo.wasm.wasm"), 'Release must verify Ammo WASM exists.');
@@ -97,7 +99,7 @@ try {
   assert.ok(netlify.includes('for = "/vendor/dice-box-1.1.4/*"'));
   assert.equal(privacy.includes('DiceBox distribution CDNs'), false, 'Privacy page must not claim runtime CDN dependence after self-hosting.');
 
-  console.log('DiceBox self-host contract passed: pinned 1.1.4 vendor provenance, same-origin runtime/model paths, required offscreen worker + Ammo WASM release copying, and hardened CSP/frame protections are enforced.');
+  console.log('DiceBox self-host contract passed: pinned 1.1.4 vendor provenance, same-origin runtime/model paths, required onscreen runtime + offscreen worker + Ammo WASM release copying, and hardened CSP/frame protections are enforced.');
 } catch (error) {
   console.error('DiceBox self-host contract failed:', error);
   process.exitCode = 1;
