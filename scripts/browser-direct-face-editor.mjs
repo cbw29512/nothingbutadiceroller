@@ -24,10 +24,14 @@ async function run() {
     await navigate(client, `${server.origin}/customize.html`, desktop);
     await waitFor(client, "document.querySelector('#studio-status')?.textContent.includes('Dice Studio ready.')");
 
-    await client.evaluate("document.querySelector('#new-set')?.click()");
-    await waitFor(client, "document.querySelector('#studio-status')?.textContent.includes('New set ready.')");
-    assert.equal(await client.evaluate("document.querySelector('#face-mode')?.value"), 'raw', 'A new d20 should begin with standard RAW face labels.');
-    assert.equal(await client.evaluate("document.querySelector('#apply-face')?.disabled"), false, 'Editable RAW faces must not block direct customization.');
+    const defaultState = await client.evaluate(`(() => ({
+      name: document.querySelector('#set-name')?.value || '',
+      applyDisabled: Boolean(document.querySelector('#apply-face')?.disabled),
+      defaultCard: document.querySelector('#studio-library .studio-set-card')?.textContent || '',
+    }))()`);
+    assert.equal(defaultState.name, 'Default Dice', 'The regression must begin from immutable Default Dice.');
+    assert.equal(defaultState.applyDisabled, true, 'Default Dice face editing must remain immutable until user intent creates a copy.');
+    assert.match(defaultState.defaultCard, /Immutable Default/);
 
     const visibleFace = await client.evaluate(`(() => {
       const face = document.querySelector('.studio-preview-die[data-die="d20"] span[data-preview-face="20"]');
@@ -38,9 +42,11 @@ async function run() {
     assert.match(visibleFace.title, /Edit face 20/i);
 
     await client.evaluate("document.querySelector('.studio-preview-die[data-die=\"d20\"] span[data-preview-face=\"20\"]')?.click()");
-    await waitFor(client, "document.querySelector('#studio-status')?.textContent.includes('Face 20 selected.')");
+    await waitFor(client, "document.querySelector('#studio-status')?.textContent.includes('Editable copy created.')");
     const selected = await client.evaluate(`(() => ({
       die: document.querySelector('#selected-die-label')?.textContent || '',
+      setName: document.querySelector('#set-name')?.value || '',
+      setNameDisabled: Boolean(document.querySelector('#set-name')?.disabled),
       logicalFace: document.querySelector('#logical-face')?.value || '',
       faceLabel: document.querySelector('#logical-face-label')?.textContent || '',
       resultLabel: document.querySelector('#logical-result-label')?.textContent || '',
@@ -49,16 +55,20 @@ async function run() {
       colorDisabled: Boolean(document.querySelector('#custom-face-color')?.disabled),
       applyDisabled: Boolean(document.querySelector('#apply-face')?.disabled),
       focused: document.activeElement === document.querySelector('#face-value'),
+      defaultStillPresent: [...document.querySelectorAll('#studio-library .studio-set-card')].some((card) => /Default Dice/.test(card.textContent) && /Immutable Default/.test(card.textContent)),
     }))()`);
     assert.equal(selected.die, 'D20');
+    assert.equal(selected.setName, 'New Dice Set', 'Clicking a Default face must create a separate editable set automatically.');
+    assert.equal(selected.setNameDisabled, false, 'The automatic copy must be editable.');
     assert.equal(selected.logicalFace, '20');
     assert.match(selected.faceLabel, /Face 20/);
     assert.match(selected.resultLabel, /Always reports 20/);
     assert.equal(selected.value, '20');
-    assert.equal(selected.valueDisabled, false, 'Clicking visible 20 must expose its display editor.');
-    assert.equal(selected.colorDisabled, false, 'Clicking visible 20 must expose its face color control.');
-    assert.equal(selected.applyDisabled, false, 'Clicking visible 20 must enable Apply Face.');
+    assert.equal(selected.valueDisabled, false, 'Clicking visible 20 from Default must expose its display editor.');
+    assert.equal(selected.colorDisabled, false, 'Clicking visible 20 from Default must expose its face color control.');
+    assert.equal(selected.applyDisabled, false, 'Clicking visible 20 from Default must enable Apply Face.');
     assert.equal(selected.focused, true, 'Clicking visible 20 must focus the face display editor.');
+    assert.equal(selected.defaultStillPresent, true, 'Automatic customization must never mutate or remove immutable Default Dice.');
 
     await client.evaluate(`(() => {
       const value = document.querySelector('#face-value');
@@ -96,7 +106,7 @@ async function run() {
     const total = await client.evaluate("Number(document.querySelector('#total-result')?.textContent)");
     assert.ok(total >= 1 && total <= 20, `Directly customized d20 must remain mechanically 1-20; received ${total}.`);
 
-    console.log('Direct face editor passed: clicking the visible d20 20 selects Face 20, exposes its text/color controls, CRIT applies immediately, and the physical d20 remains 1-20.');
+    console.log('Default-face direct editor passed: from immutable Default Dice, clicking visible d20 20 automatically creates an editable copy, selects Face 20, CRIT applies, Default remains untouched, and the physical d20 remains 1-20.');
   } finally {
     if (browser) await browser.close().catch((error) => console.warn('Browser cleanup failed:', error.message));
     if (server) await server.close().catch((error) => console.warn('Static server cleanup failed:', error.message));
