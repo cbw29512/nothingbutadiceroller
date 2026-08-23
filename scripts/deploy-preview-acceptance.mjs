@@ -14,6 +14,12 @@ const screenshotsDir = resolve('artifacts', 'deploy-preview-acceptance');
 const desktop = { width: 1440, height: 900, mobile: false };
 const mobile = { width: 390, height: 844, mobile: true };
 
+function previewPage(pathname = '/') {
+  const url = new URL(pathname, `${origin}/`);
+  url.searchParams.set('ntl-drawer-state', 'hidden');
+  return url.href;
+}
+
 async function screenshot(client, name) {
   await mkdir(screenshotsDir, { recursive: true });
   const capture = await client.send('Page.captureScreenshot', {
@@ -33,6 +39,7 @@ async function assertHostedSurface() {
 
   const csp = homepage.headers.get('content-security-policy') || '';
   assert.match(csp, /default-src 'self'/);
+  assert.match(csp, /frame-src 'self' https:\/\/app\.netlify\.com/);
   assert.match(csp, /frame-ancestors 'self' https:\/\/app\.netlify\.com/);
   assert.equal(homepage.headers.get('x-content-type-options'), 'nosniff');
 
@@ -52,7 +59,7 @@ async function assertHostedSurface() {
 }
 
 async function assertGuestPersistence(client) {
-  const root = `${origin}/`;
+  const root = previewPage('/');
   await navigate(client, root, desktop);
   await waitFor(client, "document.querySelector('#physics-status')?.textContent.includes('3D physics ready.')", 30000);
   await client.evaluate('localStorage.clear()');
@@ -76,7 +83,7 @@ async function assertGuestPersistence(client) {
   assert.equal(stored.soundEnabled, 'false');
   assert.ok(Array.isArray(stored.history) && stored.history.length >= 1, 'Guest roll history must persist in browser storage.');
 
-  await navigate(client, `${origin}/how-to.html`, desktop);
+  await navigate(client, previewPage('/how-to.html'), desktop);
   await navigate(client, root, desktop);
   await waitFor(client, "document.querySelector('#physics-status')?.textContent.includes('3D physics ready.')", 30000);
   const restored = await client.evaluate(`(() => ({
@@ -92,7 +99,7 @@ async function assertGuestPersistence(client) {
 }
 
 async function assertStudio(client, viewport, name) {
-  const url = `${origin}/customize.html`;
+  const url = previewPage('/customize.html');
   await navigate(client, url, viewport);
   await waitFor(client, "document.querySelector('#studio-status')?.textContent.includes('Dice Studio ready.')", 15000);
   assertPageAudit(await client.evaluate(PAGE_AUDIT_EXPRESSION), `live ${name} /customize.html`);
@@ -103,7 +110,7 @@ async function assertStudio(client, viewport, name) {
 }
 
 async function assertMobileRoll(client) {
-  const root = `${origin}/`;
+  const root = previewPage('/');
   await navigate(client, root, mobile);
   await waitFor(client, "document.querySelector('#physics-status')?.textContent.includes('3D physics ready.')", 30000);
   await assertMobileCustomInteraction(client);
@@ -120,7 +127,7 @@ async function run() {
     await assertStudio(browser.client, desktop, 'desktop');
     await assertMobileRoll(browser.client);
     await assertStudio(browser.client, mobile, 'mobile');
-    console.log(`Deploy Preview acceptance passed in ${browser.command}: live physical d20, mobile custom d37, guest persistence, bundled Studio, security headers, Community health, and auth boundary.`);
+    console.log(`Deploy Preview acceptance passed in ${browser.command}: live physical d20, mobile custom d37, guest persistence, bundled Studio, security headers, Community health, auth boundary, and unobstructed visual captures.`);
   } finally {
     if (browser) await browser.close().catch((error) => console.warn('Deploy Preview browser cleanup failed:', error.message));
   }
