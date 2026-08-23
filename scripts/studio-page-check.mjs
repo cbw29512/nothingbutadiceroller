@@ -34,6 +34,13 @@ try {
   requireText(render, 'renderFaceMap', 'shape-based face map');
   requireText(render, 'safeTrayImageUrl', 'validated tray-image preview');
   requireText(render, 'numberGlowShadow', 'Studio number-glow preview');
+  requireText(render, 'faceText.dataset.previewFace', 'direct visible-face edit target');
+  requireText(bindings, "event.target.closest('[data-preview-face]')", 'direct visible-face click binding');
+  requireText(bindings, "q('logical-face').value = logicalFace", 'direct visible-face logical selection');
+  requireText(bindings, 'editor.focus(); editor.select();', 'direct visible-face editor focus');
+  if (render.includes('die.faceMode === RAW_FACE_MODE')) {
+    throw new Error('Editable RAW labels must not disable direct face customization; Apply Face safely enters custom appearance mode.');
+  }
   requireText(validation, 'short visible label', 'short-label validation');
   requireText(visualControls, 'MAX_BROWSER_TRAY_IMAGE_BYTES', 'browser tray-image size limit');
   requireText(visualControls, 'MAX_TRAY_IMAGE_BYTES', 'cloud tray-image size limit');
@@ -74,7 +81,7 @@ try {
   const invalid = cloneDiceSet(valid); invalid.id = 'cloud_invalid'; invalid.appearance.extra = true;
   assert.deepEqual(validSetsFromRecords([{ set: valid }, { set: invalid }, null, {}]).map((set) => set.id), ['cloud_valid']);
   assert.deepEqual(validSetsFromRecords(null), []);
-  console.log('Studio page contract passed: every explicit button is handler-audited; glow, face, tray, library, navigation, cloud/community, save/use/lock/delete, and default fallback paths are protected.');
+  console.log('Studio page contract passed: every explicit button is handler-audited; direct visible-face editing, glow, face, tray, library, navigation, cloud/community, save/use/lock/delete, and default fallback paths are protected.');
 } catch (error) {
   console.error('Studio page contract failed:', error);
   process.exitCode = 1;
