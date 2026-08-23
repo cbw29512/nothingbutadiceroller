@@ -80,11 +80,13 @@ Phase 6 evidence: Dice Studio exact head `01a3d95206fb5f72b3243100cde6ddaf5e8484
 
 ## Phase 7 — Privacy lifecycle
 
-- [x] Stop storing unused Identity profile names in new dice-set owner records. **New writes store only the generic `Adventurer` creator label; historical-record cleanup remains a migration task and must not race cloud edits.**
-- [ ] Add self-service deletion of application cloud data.
-- [ ] Define/document data retention behavior.
-- [ ] Add a practical account/data export path if feasible for this product scope.
-- [ ] Ensure delete/private operations keep public image/projection revocation fail-closed.
+- [x] Stop storing unused Identity profile names in new dice-set owner records. **New writes store only the generic `Adventurer` creator label.**
+- [x] Add self-service deletion of application cloud data. **Signed-in users can delete server-stored app data from My Dice after same-origin validation and an exact `DELETE MY CLOUD DATA` confirmation. Cleanup covers saved configurations, shortcuts, Dice Studio sets/images/projections, legacy themes/images, Community privacy records, and owned moderation records while deliberately leaving the separate Netlify Identity account and browser-local data intact.**
+- [x] Define/document data retention behavior. **Privacy documentation now explains browser-local versus server-stored data, service-provider scope, retention-until-deletion behavior, export/deletion scope, and the current per-item/account storage limits.**
+- [x] Add a practical account/data export path if feasible for this product scope. **My Dice can download a JSON export of portable server-stored settings/content. Export strips internal owner IDs, Blob keys, image capability tokens, and raw uploaded image bytes while recovering valid unindexed legacy theme records by the user's isolated storage prefix.**
+- [x] Ensure delete/private operations keep public image/projection revocation fail-closed. **Dice-set deletion first commits a payload-free tombstone, then revokes the public projection before child image cleanup. Failed cleanup remains retryable, racing saves receive `dice-set-deleting`, and legacy deletion sweeps the complete isolated user prefix so stale indexes/orphan blobs do not survive.**
+
+Phase 7 evidence: exact implementation head `7da223f4eb38feda1265c88c6ea1dd5d7428edac` passed Full Release Validation, the rendered desktop/mobile Chrome matrix, CodeQL `security-extended`, and the Netlify Deploy Preview. The regression suite injects a child-image deletion failure, proves the public projection is already inaccessible and the owner payload has been replaced by a retryable tombstone, then retries successfully across four isolated stores. It also verifies Community privacy cleanup, unrelated-data preservation, administrator-reference anonymization, unindexed legacy-theme export, orphan legacy-blob deletion, capability-free exports, and that the Identity account/browser-local data are not silently removed. Browser coverage verifies the account privacy controls, modal focus, exact typed confirmation, rejection of an incorrect phrase, and cancellation.
 
 ## Phase 8 — Accessibility and ease of use
 
