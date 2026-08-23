@@ -25,6 +25,7 @@ const files = [
   'styles.css',
   'docs.css',
   'customize.css',
+  'customize-resin.css',
   'moderation.css',
   'appearance-harness.css',
   'themes.css',
@@ -146,6 +147,7 @@ async function validateBuild() {
     requireReferences(studioHtml, [
       'DICE STUDIO', 'id="studio-library"', 'id="studio-preview-tray"', 'id="reset-default"',
       'id="lock-set"', 'RAW — standard numbers', 'id="community-report-dialog"', 'id="load-more-community"',
+      'id="clear-die-enabled"', 'id="interior-effect"', 'href="/customize-resin.css"',
       'Community sets must be safe to share', 'src="/js/appearance/studio.js"', 'href="/how-to.html"',
     ], 'Dice Studio reference');
     requireReferences(browserStudio, ['Dice Studio ready.', 'loadCloudDiceSets', 'saveCloudDiceSet'], 'bundled Dice Studio behavior');
