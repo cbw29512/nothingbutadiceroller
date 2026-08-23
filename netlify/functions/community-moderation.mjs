@@ -31,7 +31,13 @@ function optionalReason(value) {
 async function reportQueue(store) {
   const reports = await listCommunityReports(store);
   return Promise.all(reports.map(async (report) => ({
-    ...report,
+    publicAccessId: report.publicAccessId,
+    ownerId: report.ownerId,
+    setId: report.setId,
+    setName: report.setName,
+    reason: report.reason,
+    details: report.details,
+    createdAt: report.createdAt,
     blocked: Boolean(await readModerationBlock(store, report.ownerId, report.setId)),
   })));
 }
