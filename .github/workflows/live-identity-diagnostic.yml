@@ -1,0 +1,56 @@
+name: Live Identity Diagnostic
+
+on:
+  push:
+    branches:
+      - audit/live-identity-diagnostic-20260823
+
+permissions:
+  contents: read
+
+jobs:
+  diagnostic:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Read public preview configuration
+        env:
+          ORIGIN: https://deploy-preview-19--nothingbutattrpgdiceroller.netlify.app
+        run: |
+          node <<'NODE'
+          const origin = process.env.ORIGIN;
+          const fetchJson = async (path) => {
+            const response = await fetch(`${origin}${path}`, { redirect: 'error' });
+            const text = await response.text();
+            let body = null;
+            try { body = JSON.parse(text); } catch {}
+            return { response, body, text };
+          };
+
+          const identity = await fetchJson('/.netlify/identity/settings');
+          console.log(`identity_settings_status=${identity.response.status}`);
+          if (identity.response.ok && identity.body && typeof identity.body === 'object') {
+            const safe = {
+              disable_signup: identity.body.disable_signup ?? null,
+              mailer_autoconfirm: identity.body.mailer_autoconfirm ?? null,
+              email_enabled: identity.body.external?.email ?? null,
+              github_enabled: identity.body.external?.github ?? null,
+              google_enabled: identity.body.external?.google ?? null,
+              bitbucket_enabled: identity.body.external?.bitbucket ?? null,
+              gitlab_enabled: identity.body.external?.gitlab ?? null,
+            };
+            console.log(`identity_safe_settings=${JSON.stringify(safe)}`);
+          } else {
+            console.log('identity_safe_settings=unavailable');
+          }
+
+          const community = await fetchJson('/api/dice-sets?scope=community&page=1&pageSize=48');
+          console.log(`community_status=${community.response.status}`);
+          const records = Array.isArray(community.body?.records) ? community.body.records : [];
+          console.log(`community_record_count=${records.length}`);
+          console.log(`community_has_public_image=${records.some((record) => Boolean(record?.trayImage?.url || record?.appearance?.tray?.image?.url || record?.imageUrl))}`);
+
+          const account = await fetchJson('/api/account-data');
+          console.log(`anonymous_account_status=${account.response.status}`);
+          console.log(`anonymous_account_code=${account.body?.code || 'none'}`);
+          NODE
