@@ -11,6 +11,7 @@ const diagnostics = [
   'shortcut-harness.css',
   'js/shortcut-harness.js',
   'js/appearance/dicebox-proof-harness.js',
+  'js/theme-community.js',
 ];
 
 for (const path of diagnostics) await rm(resolve(dist, path), { force: true });
@@ -21,12 +22,12 @@ for (const path of diagnostics) {
     await access(resolve(dist, path));
     survivors.push(path);
   } catch {
-    // Expected: internal diagnostic artifact is absent from the release bundle.
+    // Expected: internal/retired artifact is absent from the release bundle.
   }
 }
 
 if (survivors.length) {
-  throw new Error(`Release bundle still contains internal diagnostic artifacts: ${survivors.join(', ')}`);
+  throw new Error(`Release bundle still contains internal or retired artifacts: ${survivors.join(', ')}`);
 }
 
-console.log(`Release surface stripped of ${diagnostics.length} internal diagnostic artifacts.`);
+console.log(`Release surface stripped of ${diagnostics.length} internal/retired artifacts.`);
