@@ -1,4 +1,5 @@
 import { SYSTEM_DEFAULT_DICE_SET, SYSTEM_DEFAULT_DICE_SET_ID } from './defaults.mjs';
+import { createSecureId } from './secure-id.mjs';
 import { assertValidDiceSet, validateDiceSet } from './validation.mjs';
 
 export const LOCAL_SETS_KEY = 'ndr.appearance.savedSets.v2';
@@ -21,10 +22,11 @@ function parseArray(raw) {
   }
 }
 function makeOwnerId() {
-  try { return `local_${crypto.randomUUID()}`; }
-  catch (error) {
+  try {
+    return createSecureId('local');
+  } catch (error) {
     console.error('Failed to create local owner id:', error);
-    return `local_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    throw error;
   }
 }
 export function getOrCreateLocalOwnerId(storage = localStorage) {
