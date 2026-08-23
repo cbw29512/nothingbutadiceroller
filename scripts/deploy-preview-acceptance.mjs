@@ -84,6 +84,10 @@ async function assertHostedSurface() {
   assert.equal(runtime.status, 200, 'Pinned DiceBox runtime must be available on the Deploy Preview.');
   assert.match(runtime.headers.get('content-type') || '', /javascript/);
 
+  const onscreenRuntime = await fetchWithRetry(`${origin}/vendor/dice-box-1.1.4/Dice.min.js`, { redirect: 'error' }, 'DiceBox onscreen runtime');
+  assert.equal(onscreenRuntime.status, 200, 'DiceBox onscreen runtime required by custom themes must be deployed.');
+  assert.match(onscreenRuntime.headers.get('content-type') || '', /javascript/);
+
   const community = await fetchWithRetry(`${origin}/api/dice-sets?scope=community&page=1&pageSize=1`, { redirect: 'error' }, 'Community API');
   assert.equal(community.status, 200, 'Deploy Preview Community endpoint must be healthy.');
   const communityJson = await community.json();
@@ -135,6 +139,74 @@ async function assertGuestPersistence(client) {
   await screenshot(client, 'desktop-home');
 }
 
+async function assertLiveCustomDiceFlow(client) {
+  await navigateWithRetry(client, previewPage('/customize.html'), desktop, 'live custom Dice Studio');
+  await waitFor(client, "document.querySelector('#studio-status')?.textContent.includes('Dice Studio ready.')", 15000);
+
+  const initial = await client.evaluate(`(() => ({
+    defaultImmutable: Boolean(document.querySelector('#set-name')?.disabled),
+    newEnabled: !document.querySelector('#new-set')?.disabled,
+  }))()`);
+  assert.equal(initial.defaultImmutable, true, 'Default Dice must remain immutable on the live preview.');
+  assert.equal(initial.newEnabled, true, 'New Set must be available on the live preview.');
+
+  await client.evaluate("document.querySelector('#new-set')?.click()");
+  await waitFor(client, "document.querySelector('#studio-status')?.textContent.includes('New set ready.')");
+  await client.evaluate(`(() => {
+    const mode = document.querySelector('#face-mode');
+    mode.value = 'custom';
+    mode.dispatchEvent(new Event('change', { bubbles: true }));
+    const value = document.querySelector('#face-value');
+    value.value = 'CRIT';
+    value.dispatchEvent(new Event('input', { bubbles: true }));
+    document.querySelector('#apply-face')?.click();
+  })()`);
+  await waitFor(client, "document.querySelector('#studio-status')?.textContent.includes('Face 20 updated visually.')");
+  await client.evaluate("document.querySelector('#save-set')?.click()");
+  await waitFor(client, "document.querySelector('#studio-status')?.textContent.includes('Dice set saved.')");
+  await client.evaluate("document.querySelector('#use-set')?.click()");
+  await waitFor(client, "document.querySelector('#studio-status')?.textContent.includes('Set marked active for the roller.')");
+  await waitFor(client, "document.querySelector('#active-badge')?.textContent === 'ACTIVE'");
+
+  await client.evaluate("document.querySelector('.studio-header a[href=\"/\"]')?.click()");
+  await waitFor(client, "location.pathname === '/'");
+  await waitFor(client, "document.querySelector('#physics-status')?.textContent.includes('3D physics ready.')", 30000);
+  await client.evaluate("document.querySelector('.die-btn[data-type=\"d20\"]')?.click()");
+  await waitFor(client, "document.querySelector('#pool-summary')?.textContent.includes('d20')");
+  await client.evaluate("document.querySelector('#roll-btn')?.click()");
+  try {
+    await waitFor(client, "Number(document.querySelector('#total-result')?.textContent) >= 1 && !document.querySelector('#roll-btn')?.disabled", 30000);
+  } catch (error) {
+    const diagnostic = await client.evaluate(`(() => ({
+      physicsStatus: document.querySelector('#physics-status')?.textContent || '',
+      total: document.querySelector('#total-result')?.textContent || '',
+      breakdown: document.querySelector('#breakdown-text')?.textContent || '',
+      rollDisabled: Boolean(document.querySelector('#roll-btn')?.disabled),
+      resources: performance.getEntriesByType('resource').map((entry) => entry.name)
+        .filter((url) => url.includes('/api/dice-theme/') || url.includes('/vendor/dice-box-1.1.4/'))
+        .slice(-40),
+    }))()`);
+    throw new Error(`Live custom-themed d20 did not settle: ${JSON.stringify(diagnostic)}. ${error.message}`);
+  }
+
+  const result = await client.evaluate(`(() => ({
+    total: Number(document.querySelector('#total-result')?.textContent),
+    breakdown: document.querySelector('#breakdown-text')?.textContent || '',
+    resources: performance.getEntriesByType('resource').map((entry) => entry.name),
+  }))()`);
+  assert.ok(result.total >= 1 && result.total <= 20, `Live custom d20 result must remain 1-20; received ${result.total}.`);
+  assert.match(result.breakdown, /d20/i);
+  assert.ok(result.resources.some((url) => /\/api\/dice-theme\/[^/]+\/theme\.config\.json/.test(url)), 'Live custom roll must load its runtime theme config.');
+  assert.ok(result.resources.some((url) => /\/api\/dice-theme\/[^/]+\/diffuse\.svg/.test(url)), 'Live custom roll must load its runtime theme texture.');
+  assert.ok(result.resources.some((url) => url.includes('/vendor/dice-box-1.1.4/Dice.min.js')), 'Live custom roll must load the self-hosted DiceBox onscreen runtime.');
+
+  await client.evaluate(`(() => {
+    localStorage.removeItem('ndr.appearance.activeSet.v2');
+    localStorage.removeItem('ndr.appearance.activeSnapshot.v2');
+  })()`);
+  console.log('Live custom Dice Studio flow passed: New Set, custom d20 face, Save, Use, return to roller, runtime theme assets, and physical d20 result.');
+}
+
 async function assertStudio(client, viewport, name) {
   const url = previewPage('/customize.html');
   await navigateWithRetry(client, url, viewport, `${name} Dice Studio`);
@@ -161,10 +233,11 @@ async function run() {
   try {
     browser = await launchBrowser();
     await assertGuestPersistence(browser.client);
+    await assertLiveCustomDiceFlow(browser.client);
     await assertStudio(browser.client, desktop, 'desktop');
     await assertMobileRoll(browser.client);
     await assertStudio(browser.client, mobile, 'mobile');
-    console.log(`Deploy Preview acceptance passed in ${browser.command}: live physical d20, mobile custom d37, guest persistence, bundled Studio, security headers, Community health, auth boundary, and unobstructed visual captures.`);
+    console.log(`Deploy Preview acceptance passed in ${browser.command}: live physical d20, custom Dice Studio d20, mobile custom d37, guest persistence, bundled Studio, security headers, Community health, auth boundary, and unobstructed visual captures.`);
   } finally {
     if (browser) await browser.close().catch((error) => console.warn('Deploy Preview browser cleanup failed:', error.message));
   }
