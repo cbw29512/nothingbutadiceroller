@@ -13,11 +13,33 @@ if (!/^https:\/\/deploy-preview-\d+--nothingbutattrpgdiceroller\.netlify\.app$/.
 const screenshotsDir = resolve('artifacts', 'deploy-preview-acceptance');
 const desktop = { width: 1440, height: 900, mobile: false };
 const mobile = { width: 390, height: 844, mobile: true };
+const retryableStatuses = new Set([502, 503, 504]);
 
 function previewPage(pathname = '/') {
   const url = new URL(pathname, `${origin}/`);
   url.searchParams.set('ntl-drawer-state', 'hidden');
   return url.href;
+}
+
+function sleep(ms) {
+  return new Promise((resolvePromise) => setTimeout(resolvePromise, ms));
+}
+
+async function fetchWithRetry(url, options = {}, label = 'Deploy Preview request') {
+  let lastError = null;
+  for (let attempt = 1; attempt <= 4; attempt += 1) {
+    try {
+      const response = await fetch(url, options);
+      if (!retryableStatuses.has(response.status) || attempt === 4) return response;
+      lastError = new Error(`${label} returned transient HTTP ${response.status}.`);
+      await response.body?.cancel().catch(() => {});
+    } catch (error) {
+      lastError = error;
+      if (attempt === 4) throw error;
+    }
+    await sleep(attempt * 500);
+  }
+  throw lastError || new Error(`${label} failed without a response.`);
 }
 
 async function screenshot(client, name) {
@@ -31,7 +53,7 @@ async function screenshot(client, name) {
 }
 
 async function assertHostedSurface() {
-  const homepage = await fetch(`${origin}/`, { redirect: 'error' });
+  const homepage = await fetchWithRetry(`${origin}/`, { redirect: 'error' }, 'homepage');
   assert.equal(homepage.status, 200, 'Deploy Preview homepage must return 200.');
   const html = await homepage.text();
   assert.match(html, /Nothing But A Dice Roller/);
@@ -43,16 +65,16 @@ async function assertHostedSurface() {
   assert.match(csp, /frame-ancestors 'self' https:\/\/app\.netlify\.com/);
   assert.equal(homepage.headers.get('x-content-type-options'), 'nosniff');
 
-  const runtime = await fetch(`${origin}/vendor/dice-box-1.1.4/dice-box.es.min.js`, { redirect: 'error' });
+  const runtime = await fetchWithRetry(`${origin}/vendor/dice-box-1.1.4/dice-box.es.min.js`, { redirect: 'error' }, 'DiceBox runtime');
   assert.equal(runtime.status, 200, 'Pinned DiceBox runtime must be available on the Deploy Preview.');
   assert.match(runtime.headers.get('content-type') || '', /javascript/);
 
-  const community = await fetch(`${origin}/api/dice-sets?scope=community&page=1&pageSize=1`, { redirect: 'error' });
+  const community = await fetchWithRetry(`${origin}/api/dice-sets?scope=community&page=1&pageSize=1`, { redirect: 'error' }, 'Community API');
   assert.equal(community.status, 200, 'Deploy Preview Community endpoint must be healthy.');
   const communityJson = await community.json();
   assert.ok(Array.isArray(communityJson.records), 'Community response must contain a records array.');
 
-  const account = await fetch(`${origin}/api/account-data`, { redirect: 'error' });
+  const account = await fetchWithRetry(`${origin}/api/account-data`, { redirect: 'error' }, 'account auth boundary');
   assert.equal(account.status, 401, 'Account export must require authentication on the Deploy Preview.');
   const accountJson = await account.json();
   assert.equal(accountJson.code, 'authentication-required');
