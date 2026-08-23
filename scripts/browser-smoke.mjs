@@ -11,6 +11,7 @@ import {
   assertReducedMotion,
 } from './browser/main-interactions.mjs';
 import { PAGE_AUDIT_EXPRESSION, assertPageAudit } from './browser/page-audit.mjs';
+import { PERFORMANCE_EXPRESSION, formatPerformance } from './browser/performance-report.mjs';
 import { startBuiltSiteServer } from './browser/static-server.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -75,6 +76,7 @@ async function run() {
   let server;
   let browser;
   const completed = [];
+  const performanceRecords = [];
   try {
     server = await startBuiltSiteServer(dist);
     browser = await launchBrowser();
@@ -84,10 +86,20 @@ async function run() {
         await navigate(browser.client, url, viewport);
         await assertRuntimeSurfaces(browser.client, server.origin, path, viewport);
         assertPageAudit(await browser.client.evaluate(PAGE_AUDIT_EXPRESSION), `${viewport.name} ${path}`);
+        const metrics = await browser.client.evaluate(PERFORMANCE_EXPRESSION);
+        if (path === '/customize.html') {
+          assert.deepEqual(
+            [...new Set(metrics.appearanceScripts)],
+            ['/js/appearance/studio.js'],
+            'Dice Studio must load one bundled appearance script instead of a production module graph.',
+          );
+        }
+        performanceRecords.push(formatPerformance(`${viewport.name}:${path}`, metrics));
         completed.push(`${viewport.name}:${path}`);
       }
     }
     console.log(`Browser smoke passed in ${browser.command}: ${completed.join(', ')}`);
+    console.log(`Browser performance baseline:\n${performanceRecords.map((item) => `- ${item}`).join('\n')}`);
   } finally {
     if (browser) await browser.close().catch((error) => console.warn('Browser cleanup failed:', error.message));
     if (server) await server.close().catch((error) => console.warn('Static server cleanup failed:', error.message));
