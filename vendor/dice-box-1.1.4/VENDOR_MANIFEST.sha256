@@ -1,4 +1,5 @@
 7e5eb61039091dfa069458bab611edd3fc774d8e3263ced7361d1251708fed85  ./LICENSE
+007a4e93dce707e222e5f895a792a9e089f9dce65b36c057a32416644aa6be5e  ./assets/ammo/ammo.wasm.wasm
 26bf6fb1edea72296208f75dce59af3e64d0ad035a2876c0b49b7f1d1de01b50  ./assets/themes/default/default.json
 acf62205d3af969375998cf00af402959da870e846712b45ddbd8df5ddf5d21f  ./assets/themes/default/diffuse-dark.png
 de15a8eed40be8123d301f8d0dff19be4d6577cc9ffb11086b81d7e38afd62a0  ./assets/themes/default/diffuse-light.png
@@ -7,3 +8,6 @@ de15a8eed40be8123d301f8d0dff19be4d6577cc9ffb11086b81d7e38afd62a0  ./assets/theme
 4f55c758bca4c10405652c50037705b15bb633f998ca153d84f4c216ef67716d  ./assets/themes/default/theme.config.json
 264ebf61b9b99657483f625966c1960f15543ce5dc87ddb5d7bb7c32496f7ea7  ./dice-box.es.min.js
 0edb596322a776204b701c550f9eb0f2c4964177ce6d117934d6a55d028438fc  ./upstream-package.json
+a8cdd85a7a6050c3ce7f2c24edb2aabebbc5e0f275450e473be2c5153990c492  ./world.none.min.js
+95f0fa2db4baa0366e8d81140c3393438f3bce8d889878d77a3a848ff9e5194d  ./world.offscreen.min.js
+7f1279e6a2a002b9c06afad1399e608ca359070c9103bc0f4234d570e15d5ea6  ./world.onscreen.min.js
