@@ -71,7 +71,7 @@ export function validateRuntimeThemePayload(payload) {
       if (!Number.isFinite(fontPx) || fontPx < 6 || fontPx > 200) errors.push(`Operation ${index} font size is invalid.`);
     }
     if (payload.v === 2 || payload.v === RUNTIME_THEME_VERSION) validateGlow(payload.g, errors);
-    if (payload.v === RUNTIME_THEME_VERSION) validateResin(payload.r, errors);
+    if (payload.v === RUNTIME_THEME_VERSION && payload.r != null) validateResin(payload.r, errors);
   } catch (error) {
     console.error('Runtime theme payload validation failed:', error); errors.push('Runtime theme payload validation failed.');
   }
