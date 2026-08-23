@@ -10,8 +10,8 @@ export function bindStudioControls(context) {
     q('lock-set').addEventListener('click', actions.toggleLock); q('publish-set').addEventListener('click', actions.togglePublish);
     const useButton = q('use-set');
     useButton.textContent = 'Use This Set & Back to Roller';
+    q('use-set').addEventListener('click', actions.activateDraft);
     useButton.addEventListener('click', () => {
-      actions.activateDraft();
       if (q('active-badge')?.textContent === 'ACTIVE') windowRef.location.assign('/');
     });
     q('delete-set').addEventListener('click', actions.deleteDraft);
