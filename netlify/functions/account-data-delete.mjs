@@ -7,7 +7,7 @@ import {
 } from './dice-set-store.mjs';
 import {
   LEGACY_THEME_COMMUNITY_INDEX, legacyThemeIndexKey, legacyThemeKey,
-  readLegacyCommunityIndex,
+  openLegacyThemeStore, readLegacyCommunityIndex,
 } from './legacy-theme-store.mjs';
 import { deleteBlob, listAllBlobKeys, readJsonEntries } from './privacy-store-utils.mjs';
 import {
@@ -139,9 +139,10 @@ export async function deleteAccountData(userId, context, stores = {}) {
     const configurationStore = stores.configurationStore || openConfigurationStore(context);
     const shortcutStore = stores.shortcutStore || openShortcutStore(context);
     const appStore = stores.appStore || openDiceSetStore(context);
+    const legacyStore = stores.legacyStore || openLegacyThemeStore(context);
 
     const diceSetsDeleted = await deleteDiceSets(appStore, userId);
-    const legacyThemesDeleted = await deleteLegacyThemes(appStore, userId);
+    const legacyThemesDeleted = await deleteLegacyThemes(legacyStore, userId);
     const moderation = await deleteCommunityPrivacyData(appStore, userId);
     const configurationDeleted = await deleteBlob(configurationStore, configurationKey(userId), 'saved configurations');
     const shortcutsDeleted = await deleteBlob(shortcutStore, shortcutKey(userId), 'shortcut workspace');
