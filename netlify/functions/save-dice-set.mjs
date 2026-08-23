@@ -182,4 +182,11 @@ export default async (request, context) => {
     return json(safe.body, safe.status);
   }
 };
-export const config = { path: '/api/save-dice-set' };
+export const config = {
+  path: '/api/save-dice-set',
+  rateLimit: {
+    windowLimit: 30,
+    windowSize: 60,
+    aggregateBy: ['ip', 'domain'],
+  },
+};
