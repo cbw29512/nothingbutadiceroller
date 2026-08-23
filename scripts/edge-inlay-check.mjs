@@ -1,7 +1,13 @@
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import { CANONICAL_DICE } from '../js/appearance/defaults.mjs';
+import { getCanonicalFaceResults } from '../js/appearance/face-values.mjs';
 import { createUserDiceSet } from '../js/appearance/schema.mjs';
 import { buildAppearanceRenderPlan } from '../js/appearance/render-plan.mjs';
 import { buildDiceBoxThemePlan } from '../js/appearance/dicebox-theme-plan.mjs';
+import { buildDiceBoxGlyphPlan } from '../js/appearance/dicebox-glyph-plan.mjs';
+import { buildDiceBoxInlayBoundaries } from '../js/appearance/dicebox-inlay-boundaries.mjs';
+import { normalizeCanonicalDiceBoxModel } from '../js/appearance/dicebox-model-loader.mjs';
 import { buildDiceBoxRuntimeTheme } from '../js/appearance/dicebox-runtime-theme.mjs';
 import { RUNTIME_THEME_VERSION, decodeRuntimeThemePayload, validateRuntimeThemePayload } from '../js/appearance/runtime-theme-codec.mjs';
 import { buildRuntimeThemeSvg } from '../js/appearance/runtime-theme-response.mjs';
@@ -25,7 +31,6 @@ const set = createUserDiceSet({ id: 'inlay_contract', ownerId: 'owner', name: 'I
 set.appearance.diceSet.defaultStyle.inlay = { type: 'fine', color: '#f59e0b', intensity: 0.85, width: 0.6 };
 set.appearance.diceSet.dice.d6.styleOverrides.inlay = { type: 'dotted', color: '#22d3ee', intensity: 0.7, width: 0.45 };
 assert.equal(validateDiceSet(set).ok, true);
-
 const renderPlan = buildAppearanceRenderPlan(set);
 assert.equal(renderPlan.dice.d20.style.inlay.type, 'fine');
 assert.equal(renderPlan.dice.d6.style.inlay.type, 'dotted');
@@ -44,8 +49,7 @@ assert.equal(payload.i[4].length, 20, 'Enabled d20 inlay must carry exactly twen
 assert.ok(runtime.token.length < 6000, `Edge-inlay runtime token must remain route-safe; received ${runtime.token.length}.`);
 assert.equal(validateRuntimeThemePayload(payload).ok, true);
 const svg = buildRuntimeThemeSvg(payload);
-assert.match(svg, /id="edgeInlay"/);
-assert.match(svg.toLowerCase(), /#f59e0b/);
+assert.match(svg, /id="edgeInlay"/); assert.match(svg.toLowerCase(), /#f59e0b/);
 assert.equal((svg.match(/<path /g) || []).length, 40, 'Each face perimeter should render a depth stroke plus the inlay stroke.');
 
 for (const type of ['fine', 'bold', 'dashed', 'dotted']) {
@@ -54,14 +58,32 @@ for (const type of ['fine', 'bold', 'dashed', 'dotted']) {
   assert.ok(buildRuntimeThemeSvg(candidate).includes('edgeInlay'));
 }
 const disabled = structuredClone(payload); disabled.i = ['none', '#ffffff', 0.8, 0.5];
-assert.equal(validateRuntimeThemePayload(disabled).ok, true);
-assert.equal(buildRuntimeThemeSvg(disabled).includes('edgeInlay'), false);
+assert.equal(validateRuntimeThemePayload(disabled).ok, true); assert.equal(buildRuntimeThemeSvg(disabled).includes('edgeInlay'), false);
+
+// Release-critical proof against the actual pinned DiceBox geometry, not a synthetic fixture.
+const rawModel = JSON.parse(await readFile(new URL('../vendor/dice-box-1.1.4/assets/themes/default/default.json', import.meta.url), 'utf8'));
+const canonicalModel = normalizeCanonicalDiceBoxModel(rawModel);
+const realSet = createUserDiceSet({ id: 'real_inlay_geometry', ownerId: 'owner', name: 'Real Inlay Geometry' });
+realSet.appearance.diceSet.defaultStyle.inlay = { type: 'bold', color: '#f59e0b', intensity: 0.85, width: 0.6 };
+const realRenderPlan = buildAppearanceRenderPlan(realSet);
+const realThemePlan = buildDiceBoxThemePlan(realRenderPlan);
+const realGlyphPlan = buildDiceBoxGlyphPlan(realRenderPlan, canonicalModel);
+for (const dieType of Object.keys(CANONICAL_DICE)) {
+  const boundaries = buildDiceBoxInlayBoundaries(realGlyphPlan, dieType, 1024);
+  assert.equal(boundaries.length, getCanonicalFaceResults(dieType).length, `${dieType} must expose exactly one inlay perimeter per physical result.`);
+  assert.ok(boundaries.every((loop) => loop.length >= 6 && loop.length % 2 === 0), `${dieType} perimeters must be closed polygon loops.`);
+  const realRuntime = buildDiceBoxRuntimeTheme(realGlyphPlan, realThemePlan, dieType);
+  const realPayload = decodeRuntimeThemePayload(realRuntime.token);
+  assert.equal(realPayload.i[0], 'bold');
+  assert.equal(realPayload.i[4].length, getCanonicalFaceResults(dieType).length);
+  assert.ok(realRuntime.token.length < 6000, `${dieType} inlay token must remain below the route safety cap.`);
+  assert.ok(buildRuntimeThemeSvg(realPayload).includes('id="edgeInlay"'));
+}
 
 const legacyCompatible = createUserDiceSet({ id: 'legacy_inlayless', ownerId: 'owner', name: 'Legacy Inlayless' });
 delete legacyCompatible.appearance.diceSet.defaultStyle.inlay;
 assert.equal(validateDiceSet(legacyCompatible).ok, true, 'Previously saved sets without inlay fields must remain valid.');
 assert.equal(buildAppearanceRenderPlan(legacyCompatible).dice.d20.style.inlay.type, 'none');
-
 const invalidSet = structuredClone(set); invalidSet.appearance.diceSet.defaultStyle.inlay.type = 'weighted';
 assert.equal(validateDiceSet(invalidSet).ok, false, 'Unknown inlay presets must fail closed.');
 const invalidRuntime = structuredClone(payload); invalidRuntime.i[0] = 'weighted';
@@ -69,4 +91,4 @@ assert.equal(validateRuntimeThemePayload(invalidRuntime).ok, false);
 const malformedBoundary = structuredClone(payload); malformedBoundary.i[4][0] = [10, 10, 20];
 assert.equal(validateRuntimeThemePayload(malformedBoundary).ok, false, 'Malformed face boundaries must fail closed.');
 
-console.log('Edge inlay contract passed: four bounded styles, set/per-die inheritance, exact physical-face UV boundaries, v6 runtime encoding, legacy saved-set compatibility, mechanics isolation, and fail-closed validation are protected.');
+console.log('Edge inlay contract passed: four bounded styles, exact real-model perimeters for all seven standard dice, set/per-die inheritance, v6 runtime encoding, legacy compatibility, mechanics isolation, and fail-closed validation are protected.');

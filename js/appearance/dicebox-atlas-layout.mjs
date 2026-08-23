@@ -74,11 +74,14 @@ export function extractDiceBoxFaceRegions(modelData, dieType, { includeOutline =
     const mesh = getRenderMesh(modelData, dieType); const colliderMesh = getColliderMesh(modelData, dieType);
     const colliderMap = modelData?.colliderFaceMap?.[dieType];
     if (!colliderMap || typeof colliderMap !== 'object') throw new Error(`Canonical ${dieType} colliderFaceMap is missing.`);
-    const grouped = new Map(); const usedD20RenderFaces = new Set();
+    const grouped = new Map(); const usedRenderFaces = new Set();
     for (const [rawFaceId, rawResult] of Object.entries(colliderMap)) {
       const faceId = Number(rawFaceId); const logicalResult = Number(rawResult);
       if (!Number.isInteger(faceId) || !isCanonicalFaceResult(dieType, logicalResult)) throw new Error(`${dieType} collider mapping contains an invalid face.`);
-      const renderFaceId = dieType === 'd20' && colliderMesh ? matchColliderFaceToRenderFace(mesh, colliderMesh, faceId, usedD20RenderFaces) : faceId;
+      const needsGeometryMatch = Boolean(colliderMesh && (dieType === 'd20' || includeOutline));
+      const renderFaceId = needsGeometryMatch
+        ? matchColliderFaceToRenderFace(mesh, colliderMesh, faceId, usedRenderFaces)
+        : faceId;
       const triangles = grouped.get(logicalResult) || []; triangles.push(triangleUv(mesh, renderFaceId)); grouped.set(logicalResult, triangles);
     }
     const expected = getCanonicalFaceResults(dieType);
