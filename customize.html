@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="robots" content="noindex,nofollow">
   <meta name="theme-color" content="#090c12">
-  <meta name="description" content="Customize visual dice faces, dice colors, number glow, and tray appearance without changing tabletop RPG roll mechanics.">
+  <meta name="description" content="Customize dice colors, faces, symbols, glow, clear resin interiors, and tray appearance without changing tabletop RPG roll mechanics.">
   <title>Dice Studio • Nothing But A Dice Roller</title>
   <link rel="stylesheet" href="/styles.css">
   <link rel="stylesheet" href="/customize.css">
@@ -77,6 +77,38 @@
           </div>
           <label class="check-row"><input id="die-glow-enabled" data-edit-control data-die-style-control type="checkbox"> Enable number glow for this die</label>
           <p class="studio-note">This glows the printed numbers or symbols on every face of the selected die. Selecting face 4 keeps the result 4; it does not change the roll.</p>
+        </fieldset>
+        <fieldset id="resin-editor-group" class="studio-group resin-editor-group">
+          <legend>Clear resin & inside</legend>
+          <label class="studio-field">Apply to
+            <select id="resin-scope" data-edit-control>
+              <option value="set">Whole set</option>
+              <option value="selected">Selected die only</option>
+            </select>
+          </label>
+          <p id="resin-scope-note" class="studio-note">This resin/interior look becomes the default for every die in the set.</p>
+          <label class="check-row"><input id="clear-die-enabled" data-edit-control type="checkbox"> Clear / translucent resin</label>
+          <label class="studio-field">Resin opacity
+            <span class="range-field"><input id="clear-die-opacity" data-edit-control type="range" min="0.25" max="1" step="0.05" value="0.72"><output id="clear-opacity-output" for="clear-die-opacity">72%</output></span>
+          </label>
+          <label class="studio-field">Inside effect
+            <select id="interior-effect" data-edit-control>
+              <option value="none">None</option>
+              <option value="glitter">Glitter</option>
+              <option value="flakes">Flakes</option>
+              <option value="smoke">Smoke</option>
+              <option value="nebula">Nebula</option>
+              <option value="bubbles">Bubbles</option>
+            </select>
+          </label>
+          <div class="color-grid resin-colors">
+            <label>Inside color 1<input id="interior-primary-color" data-edit-control type="color" value="#f8fafc"></label>
+            <label>Inside color 2<input id="interior-secondary-color" data-edit-control type="color" value="#7dd3fc"></label>
+          </div>
+          <label class="studio-field">Effect density
+            <span class="range-field"><input id="interior-density" data-edit-control type="range" min="0" max="1" step="0.05" value="0.45"><output id="interior-density-output" for="interior-density">45%</output></span>
+          </label>
+          <p class="studio-note">Try clear resin with glitter, flakes, smoke, nebula, or bubbles. These are visual effects only; the physical die shape and result never change.</p>
         </fieldset>
         <fieldset class="studio-group">
           <legend>Selected die faces</legend>
