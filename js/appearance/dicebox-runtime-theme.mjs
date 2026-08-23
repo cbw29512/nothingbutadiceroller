@@ -6,6 +6,9 @@ import { RUNTIME_THEME_VERSION, encodeRuntimeThemePayload } from './runtime-them
 function round(value) {
   return Math.round(Number(value) * 100) / 100;
 }
+function clamp01(value) {
+  return Math.max(0, Math.min(1, Number.isFinite(Number(value)) ? Number(value) : 0));
+}
 
 export function buildDiceBoxRuntimeTheme(glyphPlan, themePlan, dieType, { size = 1024 } = {}) {
   try {
@@ -13,6 +16,7 @@ export function buildDiceBoxRuntimeTheme(glyphPlan, themePlan, dieType, { size =
     const dieTheme = themePlan?.dice?.[dieType];
     if (!dieTheme) throw new Error(`Missing ${dieType} DiceBox theme instructions.`);
     const operations = buildDiceBoxAtlasDrawOperations(glyphPlan, dieType, size);
+    const glow = dieTheme.material?.glowHint || {};
     const payload = {
       v: RUNTIME_THEME_VERSION,
       d: dieType,
@@ -25,6 +29,7 @@ export function buildDiceBoxRuntimeTheme(glyphPlan, themePlan, dieType, { size =
         round(operation.y),
         round(operation.fontPx),
       ]),
+      g: [Boolean(glow.enabled), String(glow.color || '#ffffff'), round(clamp01(glow.intensity))],
     };
     const token = encodeRuntimeThemePayload(payload);
     return {
