@@ -61,12 +61,14 @@ Phase 4 evidence: exact head `9e55ef7d2d5d990ef7b5378c01480f8669eba451` passed F
 
 ## Phase 5 — Supply-chain and runtime resilience
 
-- [ ] Self-host the pinned DiceBox browser runtime.
-- [ ] Self-host the pinned DiceBox runtime assets/models required for standard dice.
-- [ ] Remove production execution dependency on jsDelivr/unpkg.
-- [ ] Tighten Content-Security-Policy after self-hosting.
-- [ ] Add production clickjacking protection (`frame-ancestors`) without breaking Deploy Preview review workflow.
-- [ ] Add regression checks proving no remote production module execution is required.
+- [x] Self-host the pinned DiceBox browser runtime. **DiceBox is pinned to exact version 1.1.4 and the production module is served from the app's own `/vendor/dice-box-1.1.4/` path.**
+- [x] Self-host the pinned DiceBox runtime assets/models required for standard dice. **The default model/textures, all three world worker modes, and Ammo WASM required by DiceBox 1.1.4 are shipped same-origin; package provenance and required runtime files are regression checked.**
+- [x] Remove production execution dependency on jsDelivr/unpkg. **Production runtime/model loaders have no CDN fallback, and rendered Chrome asserts no DiceBox resource is fetched from jsDelivr or unpkg.**
+- [x] Tighten Content-Security-Policy after self-hosting. **Production CSP defaults to same-origin execution/resources, allows only the WASM/worker behavior required by DiceBox, and is exercised by the production-like browser server.**
+- [x] Add production clickjacking protection (`frame-ancestors`) without breaking Deploy Preview review workflow. **Framing is restricted to self and `https://app.netlify.com`, preserving Netlify review while blocking arbitrary embedding.**
+- [x] Add regression checks proving no remote production module execution is required. **Hash/provenance, same-origin loader, worker/WASM presence, CSP, resource-timing, and a real physical d20 roll are release-gated.**
+
+Phase 5 evidence: exact consolidated head `39384cd998078deee37966ecceaca3f869688f06` passed the complete deterministic/build suite, rendered desktop/mobile Chrome matrix, CodeQL `security-extended`, and Netlify Deploy Preview with the self-hosted DiceBox runtime active under the hardened CSP.
 
 ## Phase 6 — Cloud concurrency and data integrity
 
@@ -102,22 +104,24 @@ Phase 7 evidence: exact implementation head `7da223f4eb38feda1265c88c6ea1dd5d742
 - [x] Add `SECURITY.md` with vulnerability reporting guidance. **Policy directs sensitive reports to private GitHub reporting/advisories and forbids posting credentials/exploit details publicly.**
 - [x] Add Dependabot configuration for npm and GitHub Actions. **Weekly version updates cover both ecosystems.**
 - [x] Add CodeQL/static security scanning. **Dedicated CodeQL v4 JavaScript workflow runs `security-extended` on PRs, main, weekly schedule, and manual dispatch.**
-- [ ] Review and retire legacy Theme Studio production surface after compatibility/migration verification.
-- [ ] Standardize server error responses so internal error details are not unnecessarily exposed. **Saved configurations and current Community/dice-set moderation endpoints use the shared typed public-error boundary; the remaining public Netlify endpoints are being audited before this is closed.**
+- [x] Review and retire legacy Theme Studio production surface after compatibility/migration verification. **The legacy browser client is neither bootstrapped nor shipped; the writer is permanently 410 Gone. Read/delete/image compatibility remains only for historical migration, user export/deletion, and privacy cleanup.**
+- [x] Standardize server error responses so internal error details are not unnecessarily exposed. **The release contract automatically discovers every top-level `/api/*` Netlify function (14 at certification), rejects raw error/stack serialization, and requires each endpoint to have an explicit shared, typed, generic, or retired safe-error strategy.**
 
-Phase 9 security evidence: exact dependency-cleaned head `400b34ab6b4c7cf5c4b0f6215d5aee04b56753b7` passed clean-checkout `npm ci`, the complete deterministic/build/browser release validation, the local DevSecOps contract, and the independent CodeQL `security-extended` analysis.
+Phase 9 security evidence: exact dependency-cleaned head `400b34ab6b4c7cf5c4b0f6215d5aee04b56753b7` passed clean-checkout `npm ci`, the complete deterministic/build/browser release validation, the local DevSecOps contract, and the independent CodeQL `security-extended` analysis. The completed Phase 9 surface/error audit is also certified on exact head `39384cd998078deee37966ecceaca3f869688f06`, which passed deterministic/build, rendered Chrome, CodeQL, and Netlify Deploy Preview.
 
 ## Phase 10 — Performance, polish, and operations
 
-- [ ] Remove redundant stylesheet loading/imports.
-- [ ] Bundle/optimize Dice Studio production JavaScript where useful.
-- [ ] Measure bundle/page performance before making speculative optimizations.
-- [ ] Add favicon/app icon and social preview metadata.
-- [ ] Add sitemap/manifest/structured metadata where useful.
-- [ ] Establish uptime/synthetic monitoring for the production roller.
-- [ ] Establish production error alerting and function-failure visibility.
-- [ ] Establish rollback/incident steps and verify backup/recovery expectations for Netlify Blob data.
-- [ ] Verify Netlify operational controls: team MFA/2FA, Identity policy, audit logs where plan supports them, firewall/rate limits, secrets, spending alerts.
+- [x] Remove redundant stylesheet loading/imports. **Prelinked production styles are single-sourced, CSS imports were removed, and only the progressive shortcut toolbar is injected at runtime; a release contract prevents duplicate loading from returning.**
+- [x] Bundle/optimize Dice Studio production JavaScript where useful. **The audited modular Studio source is bundled by esbuild in place at its established production URL, eliminating the production module-graph waterfall without changing the public route; the bundle is inspected for unresolved relative imports before release.**
+- [x] Measure bundle/page performance before making speculative optimizations. **Every production build reports raw/gzip release totals, Dice Studio JavaScript totals, and the largest release assets so future optimization is measurement-driven.**
+- [x] Add favicon/app icon and social preview metadata. **A dedicated SVG d20 favicon, 1200×630 social card, Open Graph metadata, and Twitter large-card metadata ship with the landing page.**
+- [x] Add sitemap/manifest/structured metadata where useful. **The release ships a web app manifest, sitemap, robots policy, canonical/Open Graph metadata, and avoids weakening CSP with inline structured-data scripts.**
+- [x] Establish uptime/synthetic monitoring for the production roller. **A read-only GitHub Actions production monitor is configured for every `main` push, manual dispatch, and twice-hourly schedule; it checks the live homepage/CSP, pinned DiceBox runtime, manifest, Community Blob/API path, and account authentication boundary. The first post-release live run remains part of production acceptance.**
+- [ ] Establish production error alerting and function-failure visibility. **Source-owned GitHub synthetic failures are visible, and `OPERATIONS.md` identifies GitHub/Netlify deploy/function/audit logs; the final release still requires the external Netlify deploy-failure notification destination and maintainer notification settings to be verified.**
+- [x] Establish rollback/incident steps and verify backup/recovery expectations for Netlify Blob data. **`OPERATIONS.md` defines P0–P3 response, atomic deploy rollback, post-rollback health checks, and explicitly separates code rollback from site-wide Blob data. Destructive Blob maintenance requires a verified export/snapshot strategy first; code rollback never silently rewinds user data.**
+- [ ] Verify Netlify operational controls: team MFA/2FA, Identity policy, audit logs where plan supports them, firewall/rate limits, secrets, spending alerts. **These are account/project settings and cannot be proven from repository source; the runbook contains the exact final manual verification list.**
+
+Phase 10 code-owned evidence: exact head `39384cd998078deee37966ecceaca3f869688f06` passed the complete deterministic/build suite, rendered desktop/mobile Chrome matrix, CodeQL `security-extended`, and Netlify Deploy Preview with stylesheet, Studio-bundle, metadata, synthetic-monitor, and operations contracts enabled.
 
 ## Final 10/10 release gate
 
