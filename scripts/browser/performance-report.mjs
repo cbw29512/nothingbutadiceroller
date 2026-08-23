@@ -1,14 +1,14 @@
 export const PERFORMANCE_EXPRESSION = `(() => {
   const resources = performance.getEntriesByType('resource');
   const navigation = performance.getEntriesByType('navigation')[0];
+  const paths = resources.map((entry) => new URL(entry.name).pathname);
   return {
     resourceCount: resources.length,
     transferBytes: resources.reduce((sum, entry) => sum + (entry.transferSize || 0), 0),
     durationMs: navigation ? Math.round(navigation.duration) : null,
     domContentLoadedMs: navigation ? Math.round(navigation.domContentLoadedEventEnd) : null,
-    appearanceScripts: resources
-      .map((entry) => new URL(entry.name).pathname)
-      .filter((path) => path.startsWith('/js/appearance/')),
+    scriptPaths: paths.filter((path) => /\.(?:m?js)$/.test(path)),
+    appearanceScripts: paths.filter((path) => path.startsWith('/js/appearance/') && /\.(?:m?js)$/.test(path)),
   };
 })()`;
 
