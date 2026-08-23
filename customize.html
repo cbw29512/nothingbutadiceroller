@@ -36,6 +36,7 @@
           <div><span class="section-label">Community</span><h2>Public Locked Sets</h2></div>
           <button id="refresh-community" class="btn ghost" type="button">Refresh</button>
         </div>
+        <p class="studio-note community-rules">Community sets must be safe to share: no harassment or hate, sexual or illegal content, malicious payloads, impersonation, or privacy/copyright violations. Report anything that breaks these rules.</p>
         <div id="community-library" class="studio-library"></div>
         <button id="load-more-community" class="btn secondary full" type="button" hidden>Load More Community Sets</button>
       </aside>
@@ -117,6 +118,33 @@
       </aside>
     </main>
   </div>
+
+  <dialog id="community-report-dialog" class="studio-dialog" aria-labelledby="community-report-title">
+    <form id="community-report-form">
+      <p class="eyebrow">COMMUNITY REPORT</p>
+      <h2 id="community-report-title">Report <span id="community-report-name">Community Dice Set</span></h2>
+      <p class="studio-note">Sign-in is required to reduce report abuse. Your account identity is not shown to the set creator or Community.</p>
+      <label class="studio-field">Reason
+        <select id="community-report-reason" required>
+          <option value="inappropriate">Inappropriate content</option>
+          <option value="harassment">Harassment or hate</option>
+          <option value="copyright">Copyright concern</option>
+          <option value="privacy">Privacy concern</option>
+          <option value="malicious">Malicious or unsafe content</option>
+          <option value="other">Other</option>
+        </select>
+      </label>
+      <label class="studio-field">Details <span class="studio-note">Optional, 500 characters max</span>
+        <textarea id="community-report-details" maxlength="500" rows="5"></textarea>
+      </label>
+      <p id="community-report-status" class="status-line" role="status">Reports are private and reviewed by the site administrator.</p>
+      <div class="button-row dialog-actions">
+        <button id="community-report-cancel" class="btn ghost" type="button">Cancel</button>
+        <button id="community-report-submit" class="btn danger" type="submit">Submit Report</button>
+      </div>
+    </form>
+  </dialog>
+
   <script type="module" src="/js/appearance/studio.js"></script>
 </body>
 </html>
