@@ -134,11 +134,11 @@ async function deleteCommunityPrivacyData(store, userId) {
   return { reportsDeleted, blocksDeleted, adminReferencesAnonymized };
 }
 
-export async function deleteAccountData(userId, context) {
+export async function deleteAccountData(userId, context, stores = {}) {
   try {
-    const configurationStore = openConfigurationStore(context);
-    const shortcutStore = openShortcutStore(context);
-    const appStore = openDiceSetStore(context);
+    const configurationStore = stores.configurationStore || openConfigurationStore(context);
+    const shortcutStore = stores.shortcutStore || openShortcutStore(context);
+    const appStore = stores.appStore || openDiceSetStore(context);
 
     const diceSetsDeleted = await deleteDiceSets(appStore, userId);
     const legacyThemesDeleted = await deleteLegacyThemes(appStore, userId);
