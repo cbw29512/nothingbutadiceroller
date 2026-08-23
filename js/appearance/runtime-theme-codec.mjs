@@ -1,10 +1,12 @@
 import { CANONICAL_DICE } from './defaults.mjs';
 import { isValidFaceDisplayValue } from './face-display.mjs';
+import { INTERIOR_EFFECT_TYPES } from './resin-style.mjs';
 
-export const RUNTIME_THEME_VERSION = 2;
-const LEGACY_RUNTIME_THEME_VERSION = 1;
+export const RUNTIME_THEME_VERSION = 3;
+const LEGACY_RUNTIME_THEME_VERSIONS = new Set([1, 2]);
 const HEX = /^#[0-9a-f]{6}$/i;
 const FONT_IDS = new Set(['', 'default', 'fantasy', 'runic', 'mono']);
+const INTERIOR_TYPES = new Set(INTERIOR_EFFECT_TYPES);
 const MAX_OPERATIONS = 24;
 
 function base64UrlEncode(text) {
@@ -28,12 +30,31 @@ function validateGlow(glow, errors) {
   if (!HEX.test(String(color || ''))) errors.push('Runtime glow color is invalid.');
   if (!Number.isFinite(intensity) || intensity < 0 || intensity > 1) errors.push('Runtime glow intensity is invalid.');
 }
+function validateResin(resin, errors) {
+  if (!Array.isArray(resin) || resin.length !== 10) {
+    errors.push('Runtime resin settings are invalid.');
+    return;
+  }
+  const [clearEnabled, opacity, frost, tintColor, interiorEnabled, type, primary, secondary, density, intensity] = resin;
+  if (typeof clearEnabled !== 'boolean') errors.push('Runtime clear-resin flag is invalid.');
+  if (!Number.isFinite(opacity) || opacity < 0.25 || opacity > 1) errors.push('Runtime resin opacity is invalid.');
+  if (!Number.isFinite(frost) || frost < 0 || frost > 1) errors.push('Runtime resin frost is invalid.');
+  if (!HEX.test(String(tintColor || ''))) errors.push('Runtime resin tint color is invalid.');
+  if (typeof interiorEnabled !== 'boolean') errors.push('Runtime interior enabled flag is invalid.');
+  if (!INTERIOR_TYPES.has(String(type || ''))) errors.push('Runtime interior effect is invalid.');
+  if (interiorEnabled && type === 'none') errors.push('Runtime interior effect cannot be none while enabled.');
+  if (!HEX.test(String(primary || '')) || !HEX.test(String(secondary || ''))) errors.push('Runtime interior colors are invalid.');
+  if (!Number.isFinite(density) || density < 0 || density > 1) errors.push('Runtime interior density is invalid.');
+  if (!Number.isFinite(intensity) || intensity < 0 || intensity > 1) errors.push('Runtime interior intensity is invalid.');
+}
 export function validateRuntimeThemePayload(payload) {
   const errors = [];
   try {
     if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return { ok: false, errors: ['Payload must be an object.'] };
-    const supportedVersion = payload.v === RUNTIME_THEME_VERSION || payload.v === LEGACY_RUNTIME_THEME_VERSION;
-    const allowedFields = payload.v === RUNTIME_THEME_VERSION ? ['v', 'd', 's', 'o', 'g'] : ['v', 'd', 's', 'o'];
+    const supportedVersion = payload.v === RUNTIME_THEME_VERSION || LEGACY_RUNTIME_THEME_VERSIONS.has(payload.v);
+    let allowedFields = ['v', 'd', 's', 'o'];
+    if (payload.v === 2) allowedFields = [...allowedFields, 'g'];
+    if (payload.v === RUNTIME_THEME_VERSION) allowedFields = [...allowedFields, 'g', 'r'];
     const extra = Object.keys(payload).filter((key) => !allowedFields.includes(key));
     if (extra.length) errors.push(`Unsupported payload fields: ${extra.join(', ')}.`);
     if (!supportedVersion) errors.push('Unsupported runtime theme version.');
@@ -49,7 +70,8 @@ export function validateRuntimeThemePayload(payload) {
       if (![x, y].every((value) => Number.isFinite(value) && value >= 0 && value <= payload.s)) errors.push(`Operation ${index} position is invalid.`);
       if (!Number.isFinite(fontPx) || fontPx < 6 || fontPx > 200) errors.push(`Operation ${index} font size is invalid.`);
     }
-    if (payload.v === RUNTIME_THEME_VERSION) validateGlow(payload.g, errors);
+    if (payload.v === 2 || payload.v === RUNTIME_THEME_VERSION) validateGlow(payload.g, errors);
+    if (payload.v === RUNTIME_THEME_VERSION) validateResin(payload.r, errors);
   } catch (error) {
     console.error('Runtime theme payload validation failed:', error); errors.push('Runtime theme payload validation failed.');
   }
