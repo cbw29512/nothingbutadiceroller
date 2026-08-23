@@ -72,6 +72,21 @@ export async function loadCommunityDiceSets() {
   }
 }
 
+export async function submitCommunityReport({ publicAccessId, reason, details = '' }) {
+  try {
+    const response = await fetch('/api/community-report', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ publicAccessId, reason, details }),
+    });
+    return await parse(response);
+  } catch (error) {
+    console.error('Failed to submit Community report:', error);
+    throw error;
+  }
+}
+
 export async function saveCloudDiceSet(set, version = null) {
   const response = await fetch('/api/save-dice-set', {
     method: 'POST',
