@@ -4,11 +4,14 @@ import { openScopedStore } from './deploy-store.mjs';
 export const LEGACY_THEME_STORE_NAME = 'dice-trays-store';
 export const LEGACY_THEME_COMMUNITY_INDEX = 'community/themes/index.json';
 
+export function legacyThemePrefix(ownerId) {
+  return `users/${encodeURIComponent(String(ownerId))}/themes/`;
+}
 export function legacyThemeKey(ownerId, themeId) {
-  return `users/${encodeURIComponent(String(ownerId))}/themes/${encodeURIComponent(String(themeId))}.json`;
+  return `${legacyThemePrefix(ownerId)}${encodeURIComponent(String(themeId))}.json`;
 }
 export function legacyThemeIndexKey(ownerId) {
-  return `users/${encodeURIComponent(String(ownerId))}/themes/index.json`;
+  return `${legacyThemePrefix(ownerId)}index.json`;
 }
 export function openLegacyThemeStore(context) {
   return openScopedStore(LEGACY_THEME_STORE_NAME, context);
