@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="theme-color" content="#090c12">
+  <title>Community Moderation • Nothing But A Dice Roller</title>
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/customize.css">
+  <link rel="stylesheet" href="/moderation.css">
+</head>
+<body class="studio-page">
+  <div class="moderation-shell">
+    <header class="studio-header">
+      <div>
+        <p class="eyebrow">ADMIN ONLY</p>
+        <h1>Community Moderation</h1>
+        <p>Review private reports, remove unsafe public sets, or lift a moderation block after review.</p>
+      </div>
+      <div class="button-row"><a class="btn ghost" href="/customize.html">Dice Studio</a><a class="btn secondary" href="/">Roller</a></div>
+    </header>
+
+    <main class="studio-panel">
+      <div class="studio-panel-heading">
+        <div><span class="section-label">Report Queue</span><h2>Community Reports</h2></div>
+        <button id="moderation-refresh" class="btn secondary" type="button">Refresh</button>
+      </div>
+      <p class="studio-note">Access is enforced server-side with the Netlify Identity <strong>admin</strong> role. Reporter account IDs are never rendered here.</p>
+      <p id="moderation-status" class="status-line" role="status">Loading moderation queue…</p>
+      <div id="moderation-reports" class="moderation-reports" aria-live="polite"></div>
+    </main>
+  </div>
+  <script type="module" src="/js/community-moderation.js"></script>
+</body>
+</html>
