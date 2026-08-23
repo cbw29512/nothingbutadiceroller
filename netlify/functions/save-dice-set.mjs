@@ -4,6 +4,7 @@ import { RegExpMatcher, englishDataset, englishRecommendedTransformers } from 'o
 import { assertLockedUpdateAllowed, collectModerationText, prepareCloudDiceSet } from '../../js/appearance/cloud-rules.mjs';
 import { extractTrayImageDataUrl, MAX_TRAY_IMAGE_BYTES } from '../../js/appearance/tray-image.mjs';
 import { apiErrorResponse, publicError } from './api-errors.mjs';
+import { readModerationBlock } from './community-moderation-store.mjs';
 import {
   conditionalRecordWrite, normalizeExpectedVersion, readVersionedRecord, versionConflict,
 } from './dice-set-concurrency.mjs';
@@ -107,6 +108,10 @@ export default async (request, context) => {
     if (matcher.hasMatch(collectModerationText(set))) {
       return json({ error: 'Please remove inappropriate terms before saving this dice set.', code: 'moderation-rejected' }, 400);
     }
+    const publicLocked = set.visibility === 'public' && set.locked;
+    if (publicLocked && await readModerationBlock(store, user.id, set.id)) {
+      throw publicError('This dice set was removed from Community by moderation. Make it private to continue editing.', { status: 403, code: 'community-publication-blocked' });
+    }
 
     const previousTrayImageKey = existing?.trayImageKey || null;
     let trayImageKey = previousTrayImageKey;
@@ -124,7 +129,6 @@ export default async (request, context) => {
     }
 
     const now = new Date().toISOString();
-    const publicLocked = set.visibility === 'public' && set.locked;
     const previousPublicAccessId = existing?.publicAccessId || null;
     const existingIsPublic = existing?.set?.visibility === 'public' && existing?.set?.locked;
     let publicAccessId = publicLocked && existingIsPublic ? previousPublicAccessId : null;
