@@ -1,4 +1,5 @@
 import { faceFontStack } from './face-fonts.mjs';
+import { normalizeFaceGlyphScale } from './face-glyph-scale.mjs';
 
 function graphemeCount(value) {
   const text = String(value || '');
@@ -13,6 +14,9 @@ function fitFont(text, maxWidth, maxHeight) {
   const count = graphemeCount(text);
   const widthLimited = maxWidth / Math.max(0.8, count * 0.62);
   return Math.max(8, Math.min(180, maxHeight * 0.82, widthLimited));
+}
+function scaledFont(text, maxWidth, maxHeight, scale) {
+  return Math.max(6, Math.min(200, fitFont(text, maxWidth, maxHeight) * normalizeFaceGlyphScale(scale)));
 }
 
 function centeredOperation(command, size) {
@@ -29,7 +33,7 @@ function centeredOperation(command, size) {
     y: (1 - region.centerV) * size,
     maxWidth,
     maxHeight,
-    fontPx: fitFont(command.text, maxWidth, maxHeight),
+    fontPx: scaledFont(command.text, maxWidth, maxHeight, command.scale),
     strategy: command.strategy,
   };
 }
@@ -50,7 +54,7 @@ function d4Operations(command, size) {
       y: (1 - mark.v) * size,
       maxWidth,
       maxHeight,
-      fontPx: fitFont(command.text, maxWidth, maxHeight),
+      fontPx: scaledFont(command.text, maxWidth, maxHeight, command.scale),
       strategy: command.strategy,
     };
   });

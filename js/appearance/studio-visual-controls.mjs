@@ -2,6 +2,7 @@ import { CUSTOM_FACE_MODE } from './defaults.mjs';
 import { canEditDiceSet } from './authorization.mjs';
 import { replaceVisualFace, removeVisualFace, useRawFaces } from './face-customization.mjs';
 import { normalizeFaceFontId } from './face-fonts.mjs';
+import { normalizeFaceGlyphScale } from './face-glyph-scale.mjs';
 import { buildAppearanceRenderPlan } from './render-plan.mjs';
 import { MAX_BROWSER_TRAY_IMAGE_BYTES, MAX_TRAY_IMAGE_BYTES } from './tray-image.mjs';
 
@@ -85,6 +86,10 @@ export function bindStudioVisualControls(context) {
     if (q('face-mode').value === 'raw') { setDraft(useRawFaces(set, getSelectedDie())); refresh(); return; }
     updateDraft((next) => { next.appearance.diceSet.dice[getSelectedDie()].faceMode = CUSTOM_FACE_MODE; });
   });
+  q('face-scale')?.addEventListener('input', () => {
+    const output = q('face-scale-output');
+    if (output) output.textContent = `${q('face-scale').value}%`;
+  });
   q('apply-face').addEventListener('click', () => {
     try {
       const set = getDraft();
@@ -95,6 +100,7 @@ export function bindStudioVisualControls(context) {
         value: q('face-value').value.trim(),
         color: q('custom-face-color').value,
         fontId: normalizeFaceFontId(q('face-font')?.value),
+        scale: normalizeFaceGlyphScale(Number(q('face-scale')?.value || 100) / 100),
       });
       setDraft(next); refresh(); setStatus(`Face ${logicalFace} updated visually. It still rolls ${logicalFace}.`, 'ready');
     } catch (error) { console.error('Failed to apply face appearance:', error); setStatus(error.message, 'error'); }

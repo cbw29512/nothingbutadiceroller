@@ -8,6 +8,7 @@ import {
 } from './defaults.mjs';
 import { countFaceDisplayGraphemes, isValidFaceDisplayValue } from './face-display.mjs';
 import { isSupportedFaceFontId } from './face-fonts.mjs';
+import { isValidFaceGlyphScale } from './face-glyph-scale.mjs';
 import { isCanonicalFaceResult } from './face-values.mjs';
 import { isValidDiceSetId } from './identifiers.mjs';
 import { validateEdgeInlay } from './inlay-style.mjs';
@@ -30,7 +31,7 @@ const DICE_SET_KEYS = new Set(['defaultStyle', 'dice']);
 const BASE_STYLE_KEYS = new Set(['bodyColor', 'faceColor', 'opacity', 'glow', 'translucency', 'interior', 'finish', 'pattern', 'inlay']);
 const TRAY_KEYS = new Set(['color', 'image', 'glow']);
 const DIE_KEYS = new Set(['shapeId', 'logicalDie', 'faceMode', 'styleOverrides', 'faces']);
-const FACE_KEYS = new Set(['kind', 'value', 'color', 'fontId']);
+const FACE_KEYS = new Set(['kind', 'value', 'color', 'fontId', 'scale']);
 const GLOW_KEYS = new Set(['enabled', 'color', 'intensity']);
 const TRANSLUCENCY_KEYS = new Set(['enabled', 'opacity', 'frost', 'tintColor']);
 const INTERIOR_KEYS = new Set(['enabled', 'type', 'primaryColor', 'secondaryColor', 'density', 'intensity']);
@@ -100,6 +101,7 @@ function checkFace(face, path, errors) {
   if (!FACE_KINDS.has(face.kind)) errors.push(`${path}.kind is unsupported.`);
   if (face.color != null && !HEX.test(String(face.color))) errors.push(`${path}.color is invalid.`);
   if (face.fontId != null && !isSupportedFaceFontId(face.fontId)) errors.push(`${path}.fontId must reference a supported font.`);
+  if (face.scale != null && !isValidFaceGlyphScale(face.scale)) errors.push(`${path}.scale must be between 0.6 and 1.2.`);
   if (face.kind === 'text' && !isValidFaceDisplayValue(face.value)) errors.push(`${path}.value must be a short visible label.`);
   if (face.kind === 'icon') {
     const value = typeof face.value === 'string' ? face.value.trim() : '';

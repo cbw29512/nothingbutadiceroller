@@ -6,6 +6,13 @@ import {
   cloneSystemDefaultAppearance,
 } from '../js/appearance/defaults.mjs';
 import { FACE_FONT_OPTIONS, faceFontStack, isSupportedFaceFontId } from '../js/appearance/face-fonts.mjs';
+import {
+  DEFAULT_FACE_GLYPH_SCALE,
+  MAX_FACE_GLYPH_SCALE,
+  MIN_FACE_GLYPH_SCALE,
+  isValidFaceGlyphScale,
+  normalizeFaceGlyphScale,
+} from '../js/appearance/face-glyph-scale.mjs';
 import { getCanonicalFaceLabel, getCanonicalFaceResults } from '../js/appearance/face-values.mjs';
 import { getFaceLayout, getSupportedFaceEditorDice } from '../js/appearance/face-layouts.mjs';
 import { createUserDiceSet } from '../js/appearance/schema.mjs';
@@ -23,6 +30,10 @@ assert.equal(isSupportedFaceFontId('comic-sans'), false, 'Unknown face font IDs 
 assert.equal(faceFontStack('default'), 'Arial, sans-serif');
 assert.equal(faceFontStack('fantasy'), 'Georgia, serif');
 assert.match(faceFontStack('mono'), /monospace/);
+assert.equal(MIN_FACE_GLYPH_SCALE, 0.6); assert.equal(MAX_FACE_GLYPH_SCALE, 1.2); assert.equal(DEFAULT_FACE_GLYPH_SCALE, 1);
+assert.equal(isValidFaceGlyphScale(0.6), true); assert.equal(isValidFaceGlyphScale(1), true); assert.equal(isValidFaceGlyphScale(1.2), true);
+assert.equal(isValidFaceGlyphScale(0.59), false); assert.equal(isValidFaceGlyphScale(1.21), false); assert.equal(isValidFaceGlyphScale('1'), false);
+assert.equal(normalizeFaceGlyphScale(undefined), 1); assert.equal(normalizeFaceGlyphScale(0.2), 0.6); assert.equal(normalizeFaceGlyphScale(3), 1.2);
 for (const type of Object.keys(CANONICAL_DICE)) {
   const die = SYSTEM_DEFAULT_DICE_SET.appearance.diceSet.dice[type];
   assert.equal(die.shapeId, `canonical:${type}`); assert.equal(die.logicalDie, type);
@@ -52,18 +63,16 @@ assert.equal(validateDiceSet(extraDie).ok, false);
 const illegalRaw = structuredClone(rawStyled); illegalRaw.appearance.diceSet.dice.d20.faces = { 20: { kind: 'text', value: '☠' } };
 assert.equal(validateDiceSet(illegalRaw).ok, false);
 
-let custom = replaceVisualFace(rawStyled, 'd20', 20, { kind: 'text', value: '☠', color: '#a855f7' });
-custom = replaceVisualFace(custom, 'd20', 1, { kind: 'text', value: 'CRIT', color: '#ffffff', fontId: 'fantasy' });
-custom = replaceVisualFace(custom, 'd4', 1, { kind: 'text', value: 'ᚱ', color: '#ffffff', fontId: 'runic' });
+let custom = replaceVisualFace(rawStyled, 'd20', 20, { kind: 'text', value: '☠', color: '#a855f7', scale: 1.2 });
+custom = replaceVisualFace(custom, 'd20', 1, { kind: 'text', value: 'CRIT', color: '#ffffff', fontId: 'fantasy', scale: 0.6 });
+custom = replaceVisualFace(custom, 'd4', 1, { kind: 'text', value: 'ᚱ', color: '#ffffff', fontId: 'runic', scale: 1.1 });
 custom = replaceVisualFace(custom, 'd8', 8, { kind: 'text', value: '☠️', color: '#ffffff' });
-custom = replaceVisualFace(custom, 'd100', 0, { kind: 'text', value: 'BOOM', color: '#ffffff', fontId: 'mono' });
-assert.equal(validateDiceSet(custom).ok, true, 'Numbers, symbols, runes, short words, and supported face fonts are visual-only and valid.');
-assert.equal(getVisualFace(custom, 'd20', 20).value, '☠');
-assert.equal(getVisualFace(custom, 'd20', 1).value, 'CRIT');
-assert.equal(getVisualFace(custom, 'd20', 1).fontId, 'fantasy');
+custom = replaceVisualFace(custom, 'd100', 0, { kind: 'text', value: 'BOOM', color: '#ffffff', fontId: 'mono', scale: 1 });
+assert.equal(validateDiceSet(custom).ok, true, 'Numbers, symbols, runes, short words, supported fonts, and bounded glyph scale are visual-only and valid.');
+assert.equal(getVisualFace(custom, 'd20', 20).value, '☠'); assert.equal(getVisualFace(custom, 'd20', 20).scale, 1.2);
+assert.equal(getVisualFace(custom, 'd20', 1).value, 'CRIT'); assert.equal(getVisualFace(custom, 'd20', 1).fontId, 'fantasy'); assert.equal(getVisualFace(custom, 'd20', 1).scale, 0.6);
 assert.equal(getVisualFace(custom, 'd10', 10).value, '0');
-assert.equal(getVisualFace(custom, 'd100', 0).value, 'BOOM');
-assert.equal(getVisualFace(custom, 'd100', 0).fontId, 'mono');
+assert.equal(getVisualFace(custom, 'd100', 0).value, 'BOOM'); assert.equal(getVisualFace(custom, 'd100', 0).fontId, 'mono');
 const legacyIcon = replaceVisualFace(custom, 'd6', 6, { kind: 'icon', value: 'skull', color: '#ffffff' });
 assert.equal(validateDiceSet(legacyIcon).ok, true);
 for (const word of ['FIRE', 'AB', 'MISS', 'ROLL AGAIN']) {
@@ -77,10 +86,12 @@ assert.throws(() => replaceVisualFace(custom, 'd20', 20, { kind: 'text', value: 
 assert.throws(() => replaceVisualFace(custom, 'd20', 20, { kind: 'text', value: 'BAD\nLABEL' }));
 assert.throws(() => replaceVisualFace(custom, 'd20', 20, { kind: 'image', assetId: 'skull.png' }));
 assert.throws(() => replaceVisualFace(custom, 'd20', 20, { kind: 'text', value: 'BADFONT', fontId: 'user-font-url' }), /supported font/i);
+assert.throws(() => replaceVisualFace(custom, 'd20', 20, { kind: 'text', value: 'SMALL', scale: 0.59 }), /scale must be between 0\.6 and 1\.2/i);
+assert.throws(() => replaceVisualFace(custom, 'd20', 20, { kind: 'text', value: 'LARGE', scale: 1.21 }), /scale must be between 0\.6 and 1\.2/i);
 
 custom = removeVisualFace(custom, 'd20', 20); assert.equal(getVisualFace(custom, 'd20', 20).value, '20');
 custom = useRawFaces(custom, 'd20'); assert.equal(custom.appearance.diceSet.dice.d20.faceMode, RAW_FACE_MODE); assert.deepEqual(custom.appearance.diceSet.dice.d20.faces, {});
 const wrongShape = structuredClone(custom); wrongShape.appearance.diceSet.dice.d20.shapeId = 'custom:d20'; assert.equal(validateDiceSet(wrongShape).ok, false);
 const wrongLogic = structuredClone(custom); wrongLogic.appearance.diceSet.dice.d20.logicalDie = 'd6'; assert.equal(validateDiceSet(wrongLogic).ok, false);
 const clone = cloneSystemDefaultAppearance(); clone.tray.color = '#123456'; assert.equal(SYSTEM_DEFAULT_DICE_SET.appearance.tray.color, '#000000');
-console.log('Appearance mechanics passed: customization is visual-only; canonical RPG dice/results are protected, typography is bounded, and short labels are supported.');
+console.log('Appearance mechanics passed: customization is visual-only; canonical RPG dice/results are protected, typography and 60–120% glyph scale are bounded, and short labels are supported.');

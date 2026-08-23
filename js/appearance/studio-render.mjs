@@ -3,9 +3,11 @@ import { getCanonicalFaceLabel, getCanonicalFaceResults } from './face-values.mj
 import { getSupportedFaceEditorDice } from './face-layouts.mjs';
 import { getVisualFace } from './face-customization.mjs';
 import { faceFontStack } from './face-fonts.mjs';
+import { normalizeFaceGlyphScale } from './face-glyph-scale.mjs';
 import { buildAppearanceRenderPlan } from './render-plan.mjs';
 import { renderFaceMap } from './studio-face-map.mjs';
 import { ensureStudioFaceFontControl, fillStudioFaceFontControl } from './studio-face-font-controls.mjs';
+import { ensureStudioFaceScaleControl, fillStudioFaceScaleControl } from './studio-face-scale-controls.mjs';
 import { fillStudioInlayControls } from './studio-inlay-controls.mjs';
 import { fillStudioPatternControls } from './studio-pattern-controls.mjs';
 import { fillStudioResinControls } from './studio-resin-controls.mjs';
@@ -79,6 +81,7 @@ export function renderPreview(set, selectedDie) {
     const faceText = die.querySelector('span');
     faceText.textContent = visualText(face);
     faceText.style.fontFamily = faceFontStack(face.fontId);
+    faceText.style.fontSize = `${normalizeFaceGlyphScale(face.scale)}em`;
     faceText.style.textShadow = numberGlowShadow(style.glow);
     if (FACE_EDITOR_DICE.has(type)) {
       faceText.dataset.previewFace = String(previewResult);
@@ -89,6 +92,7 @@ export function renderPreview(set, selectedDie) {
 }
 export function fillEditor(set, selectedDie, activeId, ownerId, cloudEnabled) {
   ensureStudioFaceFontControl(document);
+  ensureStudioFaceScaleControl(document);
   const system = set.id === SYSTEM_DEFAULT_DICE_SET_ID; const owner = !system && set.ownerId === ownerId; const locked = set.locked;
   const editable = !system && !locked && owner;
   const style = set.appearance.diceSet.defaultStyle; const die = set.appearance.diceSet.dice[selectedDie];
@@ -118,6 +122,7 @@ export function fillEditor(set, selectedDie, activeId, ownerId, cloudEnabled) {
     q('logical-face-label').textContent = `Face ${faceLabel}`; q('logical-result-label').textContent = `Always reports ${faceNumber}`;
     q('face-value').value = visualText(face); q('custom-face-color').value = face.color || dieStyle.faceColor;
     fillStudioFaceFontControl({ q, face, editable });
+    fillStudioFaceScaleControl({ q, face, editable });
     document.querySelectorAll('[data-face-edit-control]').forEach((el) => { el.disabled = !editable; }); renderFaceMap(set, selectedDie, faceNumber, selectFace);
   };
   selectFace(selectedFace);
