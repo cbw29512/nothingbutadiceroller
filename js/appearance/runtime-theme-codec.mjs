@@ -15,7 +15,7 @@ const FINISH_TYPES = new Set(SURFACE_FINISH_TYPES);
 const PATTERN_TYPES = new Set(SURFACE_PATTERN_TYPES);
 const INLAY_TYPES = new Set(EDGE_INLAY_TYPES);
 const MAX_OPERATIONS = 24;
-const MAX_BOUNDARY_POINTS = 24;
+const MAX_EDGE_SEGMENTS_PER_FACE = 12;
 
 function base64UrlEncode(text) {
   const bytes = new TextEncoder().encode(text); let binary = '';
@@ -29,20 +29,14 @@ function base64UrlDecode(token) {
   return new TextDecoder().decode(Uint8Array.from(binary, (char) => char.charCodeAt(0)));
 }
 function validateGlow(glow, errors) {
-  if (!Array.isArray(glow) || glow.length !== 3) {
-    errors.push('Runtime glow settings are invalid.');
-    return;
-  }
+  if (!Array.isArray(glow) || glow.length !== 3) { errors.push('Runtime glow settings are invalid.'); return; }
   const [enabled, color, intensity] = glow;
   if (typeof enabled !== 'boolean') errors.push('Runtime glow enabled flag is invalid.');
   if (!HEX.test(String(color || ''))) errors.push('Runtime glow color is invalid.');
   if (!Number.isFinite(intensity) || intensity < 0 || intensity > 1) errors.push('Runtime glow intensity is invalid.');
 }
 function validateResin(resin, errors) {
-  if (!Array.isArray(resin) || resin.length !== 10) {
-    errors.push('Runtime resin settings are invalid.');
-    return;
-  }
+  if (!Array.isArray(resin) || resin.length !== 10) { errors.push('Runtime resin settings are invalid.'); return; }
   const [clearEnabled, opacity, frost, tintColor, interiorEnabled, type, primary, secondary, density, intensity] = resin;
   if (typeof clearEnabled !== 'boolean') errors.push('Runtime clear-resin flag is invalid.');
   if (!Number.isFinite(opacity) || opacity < 0.25 || opacity > 1) errors.push('Runtime resin opacity is invalid.');
@@ -56,20 +50,14 @@ function validateResin(resin, errors) {
   if (!Number.isFinite(intensity) || intensity < 0 || intensity > 1) errors.push('Runtime interior intensity is invalid.');
 }
 function validateFinish(finish, errors) {
-  if (!Array.isArray(finish) || finish.length !== 3) {
-    errors.push('Runtime surface finish settings are invalid.');
-    return;
-  }
+  if (!Array.isArray(finish) || finish.length !== 3) { errors.push('Runtime surface finish settings are invalid.'); return; }
   const [type, accentColor, intensity] = finish;
   if (!FINISH_TYPES.has(String(type || ''))) errors.push('Runtime surface finish is invalid.');
   if (!HEX.test(String(accentColor || ''))) errors.push('Runtime surface finish accent color is invalid.');
   if (!Number.isFinite(intensity) || intensity < 0 || intensity > 1) errors.push('Runtime surface finish intensity is invalid.');
 }
 function validatePattern(pattern, errors) {
-  if (!Array.isArray(pattern) || pattern.length !== 5) {
-    errors.push('Runtime surface pattern settings are invalid.');
-    return;
-  }
+  if (!Array.isArray(pattern) || pattern.length !== 5) { errors.push('Runtime surface pattern settings are invalid.'); return; }
   const [type, primaryColor, secondaryColor, intensity, scale] = pattern;
   if (!PATTERN_TYPES.has(String(type || ''))) errors.push('Runtime surface pattern is invalid.');
   if (!HEX.test(String(primaryColor || ''))) errors.push('Runtime surface pattern primary color is invalid.');
@@ -79,23 +67,19 @@ function validatePattern(pattern, errors) {
 }
 function validateBoundaries(boundaries, payload, errors) {
   if (!Array.isArray(boundaries) || boundaries.length !== getCanonicalFaceResults(payload.d).length) {
-    errors.push('Runtime edge-inlay boundaries do not cover every physical face.');
-    return;
+    errors.push('Runtime edge-inlay boundaries do not cover every physical face.'); return;
   }
-  for (const [index, loop] of boundaries.entries()) {
-    if (!Array.isArray(loop) || loop.length < 6 || loop.length > MAX_BOUNDARY_POINTS * 2 || loop.length % 2 !== 0) {
-      errors.push(`Runtime edge-inlay boundary ${index} is invalid.`); continue;
+  for (const [index, faceSegments] of boundaries.entries()) {
+    if (!Array.isArray(faceSegments) || faceSegments.length < 12 || faceSegments.length > MAX_EDGE_SEGMENTS_PER_FACE * 4 || faceSegments.length % 4 !== 0) {
+      errors.push(`Runtime edge-inlay face segments ${index} are invalid.`); continue;
     }
-    if (!loop.every((value) => Number.isFinite(value) && value >= 0 && value <= payload.s)) {
-      errors.push(`Runtime edge-inlay boundary ${index} contains invalid coordinates.`);
+    if (!faceSegments.every((value) => Number.isFinite(value) && value >= 0 && value <= payload.s)) {
+      errors.push(`Runtime edge-inlay face segments ${index} contain invalid coordinates.`);
     }
   }
 }
 function validateInlay(inlay, payload, errors) {
-  if (!Array.isArray(inlay) || (inlay.length !== 4 && inlay.length !== 5)) {
-    errors.push('Runtime edge-inlay settings are invalid.');
-    return;
-  }
+  if (!Array.isArray(inlay) || (inlay.length !== 4 && inlay.length !== 5)) { errors.push('Runtime edge-inlay settings are invalid.'); return; }
   const [type, color, intensity, width, boundaries] = inlay;
   if (!INLAY_TYPES.has(String(type || ''))) errors.push('Runtime edge-inlay type is invalid.');
   if (!HEX.test(String(color || ''))) errors.push('Runtime edge-inlay color is invalid.');

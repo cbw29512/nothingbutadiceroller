@@ -36,7 +36,7 @@ export function buildDiceBoxGlyphPlan(renderPlan, modelData) {
         for (const logicalResult of getCanonicalFaceResults(type)) commands.push(d4Command(logicalResult, die, d4Anchors[String(logicalResult)]));
         continue;
       }
-      const regions = extractDiceBoxFaceRegions(modelData, type, { includeOutline: needsEdgeInlay(die) });
+      const regions = extractDiceBoxFaceRegions(modelData, type, { includeEdgeSegments: needsEdgeInlay(die) });
       for (const logicalResult of getCanonicalFaceResults(type)) commands.push(centeredCommand(type, logicalResult, die, regions[String(logicalResult)]));
     }
     return { atlasVersion: 1, sourceSetId: renderPlan.sourceSetId, commands };

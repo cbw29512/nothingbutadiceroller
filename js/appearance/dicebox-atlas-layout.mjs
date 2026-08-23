@@ -8,45 +8,57 @@ function getRenderMesh(modelData, dieType) {
   return mesh;
 }
 function getColliderMesh(modelData, dieType) { return modelData?.meshes?.find((item) => item?.name === `${dieType}_collider`) || null; }
-function triangleUv(mesh, faceId) {
+function vertexPosition(mesh, vertexIndex) {
+  if (!Array.isArray(mesh.positions)) return null;
+  const point = [Number(mesh.positions[vertexIndex * 3]), Number(mesh.positions[(vertexIndex * 3) + 1]), Number(mesh.positions[(vertexIndex * 3) + 2])];
+  return point.every(Number.isFinite) ? point : null;
+}
+function triangleData(mesh, faceId) {
   const indices = mesh.indices.slice(faceId * 3, (faceId * 3) + 3);
   if (indices.length !== 3) throw new Error(`Mesh face ${faceId} has no render triangle.`);
   return indices.map((vertexIndex) => {
     const u = Number(mesh.uvs[vertexIndex * 2]); const v = Number(mesh.uvs[(vertexIndex * 2) + 1]);
     if (!Number.isFinite(u) || !Number.isFinite(v)) throw new Error(`Mesh face ${faceId} has invalid UV data.`);
-    return [u, v];
+    return { uv: [u, v], position: vertexPosition(mesh, vertexIndex) };
   });
 }
-function pointKey([u, v]) { return `${u.toFixed(6)}:${v.toFixed(6)}`; }
-function uniquePoints(points) {
-  const seen = new Set();
-  return points.filter((point) => { const key = pointKey(point); if (seen.has(key)) return false; seen.add(key); return true; });
+function uvKey([u, v]) { return `${u.toFixed(6)}:${v.toFixed(6)}`; }
+function physicalKey(vertex) {
+  if (vertex.position) return vertex.position.map((value) => Number(value).toFixed(5)).join(':');
+  return `uv:${uvKey(vertex.uv)}`;
 }
-function boundaryLoop(triangles) {
-  const points = new Map(); const edges = new Map();
+function uniqueUvPoints(triangles) {
+  const seen = new Set(); const result = [];
+  for (const vertex of triangles.flat()) {
+    const key = uvKey(vertex.uv); if (seen.has(key)) continue; seen.add(key); result.push(vertex.uv);
+  }
+  return result;
+}
+function triangleUvCenter(triangle) {
+  return [
+    triangle.reduce((sum, vertex) => sum + vertex.uv[0], 0) / 3,
+    triangle.reduce((sum, vertex) => sum + vertex.uv[1], 0) / 3,
+  ];
+}
+function edgeSegments(triangles) {
+  const edges = new Map();
   for (const triangle of triangles) {
-    for (const point of triangle) points.set(pointKey(point), point);
+    const insideUv = triangleUvCenter(triangle);
     for (const [a, b] of [[triangle[0], triangle[1]], [triangle[1], triangle[2]], [triangle[2], triangle[0]]]) {
-      const aKey = pointKey(a); const bKey = pointKey(b); const key = [aKey, bKey].sort().join('|');
-      const edge = edges.get(key) || { aKey, bKey, count: 0 }; edge.count += 1; edges.set(key, edge);
+      const aKey = physicalKey(a); const bKey = physicalKey(b); const key = [aKey, bKey].sort().join('|');
+      const edge = edges.get(key) || { key, aKey, bKey, uvA: a.uv, uvB: b.uv, insideUv, count: 0 };
+      edge.count += 1; edges.set(key, edge);
     }
   }
-  const boundary = [...edges.values()].filter((edge) => edge.count === 1);
-  if (boundary.length < 3) throw new Error('Face UV region has no closed outer boundary.');
+  const boundary = [...edges.values()].filter((edge) => edge.count === 1).sort((a, b) => a.key.localeCompare(b.key));
+  if (boundary.length < 3) throw new Error('Face has fewer than three physical outer edges.');
   const adjacency = new Map();
   for (const { aKey, bKey } of boundary) {
     if (!adjacency.has(aKey)) adjacency.set(aKey, new Set()); if (!adjacency.has(bKey)) adjacency.set(bKey, new Set());
     adjacency.get(aKey).add(bKey); adjacency.get(bKey).add(aKey);
   }
-  if ([...adjacency.values()].some((neighbors) => neighbors.size !== 2)) throw new Error('Face UV boundary is not a single closed perimeter.');
-  const start = [...adjacency.keys()].sort()[0]; const ordered = []; let previous = null; let current = start;
-  for (let guard = 0; guard <= boundary.length; guard += 1) {
-    ordered.push(points.get(current)); const neighbors = [...adjacency.get(current)].sort();
-    const next = neighbors.find((candidate) => candidate !== previous) || neighbors[0]; previous = current; current = next;
-    if (current === start) break;
-  }
-  if (current !== start || ordered.length !== boundary.length) throw new Error('Face UV perimeter did not close cleanly.');
-  return ordered;
+  if ([...adjacency.values()].some((neighbors) => neighbors.size !== 2)) throw new Error('Face physical outer edges do not form one closed perimeter.');
+  return boundary.map(({ uvA, uvB, insideUv }) => [uvA, uvB, insideUv]);
 }
 function triangleAreaAndCentroid(points) {
   const [[u1, v1], [u2, v2], [u3, v3]] = points;
@@ -58,17 +70,13 @@ function regionMetrics(points, triangles) {
   const minU = Math.min(...us); const maxU = Math.max(...us); const minV = Math.min(...vs); const maxV = Math.max(...vs);
   let totalArea = 0; let weightedU = 0; let weightedV = 0;
   for (const triangle of triangles) {
-    const metrics = triangleAreaAndCentroid(triangle); if (metrics.area <= Number.EPSILON) continue;
+    const metrics = triangleAreaAndCentroid(triangle.map((vertex) => vertex.uv)); if (metrics.area <= Number.EPSILON) continue;
     totalArea += metrics.area; weightedU += metrics.centerU * metrics.area; weightedV += metrics.centerV * metrics.area;
   }
-  return {
-    minU, maxU, minV, maxV,
-    centerU: totalArea > Number.EPSILON ? weightedU / totalArea : (minU + maxU) / 2,
-    centerV: totalArea > Number.EPSILON ? weightedV / totalArea : (minV + maxV) / 2,
-  };
+  return { minU, maxU, minV, maxV, centerU: totalArea > Number.EPSILON ? weightedU / totalArea : (minU + maxU) / 2, centerV: totalArea > Number.EPSILON ? weightedV / totalArea : (minV + maxV) / 2 };
 }
 
-export function extractDiceBoxFaceRegions(modelData, dieType, { includeOutline = false } = {}) {
+export function extractDiceBoxFaceRegions(modelData, dieType, { includeEdgeSegments = false } = {}) {
   try {
     if (!Object.hasOwn(CANONICAL_DICE, dieType)) throw new Error(`Unsupported die type: ${dieType}`);
     const mesh = getRenderMesh(modelData, dieType); const colliderMesh = getColliderMesh(modelData, dieType);
@@ -78,22 +86,17 @@ export function extractDiceBoxFaceRegions(modelData, dieType, { includeOutline =
     for (const [rawFaceId, rawResult] of Object.entries(colliderMap)) {
       const faceId = Number(rawFaceId); const logicalResult = Number(rawResult);
       if (!Number.isInteger(faceId) || !isCanonicalFaceResult(dieType, logicalResult)) throw new Error(`${dieType} collider mapping contains an invalid face.`);
-      const needsGeometryMatch = Boolean(colliderMesh && (dieType === 'd20' || includeOutline));
-      const renderFaceId = needsGeometryMatch
-        ? matchColliderFaceToRenderFace(mesh, colliderMesh, faceId, usedRenderFaces)
-        : faceId;
-      const triangles = grouped.get(logicalResult) || []; triangles.push(triangleUv(mesh, renderFaceId)); grouped.set(logicalResult, triangles);
+      const needsGeometryMatch = Boolean(colliderMesh && (dieType === 'd20' || includeEdgeSegments));
+      const renderFaceId = needsGeometryMatch ? matchColliderFaceToRenderFace(mesh, colliderMesh, faceId, usedRenderFaces) : faceId;
+      const triangles = grouped.get(logicalResult) || []; triangles.push(triangleData(mesh, renderFaceId)); grouped.set(logicalResult, triangles);
     }
     const expected = getCanonicalFaceResults(dieType);
     if (grouped.size !== expected.length || expected.some((result) => !grouped.has(result))) throw new Error(`${dieType} collider mapping does not cover every physical result.`);
     return Object.fromEntries(expected.map((logicalResult) => {
-      const triangles = grouped.get(logicalResult); const points = uniquePoints(triangles.flat());
-      return [String(logicalResult), {
-        logicalResult, points, ...regionMetrics(points, triangles),
-        ...(includeOutline ? { outline: boundaryLoop(triangles) } : {}),
-      }];
+      const triangles = grouped.get(logicalResult); const points = uniqueUvPoints(triangles);
+      return [String(logicalResult), { logicalResult, points, ...regionMetrics(points, triangles), ...(includeEdgeSegments ? { edgeSegments: edgeSegments(triangles) } : {}) }];
     }));
   } catch (error) {
-    console.error('Failed to extract DiceBox face UV regions:', error); throw error;
+    console.error(`Failed to extract ${dieType} DiceBox face UV regions:`, error); throw error;
   }
 }
