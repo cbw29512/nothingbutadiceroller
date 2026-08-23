@@ -37,6 +37,7 @@ function faceInstructions(die) {
       assetId: face.assetId ?? null,
       color: face.color ?? null,
       fontId: face.fontId ?? null,
+      scale: face.scale ?? 1,
     },
   ]));
 }
