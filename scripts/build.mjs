@@ -13,11 +13,13 @@ const files = [
   'how-to.html',
   'privacy.html',
   'legal.html',
+  'moderation.html',
   'appearance-harness.html',
   'rolls.html',
   'styles.css',
   'docs.css',
   'customize.css',
+  'moderation.css',
   'appearance-harness.css',
   'themes.css',
   'account.css',
@@ -72,10 +74,10 @@ async function validateBuild() {
     const required = [
       ...files,
       'js/app.js', 'js/rolls.js', 'js/account.js', 'js/account-api.js', 'js/account-ui.js', 'js/auth-ui.js',
-      'js/custom-controls.js', 'js/custom-roll.js', 'js/deployment.js', 'js/drawer-controls.js', 'js/physics.js',
+      'js/community-moderation.js', 'js/custom-controls.js', 'js/custom-roll.js', 'js/deployment.js', 'js/drawer-controls.js', 'js/physics.js',
       'js/roll-results.js', 'js/roller.js', 'js/style-picker.js', 'js/theme-community.js', 'js/tray-controls.js',
       'js/shortcut-harness.js', 'js/appearance/studio.js', 'js/appearance/studio-persistence.mjs',
-      'js/appearance/studio-render.mjs', 'js/appearance/dicebox-proof-harness.js', 'js/appearance/runtime-theme-codec.mjs',
+      'js/appearance/studio-render.mjs', 'js/appearance/studio-community-report.mjs', 'js/appearance/dicebox-proof-harness.js', 'js/appearance/runtime-theme-codec.mjs',
       'js/shortcuts/icons.mjs', 'js/shortcuts/manager-state.mjs', 'js/shortcuts/persistence.mjs', 'js/shortcuts/toolbar.mjs',
     ];
     await Promise.all(required.map(path => access(resolve(dist, path))));
@@ -89,10 +91,11 @@ async function validateBuild() {
       readFile(resolve(dist, 'js/custom-roll.js'), 'utf8'), readFile(resolve(dist, 'js/tray-controls.js'), 'utf8'),
       readFile(resolve(dist, 'js/appearance/dicebox-proof-harness.js'), 'utf8'),
     ]);
-    const [howToHtml, privacyHtml, legalHtml] = await Promise.all([
+    const [howToHtml, privacyHtml, legalHtml, moderationHtml] = await Promise.all([
       readFile(resolve(dist, 'how-to.html'), 'utf8'),
       readFile(resolve(dist, 'privacy.html'), 'utf8'),
       readFile(resolve(dist, 'legal.html'), 'utf8'),
+      readFile(resolve(dist, 'moderation.html'), 'utf8'),
     ]);
 
     requireReferences(html, [
@@ -107,7 +110,8 @@ async function validateBuild() {
 
     requireReferences(studioHtml, [
       'DICE STUDIO', 'id="studio-library"', 'id="studio-preview-tray"', 'id="reset-default"',
-      'id="lock-set"', 'RAW — standard numbers', 'src="/js/appearance/studio.js"', 'href="/how-to.html"',
+      'id="lock-set"', 'RAW — standard numbers', 'id="community-report-dialog"', 'id="load-more-community"',
+      'Community sets must be safe to share', 'src="/js/appearance/studio.js"', 'href="/how-to.html"',
     ], 'Dice Studio reference');
 
     requireReferences(howToHtml, [
@@ -122,6 +126,10 @@ async function validateBuild() {
       'SRD ATTRIBUTION', 'System Reference Document 5.1', 'System Reference Document 5.2.1',
       'Creative Commons Attribution 4.0 International', 'href="/privacy.html"',
     ], 'legal/SRD reference');
+    requireReferences(moderationHtml, [
+      'name="robots" content="noindex,nofollow"', 'Community Moderation', 'id="moderation-reports"',
+      'Netlify Identity <strong>admin</strong> role', 'src="/js/community-moderation.js"',
+    ], 'Community moderation reference');
 
     requireReferences(appearanceHarnessHtml, [
       'name="robots" content="noindex,nofollow"', 'ISOLATED V2 PROOF', 'id="appearance-proof-tray"',
