@@ -16,6 +16,23 @@ export function bindStudioControls(context) {
     q('set-name').addEventListener('input', () => { if (draft.canEdit()) draft.markDirty(); });
     q('set-name').addEventListener('change', () => draft.update((set) => { set.name = q('set-name').value.trim() || 'Untitled Dice Set'; }));
     documentRef.addEventListener('click', (event) => {
+      const previewFace = event.target.closest('[data-preview-face]');
+      if (previewFace) {
+        const type = previewFace.closest('[data-die]')?.dataset.die;
+        const logicalFace = previewFace.dataset.previewFace;
+        if (type && logicalFace) {
+          q('logical-face').value = logicalFace;
+          dice.select(type);
+          const editor = q('face-value');
+          if (editor && !editor.disabled) {
+            editor.focus(); editor.select();
+            setStatus(`Face ${logicalFace} selected. Edit its display or color below; it will always roll ${logicalFace}.`, 'ready');
+          } else {
+            setStatus('Default Dice is immutable. Click New Set to customize this face.', 'ready');
+          }
+        }
+        return;
+      }
       const type = event.target.closest('[data-die]')?.dataset.die;
       if (type) dice.select(type);
     });
