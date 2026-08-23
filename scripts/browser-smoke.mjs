@@ -23,6 +23,97 @@ const viewports = [
 ];
 const pages = ['/', '/customize.html', '/rolls.html', '/how-to.html', '/privacy.html', '/legal.html', '/moderation.html'];
 
+async function assertStudioCreationFlow(client, origin) {
+  const viewport = viewports[0];
+  await navigate(client, `${origin}/`, viewport);
+  await waitFor(client, "document.querySelector('#open-styles-btn') && document.querySelector('#account-auth-email')");
+  await client.evaluate("document.querySelector('#open-styles-btn')?.click()");
+  await waitFor(client, "location.pathname === '/customize.html'");
+  await waitFor(client, "document.querySelector('#studio-status')?.textContent.includes('Dice Studio ready.')");
+
+  const defaultState = await client.evaluate(`(() => ({
+    setNameDisabled: Boolean(document.querySelector('#set-name')?.disabled),
+    saveDisabled: Boolean(document.querySelector('#save-set')?.disabled),
+    newDisabled: Boolean(document.querySelector('#new-set')?.disabled),
+    actionButtons: ['new-set','save-set','use-set','lock-set','publish-set','delete-set','reset-default','refresh-community','load-more-community','import-browser-sets']
+      .every((id) => Boolean(document.getElementById(id))),
+  }))()`);
+  assert.equal(defaultState.setNameDisabled, true, 'Immutable Default Dice must not expose editable fields.');
+  assert.equal(defaultState.saveDisabled, true, 'Immutable Default Dice must not be saveable as an edited system set.');
+  assert.equal(defaultState.newDisabled, false, 'New Set must remain available from the immutable default.');
+  assert.equal(defaultState.actionButtons, true, 'Dice Studio action surface is incomplete.');
+
+  await client.evaluate("document.querySelector('#new-set')?.click()");
+  await waitFor(client, "document.querySelector('#studio-status')?.textContent.includes('New set ready.')");
+  const newState = await client.evaluate(`(() => ({
+    name: document.querySelector('#set-name')?.value || '',
+    setNameDisabled: Boolean(document.querySelector('#set-name')?.disabled),
+    saveDisabled: Boolean(document.querySelector('#save-set')?.disabled),
+    faceModeDisabled: Boolean(document.querySelector('#face-mode')?.disabled),
+    faceNodes: document.querySelectorAll('#face-map .face-node').length,
+  }))()`);
+  assert.equal(newState.name, 'New Dice Set');
+  assert.equal(newState.setNameDisabled, false, 'New custom set name must be editable.');
+  assert.equal(newState.saveDisabled, false, 'New custom set must be saveable.');
+  assert.equal(newState.faceModeDisabled, false, 'New custom set face mode must be editable.');
+  assert.ok(newState.faceNodes >= 20, `Expected an editable d20 face map; received ${newState.faceNodes} nodes.`);
+
+  await client.evaluate(`(() => {
+    const mode = document.querySelector('#face-mode');
+    mode.value = 'custom';
+    mode.dispatchEvent(new Event('change', { bubbles: true }));
+  })()`);
+  await waitFor(client, "document.querySelector('#face-mode')?.value === 'custom' && !document.querySelector('#apply-face')?.disabled");
+
+  await client.evaluate(`(() => {
+    const value = document.querySelector('#face-value');
+    value.value = 'CRIT';
+    value.dispatchEvent(new Event('input', { bubbles: true }));
+    document.querySelector('#apply-face')?.click();
+  })()`);
+  await waitFor(client, "document.querySelector('#studio-status')?.textContent.includes('Face 20 updated visually.')");
+  const faceState = await client.evaluate(`(() => ({
+    value: document.querySelector('#face-value')?.value || '',
+    selectedText: document.querySelector('#face-map .face-node.active')?.textContent || '',
+    logicalResult: document.querySelector('#logical-result-label')?.textContent || '',
+  }))()`);
+  assert.equal(faceState.value, 'CRIT');
+  assert.equal(faceState.selectedText, 'CRIT');
+  assert.match(faceState.logicalResult, /Always reports 20/i);
+
+  await client.evaluate("document.querySelector('#save-set')?.click()");
+  await waitFor(client, "document.querySelector('#studio-status')?.textContent.includes('Dice set saved.')");
+  const saved = await client.evaluate(`(() => ({
+    libraryNames: [...document.querySelectorAll('#studio-library .studio-set-card strong')].map((el) => el.textContent),
+    activeId: localStorage.getItem('ndr.appearance.activeSet.v2'),
+  }))()`);
+  assert.ok(saved.libraryNames.includes('New Dice Set'), 'Saved custom set did not appear in My Collection.');
+
+  await client.evaluate("document.querySelector('#use-set')?.click()");
+  await waitFor(client, "document.querySelector('#studio-status')?.textContent.includes('Set marked active for the roller.')");
+  await waitFor(client, "document.querySelector('#active-badge')?.textContent === 'ACTIVE'");
+  const active = await client.evaluate(`(() => {
+    const id = localStorage.getItem('ndr.appearance.activeSet.v2');
+    const snapshot = JSON.parse(localStorage.getItem('ndr.appearance.activeSnapshot.v2') || 'null');
+    return { id, snapshotId: snapshot?.id || null, snapshotName: snapshot?.name || null };
+  })()`);
+  assert.ok(active.id, 'Using a custom set must persist an active set id.');
+  assert.equal(active.snapshotId, active.id, 'Active custom set snapshot must match its active id.');
+  assert.equal(active.snapshotName, 'New Dice Set');
+
+  await client.evaluate("document.querySelector('.studio-header a[href=\"/\"]')?.click()");
+  await waitFor(client, "location.pathname === '/'");
+  await waitFor(client, "document.querySelector('#physics-status')?.textContent.includes('3D physics ready.')", 30000);
+  const restored = await client.evaluate(`(() => {
+    const id = localStorage.getItem('ndr.appearance.activeSet.v2');
+    const snapshot = JSON.parse(localStorage.getItem('ndr.appearance.activeSnapshot.v2') || 'null');
+    return { id, snapshotId: snapshot?.id || null, snapshotName: snapshot?.name || null };
+  })()`);
+  assert.equal(restored.snapshotId, restored.id, 'Custom set must stay active after returning to the roller.');
+  assert.equal(restored.snapshotName, 'New Dice Set');
+  console.log('Dice Studio creation flow passed: roller navigation, New Set, custom d20 face, Save, Use, and return-to-roller persistence are wired.');
+}
+
 async function assertRuntimeSurfaces(client, origin, path, viewport) {
   if (path === '/') {
     await waitFor(client, "document.querySelector('#account-auth-email') && document.querySelector('#open-styles-btn')");
@@ -80,6 +171,7 @@ async function run() {
   try {
     server = await startBuiltSiteServer(dist);
     browser = await launchBrowser();
+    await assertStudioCreationFlow(browser.client, server.origin);
     for (const viewport of viewports) {
       for (const path of pages) {
         const url = `${server.origin}${path}`;
