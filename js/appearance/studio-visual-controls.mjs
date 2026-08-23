@@ -30,7 +30,11 @@ export function bindStudioVisualControls(context) {
   [['dice-body-color', 'bodyColor'], ['dice-face-color', 'faceColor']].forEach(([id, key]) => {
     q(id).addEventListener('input', () => updateDraft((set) => { set.appearance.diceSet.defaultStyle[key] = q(id).value; }));
   });
-  q('dice-glow-enabled').addEventListener('change', () => updateDraft((set) => { set.appearance.diceSet.defaultStyle.glow.enabled = q('dice-glow-enabled').checked; }));
+  q('dice-glow-enabled').addEventListener('change', () => {
+    const enabled = q('dice-glow-enabled').checked;
+    updateDraft((set) => { set.appearance.diceSet.defaultStyle.glow.enabled = enabled; });
+    setStatus(enabled ? 'Number glow enabled for every die. Save the set to keep it.' : 'Set-wide number glow disabled. Save the set to keep it.', 'ready');
+  });
   q('dice-glow-color').addEventListener('input', () => updateDraft((set) => {
     set.appearance.diceSet.defaultStyle.glow.color = q('dice-glow-color').value; set.appearance.diceSet.defaultStyle.glow.intensity = 0.75;
   }));
@@ -42,7 +46,13 @@ export function bindStudioVisualControls(context) {
   [['die-body-color', 'bodyColor'], ['die-face-color', 'faceColor']].forEach(([id, key]) => {
     q(id).addEventListener('input', () => updateDraft((set) => { set.appearance.diceSet.dice[getSelectedDie()].styleOverrides[key] = q(id).value; }));
   });
-  q('die-glow-enabled').addEventListener('change', () => updateDraft((set) => { ensureDieGlow(set, getSelectedDie()).enabled = q('die-glow-enabled').checked; }));
+  q('die-glow-enabled').addEventListener('change', () => {
+    const type = getSelectedDie(); const enabled = q('die-glow-enabled').checked;
+    updateDraft((set) => { ensureDieGlow(set, type).enabled = enabled; });
+    setStatus(enabled
+      ? `${type.toUpperCase()} number glow enabled for every face on this die. Save the set to keep it.`
+      : `${type.toUpperCase()} number glow disabled. Save the set to keep it.`, 'ready');
+  });
   q('die-glow-color').addEventListener('input', () => updateDraft((set) => {
     const glow = ensureDieGlow(set, getSelectedDie()); glow.color = q('die-glow-color').value; glow.intensity = 0.75;
   }));
@@ -64,7 +74,10 @@ export function bindStudioVisualControls(context) {
       console.error('Failed to add tray image:', error); q('tray-image').value = ''; setStatus(error.message, 'error');
     }
   });
-  q('remove-tray-image').addEventListener('click', () => updateDraft((set) => { set.appearance.tray.image = null; }));
+  q('remove-tray-image').addEventListener('click', () => {
+    updateDraft((set) => { set.appearance.tray.image = null; });
+    setStatus('Tray image removed from this draft. Save the set to keep it.', 'ready');
+  });
   q('face-mode').addEventListener('change', () => {
     const set = getDraft();
     if (!canEditDiceSet(set, getOwnerId())) return;
@@ -86,7 +99,9 @@ export function bindStudioVisualControls(context) {
     try {
       const set = getDraft();
       if (!canEditDiceSet(set, getOwnerId())) throw new Error('Unlock this set before editing faces.');
-      setDraft(removeVisualFace(set, getSelectedDie(), q('logical-face').value)); refresh();
+      const logicalFace = q('logical-face').value;
+      setDraft(removeVisualFace(set, getSelectedDie(), logicalFace)); refresh();
+      setStatus(`Face ${logicalFace} restored to its standard number.`, 'ready');
     } catch (error) { console.error('Failed to restore canonical face:', error); setStatus(error.message, 'error'); }
   });
 }
