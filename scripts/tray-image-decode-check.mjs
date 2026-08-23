@@ -23,25 +23,32 @@ function sourceImage() {
   });
 }
 
+async function jpegFixture() {
+  const oriented = await sourceImage()
+    .jpeg({ quality: 92 })
+    .withMetadata({ orientation: 6 })
+    .withXmp(XMP)
+    .toBuffer();
+  return sharp(oriented)
+    .jpeg({ quality: 92 })
+    .withExifMerge({
+      IFD0: { Copyright: 'PRIVATE TEST METADATA' },
+      IFD3: {
+        GPSLatitudeRef: 'N',
+        GPSLatitude: '34/1 11/1 0/100',
+        GPSLongitudeRef: 'W',
+        GPSLongitude: '79/1 46/1 0/100',
+      },
+    })
+    .keepXmp()
+    .toBuffer();
+}
+
 async function fixture(format) {
-  let pipeline = sourceImage();
-  if (format === 'png') pipeline = pipeline.png().withXmp(XMP);
-  else if (format === 'jpeg') {
-    pipeline = pipeline
-      .jpeg({ quality: 92 })
-      .withExif({
-        IFD0: { Copyright: 'PRIVATE TEST METADATA', Orientation: '6' },
-        IFD3: {
-          GPSLatitudeRef: 'N',
-          GPSLatitude: '34/1 11/1 0/100',
-          GPSLongitudeRef: 'W',
-          GPSLongitude: '79/1 46/1 0/100',
-        },
-      })
-      .withXmp(XMP);
-  } else if (format === 'webp') pipeline = pipeline.webp({ quality: 92 }).withXmp(XMP);
-  else throw new Error(`Unsupported fixture format ${format}.`);
-  return pipeline.toBuffer();
+  if (format === 'png') return sourceImage().png().withXmp(XMP).toBuffer();
+  if (format === 'jpeg') return jpegFixture();
+  if (format === 'webp') return sourceImage().webp({ quality: 92 }).withXmp(XMP).toBuffer();
+  throw new Error(`Unsupported fixture format ${format}.`);
 }
 
 function corruptPngPixels(input) {
@@ -64,7 +71,10 @@ try {
   for (const [format, mime] of cases) {
     const input = await fixture(format);
     const inputMetadata = await sharp(input).metadata();
-    if (format === 'jpeg') assert.ok(inputMetadata.exif, 'JPEG fixture must contain EXIF metadata before sanitization.');
+    if (format === 'jpeg') {
+      assert.ok(inputMetadata.exif, 'JPEG fixture must contain EXIF metadata before sanitization.');
+      assert.equal(inputMetadata.orientation, 6, 'JPEG fixture must expose a real EXIF orientation tag before sanitization.');
+    }
     assert.ok(inputMetadata.xmp, `${format} fixture must contain XMP metadata before sanitization.`);
 
     const result = await decodeAndReencodeTrayImage(input, mime);
@@ -104,7 +114,7 @@ try {
   const saveSource = await readFile(new URL('../netlify/functions/save-dice-set.mjs', import.meta.url), 'utf8');
   const netlifyConfig = await readFile(new URL('../netlify.toml', import.meta.url), 'utf8');
   for (const text of [
-    "decodeAndReencodeTrayImage",
+    'decodeAndReencodeTrayImage',
     'const decoded = await decodeAndReencodeTrayImage',
     'const parsedImage = await parseImage',
     'decoded.buffer.byteLength > MAX_TRAY_IMAGE_BYTES',
