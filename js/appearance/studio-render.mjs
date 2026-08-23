@@ -3,7 +3,9 @@ import { getCanonicalFaceLabel, getCanonicalFaceResults } from './face-values.mj
 import { getSupportedFaceEditorDice } from './face-layouts.mjs';
 import { getVisualFace } from './face-customization.mjs';
 import { buildAppearanceRenderPlan } from './render-plan.mjs';
+import { buildResinPreviewBackground, buildResinPreviewShadow } from './resin-preview.mjs';
 import { renderFaceMap } from './studio-face-map.mjs';
+import { fillStudioResinControls } from './studio-resin-controls.mjs';
 import { safeTrayImageUrl } from './tray-image.mjs';
 
 const LEGACY_ICONS = { skull: '☠', star: '★', flame: '🔥', shield: '◆', heart: '♥', sword: '⚔' };
@@ -57,8 +59,12 @@ export function renderPreview(set, selectedDie) {
     const die = document.createElement('button'); const style = plan.dice[type].style;
     die.type = 'button'; die.className = `studio-preview-die${type === selectedDie ? ' active' : ''}`;
     if (FACE_EDITOR_DICE.has(type)) die.dataset.die = type;
-    die.style.background = style.bodyColor; die.style.color = style.faceColor; die.style.opacity = String(style.opacity);
-    die.style.boxShadow = style.glow.enabled ? `0 0 18px ${style.glow.color}` : 'none';
+    die.dataset.clearResin = style.translucency?.enabled ? 'true' : 'false';
+    die.dataset.interiorEffect = style.interior?.enabled ? style.interior.type : 'none';
+    die.style.background = buildResinPreviewBackground(style);
+    die.style.color = style.faceColor;
+    die.style.opacity = style.translucency?.enabled ? '1' : String(style.opacity);
+    die.style.boxShadow = buildResinPreviewShadow(style);
     const results = getCanonicalFaceResults(type); const previewResult = type === 'd100' ? 0 : results.at(-1);
     const face = getVisualFace(set, type, previewResult);
     die.innerHTML = `<span></span><small>${type}</small>`;
@@ -73,6 +79,7 @@ export function renderPreview(set, selectedDie) {
 }
 export function fillEditor(set, selectedDie, activeId, ownerId, cloudEnabled) {
   const system = set.id === SYSTEM_DEFAULT_DICE_SET_ID; const owner = !system && set.ownerId === ownerId; const locked = set.locked;
+  const editable = !system && !locked && owner;
   const style = set.appearance.diceSet.defaultStyle; const die = set.appearance.diceSet.dice[selectedDie];
   const dieStyle = buildAppearanceRenderPlan(set).dice[selectedDie].style; const hasDieOverride = Object.keys(die.styleOverrides || {}).length > 0;
   const logicalFace = q('logical-face'); const results = getCanonicalFaceResults(selectedDie);
@@ -84,10 +91,11 @@ export function fillEditor(set, selectedDie, activeId, ownerId, cloudEnabled) {
   q('die-glow-enabled').checked = dieStyle.glow.enabled; q('die-glow-color').value = dieStyle.glow.color;
   q('tray-color').value = set.appearance.tray.color; q('tray-glow-enabled').checked = set.appearance.tray.glow.enabled; q('tray-glow-color').value = set.appearance.tray.glow.color;
   q('face-mode').value = die.faceMode; q('selected-die-label').textContent = selectedDie.toUpperCase(); q('active-badge').textContent = set.id === activeId ? 'ACTIVE' : '';
-  document.querySelectorAll('[data-edit-control]').forEach((el) => { el.disabled = system || locked || !owner; });
-  if (!system && !locked && owner && !hasDieOverride) document.querySelectorAll('[data-die-style-control]').forEach((el) => { el.disabled = true; });
-  q('remove-tray-image').disabled = system || locked || !owner || !set.appearance.tray.image;
-  q('save-set').disabled = system || locked || !owner; q('delete-set').disabled = system || !owner; q('lock-set').disabled = system || !owner;
+  document.querySelectorAll('[data-edit-control]').forEach((el) => { el.disabled = !editable; });
+  if (editable && !hasDieOverride) document.querySelectorAll('[data-die-style-control]').forEach((el) => { el.disabled = true; });
+  fillStudioResinControls({ q, set, selectedDie, editable });
+  q('remove-tray-image').disabled = !editable || !set.appearance.tray.image;
+  q('save-set').disabled = !editable; q('delete-set').disabled = system || !owner; q('lock-set').disabled = system || !owner;
   q('lock-set').textContent = locked ? 'Unlock Set' : 'Lock Set'; q('publish-set').disabled = system || !owner || !locked || !cloudEnabled;
   q('publish-set').textContent = set.visibility === 'public' ? 'Make Private' : 'Publish Set';
   const selectFace = (faceNumber) => {
@@ -95,8 +103,7 @@ export function fillEditor(set, selectedDie, activeId, ownerId, cloudEnabled) {
     const face = getVisualFace(set, selectedDie, faceNumber);
     q('logical-face-label').textContent = `Face ${faceLabel}`; q('logical-result-label').textContent = `Always reports ${faceNumber}`;
     q('face-value').value = visualText(face); q('custom-face-color').value = face.color || dieStyle.faceColor;
-    const disabled = system || locked || !owner;
-    document.querySelectorAll('[data-face-edit-control]').forEach((el) => { el.disabled = disabled; }); renderFaceMap(set, selectedDie, faceNumber, selectFace);
+    document.querySelectorAll('[data-face-edit-control]').forEach((el) => { el.disabled = !editable; }); renderFaceMap(set, selectedDie, faceNumber, selectFace);
   };
   selectFace(selectedFace);
 }
