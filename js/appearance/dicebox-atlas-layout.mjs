@@ -2,6 +2,8 @@ import { CANONICAL_DICE } from './defaults.mjs';
 import { getCanonicalFaceResults, isCanonicalFaceResult } from './face-values.mjs';
 import { matchColliderFaceToRenderFace } from './dicebox-render-face-match.mjs';
 
+const FACE_EDGE_COUNTS = Object.freeze({ d6: 4, d8: 3, d10: 4, d12: 5, d20: 3, d100: 4 });
+
 function getRenderMesh(modelData, dieType) {
   const mesh = modelData?.meshes?.find((item) => item?.name === dieType);
   if (!mesh || !Array.isArray(mesh.indices) || !Array.isArray(mesh.uvs)) throw new Error(`Canonical ${dieType} render mesh is missing UV data.`);
@@ -35,29 +37,28 @@ function uniqueUvPoints(triangles) {
   return result;
 }
 function triangleUvCenter(triangle) {
-  return [
-    triangle.reduce((sum, vertex) => sum + vertex.uv[0], 0) / 3,
-    triangle.reduce((sum, vertex) => sum + vertex.uv[1], 0) / 3,
-  ];
+  return [triangle.reduce((sum, vertex) => sum + vertex.uv[0], 0) / 3, triangle.reduce((sum, vertex) => sum + vertex.uv[1], 0) / 3];
 }
-function edgeSegments(triangles) {
+function validUvEdge(a, b) { return Math.hypot(a[0] - b[0], a[1] - b[1]) > 1e-8; }
+function edgeSegments(triangles, dieType, logicalResult) {
   const edges = new Map();
   for (const triangle of triangles) {
     const insideUv = triangleUvCenter(triangle);
     for (const [a, b] of [[triangle[0], triangle[1]], [triangle[1], triangle[2]], [triangle[2], triangle[0]]]) {
-      const aKey = physicalKey(a); const bKey = physicalKey(b); const key = [aKey, bKey].sort().join('|');
-      const edge = edges.get(key) || { key, aKey, bKey, uvA: a.uv, uvB: b.uv, insideUv, count: 0 };
-      edge.count += 1; edges.set(key, edge);
+      const aKey = physicalKey(a); const bKey = physicalKey(b);
+      if (aKey === bKey) throw new Error(`${dieType} face ${logicalResult} contains a zero-length physical edge.`);
+      const key = [aKey, bKey].sort().join('|');
+      const edge = edges.get(key) || { key, uvA: a.uv, uvB: b.uv, insideUv, count: 0 };
+      edge.count += 1;
+      if (edge.count > 2) throw new Error(`${dieType} face ${logicalResult} contains a non-manifold physical edge.`);
+      edges.set(key, edge);
     }
   }
   const boundary = [...edges.values()].filter((edge) => edge.count === 1).sort((a, b) => a.key.localeCompare(b.key));
-  if (boundary.length < 3) throw new Error('Face has fewer than three physical outer edges.');
-  const adjacency = new Map();
-  for (const { aKey, bKey } of boundary) {
-    if (!adjacency.has(aKey)) adjacency.set(aKey, new Set()); if (!adjacency.has(bKey)) adjacency.set(bKey, new Set());
-    adjacency.get(aKey).add(bKey); adjacency.get(bKey).add(aKey);
-  }
-  if ([...adjacency.values()].some((neighbors) => neighbors.size !== 2)) throw new Error('Face physical outer edges do not form one closed perimeter.');
+  const expected = FACE_EDGE_COUNTS[dieType];
+  if (!Number.isInteger(expected)) throw new Error(`No physical edge-count contract exists for ${dieType}.`);
+  if (boundary.length !== expected) throw new Error(`${dieType} face ${logicalResult} must expose ${expected} physical outer edges; found ${boundary.length}.`);
+  if (boundary.some(({ uvA, uvB }) => !validUvEdge(uvA, uvB))) throw new Error(`${dieType} face ${logicalResult} contains a zero-length UV edge.`);
   return boundary.map(({ uvA, uvB, insideUv }) => [uvA, uvB, insideUv]);
 }
 function triangleAreaAndCentroid(points) {
@@ -94,7 +95,7 @@ export function extractDiceBoxFaceRegions(modelData, dieType, { includeEdgeSegme
     if (grouped.size !== expected.length || expected.some((result) => !grouped.has(result))) throw new Error(`${dieType} collider mapping does not cover every physical result.`);
     return Object.fromEntries(expected.map((logicalResult) => {
       const triangles = grouped.get(logicalResult); const points = uniqueUvPoints(triangles);
-      return [String(logicalResult), { logicalResult, points, ...regionMetrics(points, triangles), ...(includeEdgeSegments ? { edgeSegments: edgeSegments(triangles) } : {}) }];
+      return [String(logicalResult), { logicalResult, points, ...regionMetrics(points, triangles), ...(includeEdgeSegments ? { edgeSegments: edgeSegments(triangles, dieType, logicalResult) } : {}) }];
     }));
   } catch (error) {
     console.error(`Failed to extract ${dieType} DiceBox face UV regions:`, error); throw error;
