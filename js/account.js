@@ -1,6 +1,7 @@
 import { state, savePreferences } from './state.js';
 import { clearPhysics } from './physics.js';
 import { renderPool, renderResults } from './ui.js';
+import { initAccountDataControls } from './account-data.js';
 import { accountFetch } from './account-api.js';
 import { renderAccountView, setAccountMessage } from './account-ui.js';
 import { initAuthUI, signOutAccount } from './auth-ui.js';
@@ -89,8 +90,17 @@ function handleSession(user) {
   accountUser = user || null; configurationVersion = null; renderAccount(); loadConfigurations();
 }
 
+function handleCloudDeleted() {
+  savedConfigurations = [];
+  configurationVersion = null;
+  defaultAppliedForUser = null;
+  renderAccount();
+  document.dispatchEvent(new Event('cloudappdatadeleted'));
+}
+
 export function initAccount() {
   renderAccount();
+  initAccountDataControls({ onCloudDeleted: handleCloudDeleted, setMessage: setAccountMessage });
   initAuthUI(handleSession).catch((error) => {
     console.error('Account initialization failed:', error);
     setAccountMessage('Account service is unavailable. Guest rolling still works.', 'error');
