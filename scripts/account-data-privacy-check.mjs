@@ -94,13 +94,6 @@ try {
     },
     [imageKey]: 'binary-placeholder',
     [publicRecordKey(publicId)]: { publicAccessId: publicId, ownerId: userId, setId },
-    [legacyThemeIndexKey(userId)]: [{ ownerId: userId, themeId: legacyId }],
-    [legacyThemeKey(userId, legacyId)]: {
-      ownerId: userId, themeId: legacyId, themeName: 'Legacy Private', trayName: 'Old Tray', imageKey: legacyImageKey,
-      imageAccessToken: 'legacy-secret-token', isPublic: true, customStyles: { baseColor: '#112233' },
-    },
-    [legacyImageKey]: 'legacy-image-placeholder',
-    [LEGACY_THEME_COMMUNITY_INDEX]: [{ ownerId: userId, themeId: legacyId }, { ownerId: otherUserId, themeId: 'other_theme' }],
     [authoredReportKey]: {
       reporterId: userId, ownerId: otherUserId, setId: 'other_set', publicAccessId: 'public_aaaaaaaaaaaaaaaa',
       setName: 'Other Set', reason: 'privacy', details: 'My authored report', createdAt: '2026-08-22T01:00:00.000Z',
@@ -110,8 +103,17 @@ try {
     [ownedBlockKey]: { ownerId: userId, setId, publicAccessId: publicId, status: 'takedown', adminId: otherUserId, reason: 'privacy' },
     [adminBlockKey]: { ownerId: otherUserId, setId: 'other_set', publicAccessId: 'public_bbbbbbbbbbbbbbbb', status: 'takedown', adminId: userId, reason: 'other' },
   }, { failDeleteOnce: new Set([imageKey]) });
+  const legacyStore = memoryStore({
+    [legacyThemeIndexKey(userId)]: [{ ownerId: userId, themeId: legacyId }],
+    [legacyThemeKey(userId, legacyId)]: {
+      ownerId: userId, themeId: legacyId, themeName: 'Legacy Private', trayName: 'Old Tray', imageKey: legacyImageKey,
+      imageAccessToken: 'legacy-secret-token', isPublic: true, customStyles: { baseColor: '#112233' },
+    },
+    [legacyImageKey]: 'legacy-image-placeholder',
+    [LEGACY_THEME_COMMUNITY_INDEX]: [{ ownerId: userId, themeId: legacyId }, { ownerId: otherUserId, themeId: 'other_theme' }],
+  });
 
-  const stores = { configurationStore, shortcutStore, appStore, legacyStore: appStore };
+  const stores = { configurationStore, shortcutStore, appStore, legacyStore };
   const exported = await exportAccountData(userId, {}, stores);
   assert.equal(exported.savedConfigurations[0].name, 'Private Config');
   assert.equal(exported.diceSets[0].set.name, 'Private Set');
@@ -136,22 +138,28 @@ try {
   assert.equal(tombstone?.set, undefined, 'Deletion tombstone must not retain the user dice-set payload.');
   assert.equal(value(appStore, publicRecordKey(publicId)), null, 'Public projection must already be revoked before child cleanup failure returns.');
   assert.notEqual(value(appStore, imageKey), null, 'Injected image cleanup failure should leave the referenced image for retry.');
+  assert.notEqual(value(legacyStore, legacyThemeKey(userId, legacyId)), null, 'A Dice Studio cleanup failure must not corrupt the separate legacy theme store.');
 
   const deleted = await deleteAccountData(userId, {}, stores);
   assert.equal(deleted.success, true);
   assert.equal(deleted.signInAccountDeleted, false);
   assert.equal(deleted.browserLocalDataDeleted, false);
-  for (const key of [
-    diceKey, imageKey, publicRecordKey(publicId), legacyThemeIndexKey(userId), legacyThemeKey(userId, legacyId),
-    legacyImageKey, authoredReportKey, ownedSetReportKey, ownedBlockKey, configurationKey(userId), shortcutKey(userId),
-  ]) assert.equal(value(key.includes('configurations') ? configurationStore : key.includes('shortcuts-v1') ? shortcutStore : appStore, key), null, `Expected deleted cloud key: ${key}`);
+  for (const key of [diceKey, imageKey, publicRecordKey(publicId), authoredReportKey, ownedSetReportKey, ownedBlockKey]) {
+    assert.equal(value(appStore, key), null, `Expected deleted Dice Studio/Community key: ${key}`);
+  }
+  for (const key of [legacyThemeIndexKey(userId), legacyThemeKey(userId, legacyId), legacyImageKey]) {
+    assert.equal(value(legacyStore, key), null, `Expected deleted legacy theme key: ${key}`);
+  }
+  assert.equal(value(configurationStore, configurationKey(userId)), null, 'Saved configurations must be deleted from their own scoped store.');
+  assert.equal(value(shortcutStore, shortcutKey(userId)), null, 'Shortcut workspace must be deleted from its own scoped store.');
   assert.notEqual(value(appStore, unrelatedReportKey), null, 'Unrelated Community report must remain.');
   assert.equal(value(appStore, adminBlockKey)?.adminId, 'deleted-administrator', 'Admin identity references must be anonymized without lifting unrelated moderation.');
-  assert.equal(value(appStore, LEGACY_THEME_COMMUNITY_INDEX).some((item) => item.ownerId === userId), false, 'Legacy Community index must not retain deleted owner id.');
-  assert.equal(value(appStore, LEGACY_THEME_COMMUNITY_INDEX).some((item) => item.ownerId === otherUserId), true, 'Unrelated legacy Community entries must remain.');
+  assert.equal(value(legacyStore, LEGACY_THEME_COMMUNITY_INDEX).some((item) => item.ownerId === userId), false, 'Legacy Community index must not retain deleted owner id.');
+  assert.equal(value(legacyStore, LEGACY_THEME_COMMUNITY_INDEX).some((item) => item.ownerId === otherUserId), true, 'Unrelated legacy Community entries must remain.');
 
   const endpoint = await readFile(new URL('../netlify/functions/account-data.mjs', import.meta.url), 'utf8');
   const saveApi = await readFile(new URL('../netlify/functions/save-dice-set.mjs', import.meta.url), 'utf8');
+  const deleteSource = await readFile(new URL('../netlify/functions/account-data-delete.mjs', import.meta.url), 'utf8');
   for (const text of [
     'const user = await getUser()', 'verifyRequestOrigin(request)', "DELETE_CONFIRMATION = 'DELETE MY CLOUD DATA'",
     "path: '/api/account-data'", 'Content-Disposition', 'exportAccountData(user.id, context)', 'deleteAccountData(user.id, context)',
@@ -159,8 +167,10 @@ try {
   assert.ok(!endpoint.includes('deleteUser'), 'Application-data deletion must not silently delete the Netlify Identity account.');
   assert.ok(saveApi.includes("code: 'dice-set-deleting'"), 'Racing Dice Studio saves must not resurrect privacy-deletion tombstones.');
   assert.ok(saveApi.indexOf('current?.record?.deletionMarker') < saveApi.indexOf('version !== (current?.version || null)'), 'Deletion marker must be handled before normal version conflict serialization.');
+  assert.ok(deleteSource.includes('stores.legacyStore || openLegacyThemeStore(context)'), 'Privacy deletion must use the separate legacy theme Blob store.');
+  assert.ok(deleteSource.includes('deleteLegacyThemes(legacyStore, userId)'), 'Legacy theme cleanup must not run against the Dice Studio Blob store.');
 
-  console.log('Account privacy lifecycle passed: export omits capabilities, cloud deletion is fail-closed/retryable, all user app stores are removed, unrelated data remains, admin references anonymize, and the sign-in account/browser data remain untouched.');
+  console.log('Account privacy lifecycle passed: export omits capabilities, cloud deletion is fail-closed/retryable, isolated user app stores are removed, unrelated data remains, admin references anonymize, and the sign-in account/browser data remain untouched.');
 } catch (error) {
   console.error('Account privacy lifecycle check failed:', error);
   process.exitCode = 1;
