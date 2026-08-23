@@ -10,9 +10,13 @@ export function bindStudioControls(context) {
     q('lock-set').addEventListener('click', actions.toggleLock); q('publish-set').addEventListener('click', actions.togglePublish);
     const useButton = q('use-set');
     useButton.textContent = 'Use This Set & Back to Roller';
+    const backLink = documentRef.querySelector('.studio-header a[href="/"]');
+    if (backLink) backLink.textContent = 'Back to Roller (Keep Current Set)';
     q('use-set').addEventListener('click', actions.activateDraft);
     useButton.addEventListener('click', () => {
-      if (q('active-badge')?.textContent === 'ACTIVE') windowRef.location.assign('/');
+      if (q('active-badge')?.textContent === 'ACTIVE') {
+        windowRef.setTimeout(() => windowRef.location.assign('/'), 600);
+      }
     });
     q('delete-set').addEventListener('click', actions.deleteDraft);
     q('import-browser-sets').addEventListener('click', actions.importBrowserCollection);
