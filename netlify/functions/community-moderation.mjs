@@ -73,6 +73,15 @@ async function takedown(store, user, body) {
 async function liftBlock(store, body) {
   const ownerId = requiredId(body.ownerId, 'Owner id');
   const setId = requiredId(body.setId, 'Dice-set id');
+  const block = await readModerationBlock(store, ownerId, setId);
+  if (!block) return { success: true, blocked: false, republishRequired: true };
+  const publicAccessId = requiredId(block.publicAccessId, 'Community dice-set id');
+  try {
+    await store.delete(publicRecordKey(publicAccessId));
+  } catch (error) {
+    console.error('Failed to clear public projection before lifting moderation block:', error);
+    throw new Error('Unable to safely lift Community moderation block.');
+  }
   await deleteModerationBlock(store, ownerId, setId);
   return { success: true, blocked: false, republishRequired: true };
 }
