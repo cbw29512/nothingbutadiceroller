@@ -39,6 +39,7 @@ const defaultAppearance = {
       faceColor: '#ffffff',
       opacity: 1,
       glow: { enabled: false, color: '#ffffff', intensity: 0 },
+      pattern: { type: 'solid', primaryColor: '#b91c1c', secondaryColor: '#7f1d1d', strength: 0.55, scale: 0.5 },
       translucency: { enabled: false, opacity: 0.72, frost: 0.08, tintColor: '#b91c1c' },
       interior: {
         enabled: false,
