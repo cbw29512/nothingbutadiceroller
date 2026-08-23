@@ -74,6 +74,15 @@ async function bundleBrowserApps() {
       entryNames: '[name]',
       logLevel: 'warning',
     });
+    await build({
+      entryPoints: [resolve(root, 'js/appearance/studio.js')],
+      bundle: true,
+      format: 'esm',
+      platform: 'browser',
+      target: ['es2022'],
+      outfile: resolve(dist, 'js/appearance/studio.js'),
+      logLevel: 'warning',
+    });
   } catch (error) {
     console.error('Browser app bundle failed:', error);
     throw error;
@@ -101,14 +110,14 @@ async function validateBuild() {
     ];
     await Promise.all(required.map(path => access(resolve(dist, path))));
 
-    const [html, studioHtml, appearanceHarnessHtml, rollsHtml, harnessHtml, browserApp, browserRolls, accountApi, authUi, customControls, customRoll, trayControls, appearanceProof] = await Promise.all([
+    const [html, studioHtml, appearanceHarnessHtml, rollsHtml, harnessHtml, browserApp, browserRolls, browserStudio, accountApi, authUi, customControls, customRoll, trayControls, appearanceProof] = await Promise.all([
       readFile(resolve(dist, 'index.html'), 'utf8'), readFile(resolve(dist, 'customize.html'), 'utf8'),
       readFile(resolve(dist, 'appearance-harness.html'), 'utf8'), readFile(resolve(dist, 'rolls.html'), 'utf8'),
       readFile(resolve(dist, 'shortcut-harness.html'), 'utf8'), readFile(resolve(dist, 'js/app.js'), 'utf8'),
-      readFile(resolve(dist, 'js/rolls.js'), 'utf8'), readFile(resolve(dist, 'js/account-api.js'), 'utf8'),
-      readFile(resolve(dist, 'js/auth-ui.js'), 'utf8'), readFile(resolve(dist, 'js/custom-controls.js'), 'utf8'),
-      readFile(resolve(dist, 'js/custom-roll.js'), 'utf8'), readFile(resolve(dist, 'js/tray-controls.js'), 'utf8'),
-      readFile(resolve(dist, 'js/appearance/dicebox-proof-harness.js'), 'utf8'),
+      readFile(resolve(dist, 'js/rolls.js'), 'utf8'), readFile(resolve(dist, 'js/appearance/studio.js'), 'utf8'),
+      readFile(resolve(dist, 'js/account-api.js'), 'utf8'), readFile(resolve(dist, 'js/auth-ui.js'), 'utf8'),
+      readFile(resolve(dist, 'js/custom-controls.js'), 'utf8'), readFile(resolve(dist, 'js/custom-roll.js'), 'utf8'),
+      readFile(resolve(dist, 'js/tray-controls.js'), 'utf8'), readFile(resolve(dist, 'js/appearance/dicebox-proof-harness.js'), 'utf8'),
     ]);
     const [howToHtml, privacyHtml, legalHtml, moderationHtml, upstreamDiceBox] = await Promise.all([
       readFile(resolve(dist, 'how-to.html'), 'utf8'),
@@ -136,6 +145,8 @@ async function validateBuild() {
       'id="lock-set"', 'RAW — standard numbers', 'id="community-report-dialog"', 'id="load-more-community"',
       'Community sets must be safe to share', 'src="/js/appearance/studio.js"', 'href="/how-to.html"',
     ], 'Dice Studio reference');
+    requireReferences(browserStudio, ['Dice Studio ready.', 'loadCloudDiceSets', 'saveCloudDiceSet'], 'bundled Dice Studio behavior');
+    if (/\bfrom\s*['"]\.\.?\//.test(browserStudio)) throw new Error('Production Dice Studio bundle contains unresolved relative imports.');
 
     requireReferences(howToHtml, [
       'Roll first. Customize only when you want to.', 'Visual faces never change results.',
@@ -193,7 +204,9 @@ async function validateBuild() {
     for (const reference of ['handleAuthCallback', 'processIdentityCallback', 'onAuthChange']) {
       if (!accountApi.includes(reference) && !authUi.includes(reference)) throw new Error(`Missing browser Identity callback behavior: ${reference}`);
     }
-    if (browserApp.includes("from '@netlify/identity'") || browserRolls.includes("from '@netlify/identity'")) throw new Error('Browser bundles must not ship an unresolved @netlify/identity import.');
+    if (browserApp.includes("from '@netlify/identity'") || browserRolls.includes("from '@netlify/identity'") || browserStudio.includes("from '@netlify/identity'")) {
+      throw new Error('Browser bundles must not ship an unresolved @netlify/identity import.');
+    }
     if (html.includes('netlify-identity-widget') || rollsHtml.includes('netlify-identity-widget')) throw new Error('Legacy Netlify Identity widget must not ship.');
 
     console.log('Build validation passed:', required.join(', '));
