@@ -71,6 +71,9 @@ jobs:
       - name: Verify live direct d20 face editing
         run: node scripts/deploy-preview-direct-face-edit.mjs
 
+      - name: Verify live face symbol picker
+        run: node scripts/deploy-preview-face-symbol-picker.mjs
+
       - name: Upload acceptance screenshots
         if: always()
         uses: actions/upload-artifact@v4
