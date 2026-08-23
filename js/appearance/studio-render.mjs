@@ -1,4 +1,4 @@
-import { CANONICAL_DICE, RAW_FACE_MODE, SYSTEM_DEFAULT_DICE_SET_ID } from './defaults.mjs';
+import { CANONICAL_DICE, SYSTEM_DEFAULT_DICE_SET_ID } from './defaults.mjs';
 import { getCanonicalFaceLabel, getCanonicalFaceResults } from './face-values.mjs';
 import { getSupportedFaceEditorDice } from './face-layouts.mjs';
 import { getVisualFace } from './face-customization.mjs';
@@ -62,7 +62,12 @@ export function renderPreview(set, selectedDie) {
     const results = getCanonicalFaceResults(type); const previewResult = type === 'd100' ? 0 : results.at(-1);
     const face = getVisualFace(set, type, previewResult);
     die.innerHTML = `<span></span><small>${type}</small>`;
-    const faceText = die.querySelector('span'); faceText.textContent = visualText(face); faceText.style.textShadow = numberGlowShadow(style.glow);
+    const faceText = die.querySelector('span');
+    faceText.textContent = visualText(face); faceText.style.textShadow = numberGlowShadow(style.glow);
+    if (FACE_EDITOR_DICE.has(type)) {
+      faceText.dataset.previewFace = String(previewResult);
+      faceText.title = `Edit face ${getCanonicalFaceLabel(type, previewResult)}`;
+    }
     return die;
   }));
 }
@@ -90,7 +95,7 @@ export function fillEditor(set, selectedDie, activeId, ownerId, cloudEnabled) {
     const face = getVisualFace(set, selectedDie, faceNumber);
     q('logical-face-label').textContent = `Face ${faceLabel}`; q('logical-result-label').textContent = `Always reports ${faceNumber}`;
     q('face-value').value = visualText(face); q('custom-face-color').value = face.color || dieStyle.faceColor;
-    const disabled = system || locked || !owner || die.faceMode === RAW_FACE_MODE;
+    const disabled = system || locked || !owner;
     document.querySelectorAll('[data-face-edit-control]').forEach((el) => { el.disabled = disabled; }); renderFaceMap(set, selectedDie, faceNumber, selectFace);
   };
   selectFace(selectedFace);
