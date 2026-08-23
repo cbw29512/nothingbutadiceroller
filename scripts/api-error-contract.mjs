@@ -1,10 +1,13 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { apiErrorResponse, publicError } from '../netlify/functions/api-errors.mjs';
 
 async function read(path) { return readFile(new URL(`../${path}`, import.meta.url), 'utf8'); }
 
 const endpointPaths = [
   'netlify/functions/auth.mjs',
+  'netlify/functions/community-moderation.mjs',
+  'netlify/functions/community-report.mjs',
   'netlify/functions/configurations.mjs',
   'netlify/functions/dice-set-image.mjs',
   'netlify/functions/dice-sets.mjs',
@@ -27,6 +30,8 @@ for (const [path, source] of Object.entries(sources)) {
 }
 
 for (const path of [
+  'netlify/functions/community-moderation.mjs',
+  'netlify/functions/community-report.mjs',
   'netlify/functions/configurations.mjs',
   'netlify/functions/dice-sets.mjs',
   'netlify/functions/save-dice-set.mjs',
@@ -60,5 +65,12 @@ for (const [path, marker] of [
 const boundary = await read('netlify/functions/api-errors.mjs');
 assert.ok(boundary.includes("code: 'request-failed'"), 'Shared API error boundary must provide a generic internal-failure code.');
 assert.ok(boundary.includes('error instanceof PublicApiError'), 'Only typed public errors may preserve deliberate messages.');
+const typedForbidden = apiErrorResponse(publicError('Administrator access required.', { status: 403, code: 'admin-required' }));
+assert.deepEqual(typedForbidden, { status: 403, body: { error: 'Administrator access required.', code: 'admin-required' } });
+const rawForbidden = new Error('provider-specific origin failure'); rawForbidden.status = 403;
+assert.deepEqual(apiErrorResponse(rawForbidden), {
+  status: 403,
+  body: { error: 'Request origin is not allowed.', code: 'origin-not-allowed' },
+});
 
-console.log('Public API error contract passed: public endpoints do not serialize raw errors/stacks, mutable JSON APIs use typed safe boundaries, and specialized endpoints retain generic failures.');
+console.log('Public API error contract passed: public endpoints do not serialize raw errors/stacks, typed public 403s preserve deliberate safe codes, raw origin failures stay sanitized, and specialized endpoints retain generic failures.');
