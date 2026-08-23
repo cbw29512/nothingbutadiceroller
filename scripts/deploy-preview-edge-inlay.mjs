@@ -16,6 +16,56 @@ async function setControl(client, selector, value, eventName = 'input') {
   const expression = `(() => { const control = document.querySelector(${JSON.stringify(selector)}); if (!control) throw new Error('Missing control: ${selector}'); control.value = ${JSON.stringify(String(value))}; control.dispatchEvent(new Event(${JSON.stringify(eventName)}, { bubbles: true })); })()`;
   await client.evaluate(expression);
 }
+async function hostedInlayDiagnostic(client) {
+  return client.evaluate(`(async () => {
+    const allResources = performance.getEntriesByType('resource').map((entry) => entry.name);
+    const resources = [...new Set(allResources.filter((url) => url.includes('/api/dice-theme/')))].slice(-20);
+    const diceBoxResources = [...new Set(allResources.filter((url) => url.includes('/vendor/dice-box-')))].slice(-20);
+    const checks = [];
+    for (const url of resources) {
+      try {
+        const response = await fetch(url, { cache: 'no-store' });
+        const body = await response.text();
+        checks.push({
+          url,
+          ok: response.ok,
+          status: response.status,
+          contentType: response.headers.get('content-type') || '',
+          contentLength: response.headers.get('content-length') || '',
+          bodyPrefix: body.slice(0, 240),
+        });
+      } catch (error) {
+        checks.push({ url, error: String(error?.message || error) });
+      }
+    }
+    const themeUrl = resources.find((url) => url.includes('/theme.config.json')) || resources[0] || '';
+    let tokenLength = 0;
+    let themePathLength = 0;
+    try {
+      const parsed = new URL(themeUrl);
+      themePathLength = parsed.pathname.length;
+      const parts = parsed.pathname.split('/').filter(Boolean);
+      const themeIndex = parts.indexOf('dice-theme');
+      tokenLength = themeIndex >= 0 ? String(parts[themeIndex + 1] || '').length : 0;
+    } catch {}
+    return {
+      location: location.href,
+      physicsStatus: document.querySelector('#physics-status')?.textContent || '',
+      rollDisabled: Boolean(document.querySelector('#roll-btn')?.disabled),
+      totalText: document.querySelector('#total-result')?.textContent || '',
+      poolSummary: document.querySelector('#pool-summary')?.textContent || '',
+      breakdown: document.querySelector('#breakdown-text')?.textContent || '',
+      activeClass: document.body.classList.contains('appearance-v2-active'),
+      activeSnapshotLength: (localStorage.getItem('ndr.appearance.activeSnapshot.v2') || '').length,
+      themeResourceCount: resources.length,
+      tokenLength,
+      themePathLength,
+      resources,
+      diceBoxResources,
+      checks,
+    };
+  })()`);
+}
 
 async function configureDesktop(client) {
   await navigate(client, previewPage('/customize.html'), desktop);
@@ -51,7 +101,11 @@ async function verifyDesktopRoll(client) {
   await client.evaluate("document.querySelector('.die-btn[data-type=\"d20\"]')?.click()");
   await waitFor(client, "document.querySelector('#pool-summary')?.textContent.includes('d20')");
   await client.evaluate("document.querySelector('#roll-btn')?.click()");
-  await waitFor(client, "Number(document.querySelector('#total-result')?.textContent) >= 1 && !document.querySelector('#roll-btn')?.disabled", 30000);
+  try {
+    await waitFor(client, "Number(document.querySelector('#total-result')?.textContent) >= 1 && !document.querySelector('#roll-btn')?.disabled", 30000);
+  } catch (error) {
+    throw new Error(`Live edge-inlay d20 did not settle: ${JSON.stringify(await hostedInlayDiagnostic(client))}. ${error.message}`);
+  }
   const roll = await client.evaluate(`(() => ({ total: Number(document.querySelector('#total-result')?.textContent), diffuse: performance.getEntriesByType('resource').map((entry) => entry.name).filter((url) => url.includes('/api/dice-theme/') && url.endsWith('/diffuse.svg')) }))()`);
   assert.ok(roll.total >= 1 && roll.total <= 20, `Live edge-inlay d20 must remain 1-20; received ${roll.total}.`);
   assert.ok(roll.diffuse.length >= 1, 'Live edge-inlay d20 must request a generated diffuse texture.');
