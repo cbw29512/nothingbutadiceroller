@@ -47,13 +47,15 @@ Phase 2 evidence: exact hardening heads have completed the built-site Chrome mat
 
 ## Phase 4 — Community abuse and scale controls
 
-- [ ] Add application-level publication/upload abuse limits or verified Netlify rate-limit controls.
-- [ ] Add pagination/bounded page size for Community results.
-- [ ] Avoid unbounded public-record fan-out on every Community load.
+- [x] Add application-level publication/upload abuse limits or verified Netlify rate-limit controls. **Deployed Netlify function rules cap dice-set save/upload mutations at 30 requests/minute and Community/library requests at 120 requests/minute per IP+domain.**
+- [x] Add pagination/bounded page size for Community results. **Community returns 24 records by default, allows at most 48 per page, bounds page numbers, and Dice Studio exposes an explicit Load More flow.**
+- [x] Avoid unbounded public-record fan-out on every Community load. **Current Community Blob enumeration uses manual pagination and stops after one bounded candidate page; legacy migration reads are separately capped.**
 - [ ] Add a user-facing Report Set path.
 - [ ] Add an administrative takedown/moderation path.
 - [ ] Add concise Community Acceptable Use rules.
 - [x] Keep public projections anonymous (`Adventurer`) and opaque. **Current public-projection contract verifies opaque public identity and no account email/internal account IDs.**
+
+Phase 4 scale evidence: exact head `002e39c69317c3bff18f06b3c27f1fa6d404351d` passed the full deterministic/build/browser release validation and its Netlify Deploy Preview. Regression fixtures prove the current Blob async iterator stops after the bounded page and legacy migration fan-out respects its cap.
 
 ## Phase 5 — Supply-chain and runtime resilience
 
