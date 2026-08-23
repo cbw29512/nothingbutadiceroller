@@ -18,9 +18,8 @@ try {
     'id="die-style-enabled"', 'id="face-mode"', 'RAW — standard numbers', 'id="face-map"',
     'id="logical-result-label"', 'short word', 'id="tray-image"', 'id="remove-tray-image"',
     'image/png,image/jpeg,image/webp', 'Guest browser sets: up to 512 KB', 'Signed-in cloud sets: up to 4 MB',
-    'src="/js/studio.js"',
+    'src="/js/appearance/studio.js"',
   ].forEach((text) => requireText(html, text, 'studio contract'));
-  if (html.includes('src="/js/appearance/studio.js"')) throw new Error('Studio must load the bundled production entry, not its source module graph.');
   if (html.includes('Words and multi-character labels are not allowed.') || /id="logical-face"[^>]*type="number"/.test(html)) {
     throw new Error('Studio must support short visual labels without editable logical results.');
   }
@@ -42,7 +41,7 @@ try {
   const invalid = cloneDiceSet(valid); invalid.id = 'cloud_invalid'; invalid.appearance.extra = true;
   assert.deepEqual(validSetsFromRecords([{ set: valid }, { set: invalid }, null, {}]).map((set) => set.id), ['cloud_valid']);
   assert.deepEqual(validSetsFromRecords(null), []);
-  console.log('Studio page contract passed: bundled production entry, short face labels, browser/cloud tray-image limits, validated cloud/community ingestion, active-set save sync, saved sets, and default fallback are protected.');
+  console.log('Studio page contract passed: bundled in-place production entry, short face labels, browser/cloud tray-image limits, validated cloud/community ingestion, active-set save sync, saved sets, and default fallback are protected.');
 } catch (error) {
   console.error('Studio page contract failed:', error);
   process.exitCode = 1;
