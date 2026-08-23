@@ -8,6 +8,9 @@ import { readModerationBlock } from './community-moderation-store.mjs';
 import {
   conditionalRecordWrite, normalizeExpectedVersion, readVersionedRecord, versionConflict,
 } from './dice-set-concurrency.mjs';
+import {
+  imageQuotaWouldBeExceeded, MAX_USER_IMAGE_BYTES, userImageUsageBytes,
+} from './dice-set-image-quota.mjs';
 import { sanitizeTrayImageBytes } from './image-sanitizer/index.mjs';
 import {
   buildPublicProjection, countUserRecords, MAX_USER_DICE_SETS, openDiceSetStore,
@@ -32,6 +35,13 @@ function newPublicAccessId() { return `public_${randomUUID().replaceAll('-', '')
 function quotaError() {
   return publicError(`You can save up to ${MAX_USER_DICE_SETS} dice sets per account.`, { code: 'dice-set-limit-reached' });
 }
+function imageQuotaError(version = null) {
+  return publicError('Cloud tray images are limited to 64 MB total per account. Remove an image or use a smaller one, then retry.', {
+    status: 413,
+    code: 'tray-image-account-limit-reached',
+    details: version ? { version } : null,
+  });
+}
 function ownerImage(userId, setId, token) {
   return { kind: 'blob', url: `/api/dice-set-image?owner=${encodeURIComponent(userId)}&set=${encodeURIComponent(setId)}&token=${token}` };
 }
@@ -40,11 +50,17 @@ async function bestEffortDelete(store, key, label) {
   if (!store || !key) return;
   try { await store.delete(key); } catch (error) { console.warn(`Failed to clean up ${label}:`, error); }
 }
-async function rollbackNewRecord(store, key, version) {
+async function rollbackCommittedRecord(store, key, version, previousRecord) {
+  if (previousRecord) {
+    const result = await store.setJSON(key, previousRecord, { onlyIfMatch: version });
+    if (!result?.modified) throw new Error('Dice-set quota rollback lost its conditional write.');
+    return result.etag || null;
+  }
   const marker = { deletionMarker: true, deletedAt: new Date().toISOString() };
   const result = await store.setJSON(key, marker, { onlyIfMatch: version });
   if (!result?.modified) throw new Error('New dice-set quota rollback lost its conditional write.');
   await store.delete(key);
+  return null;
 }
 async function requestJson(request) {
   try { return await request.json(); }
@@ -116,16 +132,22 @@ export default async (request, context) => {
     const previousTrayImageKey = existing?.trayImageKey || null;
     let trayImageKey = previousTrayImageKey;
     let trayImageAccessToken = existing?.trayImageAccessToken || null;
+    let trayImageBytes = previousTrayImageKey ? (existing?.trayImageBytes ?? null) : 0;
     const parsedImage = parseImage(incomingDataUrl);
     if (parsedImage) {
+      const otherImageBytes = await userImageUsageBytes(store, user.id, { excludeSetId: set.id });
+      if (imageQuotaWouldBeExceeded(otherImageBytes, parsedImage.buffer.byteLength)) throw imageQuotaError();
       trayImageAccessToken = randomUUID().replaceAll('-', '');
       stagedTrayImageKey = versionedImageKey(user.id, set.id, trayImageAccessToken);
-      await store.set(stagedTrayImageKey, parsedImage.buffer, { metadata: { contentType: parsedImage.mime } });
+      await store.set(stagedTrayImageKey, parsedImage.buffer, {
+        metadata: { contentType: parsedImage.mime, byteLength: parsedImage.buffer.byteLength },
+      });
       trayImageKey = stagedTrayImageKey;
+      trayImageBytes = parsedImage.buffer.byteLength;
       set.appearance.tray.image = ownerImage(user.id, set.id, trayImageAccessToken);
       set = prepareSet(set, user.id);
     } else if (incomingImage == null) {
-      trayImageKey = null; trayImageAccessToken = null; set.appearance.tray.image = null;
+      trayImageKey = null; trayImageAccessToken = null; trayImageBytes = 0; set.appearance.tray.image = null;
     }
 
     const now = new Date().toISOString();
@@ -134,7 +156,7 @@ export default async (request, context) => {
     let publicAccessId = publicLocked && existingIsPublic ? previousPublicAccessId : null;
     if (publicLocked && !publicAccessId) publicAccessId = newPublicAccessId();
     const record = {
-      set, creator: 'Adventurer', trayImageKey, trayImageAccessToken, publicAccessId,
+      set, creator: 'Adventurer', trayImageKey, trayImageAccessToken, trayImageBytes, publicAccessId,
       recordVersion: randomUUID(), createdAt: existing?.createdAt || now, updatedAt: now,
     };
 
@@ -151,16 +173,35 @@ export default async (request, context) => {
       try { overQuota = await countUserRecords(store, user.id) > MAX_USER_DICE_SETS; }
       catch (error) {
         console.error('Post-save dice-set quota verification failed; rolling back new set:', error);
-        await rollbackNewRecord(store, key, committed.version); recordCommitted = false;
+        await rollbackCommittedRecord(store, key, committed.version, existing); recordCommitted = false;
         if (stagedTrayImageKey) await bestEffortDelete(store, stagedTrayImageKey, 'staged tray image');
         stagedTrayImageKey = null;
         throw new Error('Post-save dice-set quota verification failed.');
       }
       if (overQuota) {
-        await rollbackNewRecord(store, key, committed.version); recordCommitted = false;
+        await rollbackCommittedRecord(store, key, committed.version, existing); recordCommitted = false;
         if (stagedTrayImageKey) await bestEffortDelete(store, stagedTrayImageKey, 'staged tray image');
         stagedTrayImageKey = null;
         throw quotaError();
+      }
+    }
+
+    if (parsedImage) {
+      let postSaveImageBytes;
+      try { postSaveImageBytes = await userImageUsageBytes(store, user.id); }
+      catch (error) {
+        console.error('Post-save tray image quota verification failed; rolling back dice set:', error);
+        const rollbackVersion = await rollbackCommittedRecord(store, key, committed.version, existing); recordCommitted = false;
+        if (stagedTrayImageKey) await bestEffortDelete(store, stagedTrayImageKey, 'staged tray image');
+        stagedTrayImageKey = null;
+        if (rollbackVersion) throw imageQuotaError(rollbackVersion);
+        throw new Error('Post-save tray image quota verification failed.');
+      }
+      if (postSaveImageBytes > MAX_USER_IMAGE_BYTES) {
+        const rollbackVersion = await rollbackCommittedRecord(store, key, committed.version, existing); recordCommitted = false;
+        if (stagedTrayImageKey) await bestEffortDelete(store, stagedTrayImageKey, 'staged tray image');
+        stagedTrayImageKey = null;
+        throw imageQuotaError(rollbackVersion);
       }
     }
 
