@@ -1,4 +1,5 @@
 import { bindFaceSymbolPicker } from './face-symbol-picker.mjs';
+import { bindStudioPatternControls } from './studio-pattern-controls.mjs';
 import { bindStudioResinControls } from './studio-resin-controls.mjs';
 import { bindStudioSurfaceControls } from './studio-surface-controls.mjs';
 import { bindStudioVisualControls } from './studio-visual-controls.mjs';
@@ -68,6 +69,9 @@ export function bindStudioControls(context) {
       q, updateDraft: draft.update, getSelectedDie: dice.get, refresh, setStatus,
     });
     bindStudioSurfaceControls({
+      q, updateDraft: draft.update, getSelectedDie: dice.get, refresh, setStatus,
+    });
+    bindStudioPatternControls({
       q, updateDraft: draft.update, getSelectedDie: dice.get, refresh, setStatus,
     });
     draftGuard.bindBeforeUnload(windowRef);

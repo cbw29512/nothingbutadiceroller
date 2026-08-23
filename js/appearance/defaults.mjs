@@ -49,6 +49,13 @@ const defaultAppearance = {
         intensity: 0.7,
       },
       finish: { type: 'standard', accentColor: '#ffffff', intensity: 0.55 },
+      pattern: {
+        type: 'none',
+        primaryColor: '#f8fafc',
+        secondaryColor: '#64748b',
+        intensity: 0.55,
+        scale: 0.5,
+      },
     },
     dice: canonicalDiceMap(),
   },

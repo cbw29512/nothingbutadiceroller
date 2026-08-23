@@ -43,6 +43,7 @@ const payload = {
   g: [false, '#ffffff', 0],
   r: [true, 0.65, 0.1, '#8b5cf6', true, 'nebula', '#7c3aed', '#22d3ee', 0.7, 0.8],
   f: ['standard', '#ffffff', 0.55],
+  p: ['none', '#f8fafc', '#64748b', 0.55, 0.5],
 };
 assert.equal(validateRuntimeThemePayload(payload).ok, true);
 assert.ok(encodeRuntimeThemePayload(payload).length < 6000);
@@ -56,6 +57,7 @@ assert.ok(buildRuntimeThemeConfig(payload).material.diffuseLevel < 1);
 
 const legacyV3Payload = { ...payload, v: 3 };
 delete legacyV3Payload.f;
+delete legacyV3Payload.p;
 assert.equal(validateRuntimeThemePayload(legacyV3Payload).ok, true, 'Existing v3 resin tokens must remain readable.');
 assert.ok(buildRuntimeThemeSvg(legacyV3Payload).includes('resinSheen'));
 

@@ -1,5 +1,6 @@
 import { CANONICAL_DICE } from './defaults.mjs';
 import { buildDiceBoxAtlasDrawOperations } from './dicebox-atlas-renderer.mjs';
+import { normalizeSurfacePattern } from './pattern-style.mjs';
 import { buildRuntimeThemeIdentity } from './runtime-theme-identity.mjs';
 import { RUNTIME_THEME_VERSION, encodeRuntimeThemePayload } from './runtime-theme-codec.mjs';
 import { normalizeInterior, normalizeTranslucency, simulatedResinBodyColor } from './resin-style.mjs';
@@ -23,6 +24,7 @@ export function buildDiceBoxRuntimeTheme(glyphPlan, themePlan, dieType, { size =
     const translucency = normalizeTranslucency(material.translucency, material.bodyColor);
     const interior = normalizeInterior(material.interior);
     const finish = normalizeSurfaceFinish(material.finish);
+    const pattern = normalizeSurfacePattern(material.pattern);
     const payload = {
       v: RUNTIME_THEME_VERSION,
       d: dieType,
@@ -49,6 +51,13 @@ export function buildDiceBoxRuntimeTheme(glyphPlan, themePlan, dieType, { size =
         round(clamp01(interior.intensity)),
       ],
       f: [finish.type, finish.accentColor, round(clamp01(finish.intensity))],
+      p: [
+        pattern.type,
+        pattern.primaryColor,
+        pattern.secondaryColor,
+        round(clamp01(pattern.intensity)),
+        round(clamp01(pattern.scale)),
+      ],
     };
     const token = encodeRuntimeThemePayload(payload);
     return {

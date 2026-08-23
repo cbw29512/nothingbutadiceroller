@@ -1,4 +1,5 @@
 import { CANONICAL_DICE, CUSTOM_FACE_MODE } from './defaults.mjs';
+import { normalizeSurfacePattern } from './pattern-style.mjs';
 import { normalizeInterior, normalizeTranslucency } from './resin-style.mjs';
 import { normalizeSurfaceFinish } from './surface-style.mjs';
 import { assertValidDiceSet } from './validation.mjs';
@@ -8,6 +9,7 @@ function mergeStyle(base, overrides = {}) {
   const baseTranslucency = normalizeTranslucency(base.translucency, base.bodyColor);
   const baseInterior = normalizeInterior(base.interior);
   const baseFinish = normalizeSurfaceFinish(base.finish);
+  const basePattern = normalizeSurfacePattern(base.pattern);
   return {
     bodyColor,
     faceColor: overrides.faceColor ?? base.faceColor,
@@ -18,6 +20,7 @@ function mergeStyle(base, overrides = {}) {
       : normalizeTranslucency(baseTranslucency, bodyColor),
     interior: overrides.interior ? normalizeInterior(overrides.interior) : normalizeInterior(baseInterior),
     finish: overrides.finish ? normalizeSurfaceFinish(overrides.finish) : normalizeSurfaceFinish(baseFinish),
+    pattern: overrides.pattern ? normalizeSurfacePattern(overrides.pattern) : normalizeSurfacePattern(basePattern),
   };
 }
 

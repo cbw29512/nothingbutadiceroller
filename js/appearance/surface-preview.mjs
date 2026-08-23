@@ -1,3 +1,4 @@
+import { buildPatternPreviewLayers } from './pattern-preview.mjs';
 import { buildResinPreviewBackground, buildResinPreviewShadow } from './resin-preview.mjs';
 import { normalizeSurfaceFinish } from './surface-style.mjs';
 
@@ -40,7 +41,11 @@ function finishLayers(finish) {
 export function buildSurfacePreviewBackground(style = {}) {
   try {
     const finish = normalizeSurfaceFinish(style.finish);
-    return [...finishLayers(finish), buildResinPreviewBackground(style)].filter(Boolean).join(',');
+    return [
+      ...finishLayers(finish),
+      ...buildPatternPreviewLayers(style.pattern),
+      buildResinPreviewBackground(style),
+    ].filter(Boolean).join(',');
   } catch (error) {
     console.error('Failed to build surface preview background:', error);
     return buildResinPreviewBackground(style);

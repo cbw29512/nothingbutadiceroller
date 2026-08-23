@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="robots" content="noindex,nofollow">
   <meta name="theme-color" content="#090c12">
-  <meta name="description" content="Customize dice colors, faces, symbols, glow, clear resin interiors, surface finishes, and tray appearance without changing tabletop RPG roll mechanics.">
+  <meta name="description" content="Customize dice colors, faces, symbols, glow, clear resin interiors, surface finishes, patterns, and tray appearance without changing tabletop RPG roll mechanics.">
   <title>Dice Studio • Nothing But A Dice Roller</title>
   <link rel="stylesheet" href="/styles.css">
   <link rel="stylesheet" href="/customize.css">
@@ -135,6 +135,36 @@
             <span class="range-field"><input id="finish-intensity" data-edit-control type="range" min="0" max="1" step="0.05" value="0.55"><output id="finish-intensity-output" for="finish-intensity">55%</output></span>
           </label>
           <p class="studio-note">Matte, satin, gloss, metallic, and pearl finishes change only the generated surface artwork. Shape, physical result, and roll rules stay untouched.</p>
+        </fieldset>
+        <fieldset id="surface-pattern-group" class="studio-group">
+          <legend>Surface pattern</legend>
+          <label class="studio-field">Apply to
+            <select id="pattern-scope" data-edit-control>
+              <option value="set">Whole set</option>
+              <option value="selected">Selected die only</option>
+            </select>
+          </label>
+          <p id="pattern-scope-note" class="studio-note">This surface pattern becomes the default for every die in the set.</p>
+          <label class="studio-field">Pattern
+            <select id="surface-pattern" data-edit-control>
+              <option value="none">None</option>
+              <option value="marble">Marble</option>
+              <option value="swirl">Swirl</option>
+              <option value="speckle">Speckle</option>
+              <option value="split">Split-tone</option>
+            </select>
+          </label>
+          <div class="color-grid pattern-colors">
+            <label>Pattern color 1<input id="pattern-primary-color" data-edit-control type="color" value="#f8fafc"></label>
+            <label>Pattern color 2<input id="pattern-secondary-color" data-edit-control type="color" value="#64748b"></label>
+          </div>
+          <label class="studio-field">Pattern intensity
+            <span class="range-field"><input id="pattern-intensity" data-edit-control type="range" min="0" max="1" step="0.05" value="0.55"><output id="pattern-intensity-output" for="pattern-intensity">55%</output></span>
+          </label>
+          <label class="studio-field">Pattern scale
+            <span class="range-field"><input id="pattern-scale" data-edit-control type="range" min="0" max="1" step="0.05" value="0.5"><output id="pattern-scale-output" for="pattern-scale">50%</output></span>
+          </label>
+          <p class="studio-note">Marble, swirl, speckle, and split-tone are deterministic visual textures. They do not alter geometry, physics, RNG, face results, or RAW behavior.</p>
         </fieldset>
         <fieldset class="studio-group">
           <legend>Selected die faces</legend>
