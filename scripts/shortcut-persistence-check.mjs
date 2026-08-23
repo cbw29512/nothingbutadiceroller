@@ -110,13 +110,16 @@ assert.throws(() => validateStoredShortcutWorkspace({ ...structuredClone(stored)
 assert.throws(() => validateStoredShortcutWorkspace({ ...structuredClone(stored), schemaVersion: 999 }), ShortcutWorkspaceValidationError);
 
 const apiSource = await readFile(new URL('../netlify/functions/shortcuts.mjs', import.meta.url), 'utf8');
+const userStoreSource = await readFile(new URL('../netlify/functions/user-data-store.mjs', import.meta.url), 'utf8');
+const deployStoreSource = await readFile(new URL('../netlify/functions/deploy-store.mjs', import.meta.url), 'utf8');
 const clientSource = await readFile(new URL('../js/shortcuts/persistence-client.mjs', import.meta.url), 'utf8');
 const localSource = await readFile(new URL('../js/shortcuts/local-persistence.mjs', import.meta.url), 'utf8');
 const managerSessionSource = await readFile(new URL('../js/shortcuts/manager-session.mjs', import.meta.url), 'utf8');
 const runtimeSource = await readFile(new URL('../js/shortcuts/runtime.js', import.meta.url), 'utf8');
 for (const required of [
   'verifyRequestOrigin(request)',
-  "getStore({ name: STORE_NAME, consistency: 'strong' })",
+  'openShortcutStore(context)',
+  'shortcutKey(user.id)',
   'onlyIfMatch: current.version',
   'onlyIfNew: true',
   "'version', 'shortcuts', 'options'",
@@ -125,9 +128,15 @@ for (const required of [
   "code: 'shortcut-version-conflict'",
   'validateStoredShortcutWorkspace(entry.data)',
 ]) assert.ok(apiSource.includes(required), `Shortcut API contract missing: ${required}`);
-assert.ok(apiSource.includes('encodeURIComponent(String(userId))'));
+for (const required of [
+  "SHORTCUT_STORE_NAME = 'dice-user-shortcuts-v1'",
+  'openScopedStore(SHORTCUT_STORE_NAME, context)',
+  'return `users/${userPart(userId)}/shortcuts-v1.json`',
+]) assert.ok(userStoreSource.includes(required), `Shared shortcut store contract missing: ${required}`);
+assert.ok(deployStoreSource.includes("consistency = 'strong'"), 'Shared scoped stores must default to strong consistency.');
+assert.ok(deployStoreSource.includes("=== 'production' ? name : `${name}-nonprod`"), 'Shared scoped stores must isolate production from nonproduction.');
 assert.ok(!apiSource.includes('body.userId'));
-for (const required of ["credentials: 'include'", "fetch('/api/shortcuts'", 'normalizeShortcutOptions(options)', "shortcut-version-required", "shortcut-persistence-error"]) {
+for (const required of ["credentials: 'include'", "fetch('/api/shortcuts'", 'normalizeShortcutOptions(options)', 'shortcut-version-required', 'shortcut-persistence-error']) {
   assert.ok(clientSource.includes(required), `Shortcut persistence client contract missing: ${required}`);
 }
 for (const required of [
@@ -153,4 +162,4 @@ assert.equal(loadLocalShortcutWorkspace().workspace.options.preferredRuleset, 'd
 if (originalLocalStorage === undefined) delete globalThis.localStorage;
 else globalThis.localStorage = originalLocalStorage;
 
-console.log('Shortcut persistence checks passed.');
+console.log('Shortcut persistence checks passed: shared scoped storage, ETag conflicts, validated workspaces, and browser-local fallback are protected.');
