@@ -5,9 +5,9 @@ import {
 import { listVersionedUserRecords } from './dice-set-concurrency.mjs';
 import { openDiceSetStore } from './dice-set-store.mjs';
 import {
-  legacyThemeIndexKey, legacyThemeKey, openLegacyThemeStore,
+  legacyThemeIndexKey, legacyThemePrefix, openLegacyThemeStore,
 } from './legacy-theme-store.mjs';
-import { readJsonEntries } from './privacy-store-utils.mjs';
+import { listAllBlobKeys, readJsonEntries } from './privacy-store-utils.mjs';
 import {
   configurationKey, openConfigurationStore, openShortcutStore, shortcutKey,
 } from './user-data-store.mjs';
@@ -81,11 +81,11 @@ function safeShortcutWorkspace(raw) {
 }
 
 async function legacyThemesForUser(store, userId) {
-  const index = await store.get(legacyThemeIndexKey(userId), { type: 'json' }).catch(() => []);
-  if (!Array.isArray(index)) return [];
-  const themes = await Promise.all(index.map((item) => (
-    item?.themeId ? store.get(legacyThemeKey(userId, item.themeId), { type: 'json' }).catch(() => null) : null
-  )));
+  const prefix = legacyThemePrefix(userId);
+  const indexKey = legacyThemeIndexKey(userId);
+  const keys = await listAllBlobKeys(store, prefix);
+  const recordKeys = keys.filter((key) => key.endsWith('.json') && key !== indexKey);
+  const themes = await Promise.all(recordKeys.map((key) => store.get(key, { type: 'json' }).catch(() => null)));
   return themes.map(safeLegacyTheme).filter(Boolean);
 }
 
