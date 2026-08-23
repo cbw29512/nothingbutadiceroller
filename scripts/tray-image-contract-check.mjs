@@ -35,7 +35,8 @@ assert.match(saveSource, /stagedTrayImageKey/);
 assert.match(saveSource, /previousTrayImageKey/);
 assert.match(saveSource, /bestEffortDelete\(store, previousTrayImageKey/);
 assert.match(saveSource, /Tray images must be uploaded through Dice Studio/);
-assert.match(saveSource, /Unlock the dice set before changing its tray image/);
+assert.match(saveSource, /existing\?\.set\?\.locked && incomingDataUrl/);
+assert.match(saveSource, /code: 'locked-dice-set-image'/);
 
 const storeSource = fs.readFileSync(new URL('../netlify/functions/dice-set-store.mjs', import.meta.url), 'utf8');
 assert.match(storeSource, /function keyPart\(value\) \{ return encodeURIComponent\(String\(value\)\); \}/);
