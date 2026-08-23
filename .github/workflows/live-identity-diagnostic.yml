@@ -26,8 +26,8 @@ jobs:
         run: |
           node <<'NODE' > LIVE_IDENTITY_DIAGNOSTIC.txt
           const origin = process.env.ORIGIN;
-          const fetchJson = async (path) => {
-            const response = await fetch(`${origin}${path}`, { redirect: 'error' });
+          const fetchResult = async (path, options = {}) => {
+            const response = await fetch(`${origin}${path}`, { redirect: 'error', ...options });
             const text = await response.text();
             let body = null;
             try { body = JSON.parse(text); } catch {}
@@ -37,7 +37,7 @@ jobs:
           console.log(`release_candidate=a375f373ff8f4430c0ae34439fe5823bce301b81`);
           console.log(`preview_origin=${origin}`);
 
-          const identity = await fetchJson('/.netlify/identity/settings');
+          const identity = await fetchResult('/.netlify/identity/settings');
           console.log(`identity_settings_status=${identity.response.status}`);
           if (identity.response.ok && identity.body && typeof identity.body === 'object') {
             const safe = {
@@ -54,15 +54,40 @@ jobs:
             console.log('identity_safe_settings=unavailable');
           }
 
-          const community = await fetchJson('/api/dice-sets?scope=community&page=1&pageSize=48');
+          const badSignup = await fetchResult('/.netlify/identity/signup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: 'not-an-email', password: 'x' }),
+          });
+          console.log(`invalid_signup_status=${badSignup.response.status}`);
+
+          const badToken = await fetchResult('/.netlify/identity/token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({ grant_type: 'password', username: 'not-an-email', password: 'not-a-real-password' }),
+          });
+          console.log(`invalid_login_status=${badToken.response.status}`);
+
+          const community = await fetchResult('/api/dice-sets?scope=community&page=1&pageSize=48');
           console.log(`community_status=${community.response.status}`);
           const records = Array.isArray(community.body?.records) ? community.body.records : [];
           console.log(`community_record_count=${records.length}`);
           console.log(`community_has_public_image=${records.some((record) => Boolean(record?.trayImage?.url || record?.appearance?.tray?.image?.url || record?.imageUrl))}`);
 
-          const account = await fetchJson('/api/account-data');
+          const account = await fetchResult('/api/account-data');
           console.log(`anonymous_account_status=${account.response.status}`);
           console.log(`anonymous_account_code=${account.body?.code || 'none'}`);
+
+          const fakePublic = 'public_set_00000000000000000000000000000000';
+          const publicImage = await fetchResult(`/api/dice-set-image?public=${fakePublic}&token=invalid`);
+          console.log(`missing_public_image_status=${publicImage.response.status}`);
+
+          const ownerImage = await fetchResult('/api/dice-set-image?owner=nonexistent_owner&set=nonexistent_set');
+          console.log(`anonymous_owner_image_status=${ownerImage.response.status}`);
+
+          const fakeTheme = 'public_theme_00000000000000000000000000000000';
+          const legacyImage = await fetchResult(`/api/theme-image?public=${fakeTheme}&token=invalid`);
+          console.log(`missing_legacy_public_image_status=${legacyImage.response.status}`);
           NODE
 
       - name: Commit sanitized diagnostic result
