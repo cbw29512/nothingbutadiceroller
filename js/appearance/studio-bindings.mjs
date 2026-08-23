@@ -1,3 +1,4 @@
+import { bindFaceSymbolPicker } from './face-symbol-picker.mjs';
 import { bindStudioVisualControls } from './studio-visual-controls.mjs';
 
 export function bindStudioControls(context) {
@@ -56,6 +57,7 @@ export function bindStudioControls(context) {
       const type = event.target.closest('[data-die]')?.dataset.die;
       if (type) dice.select(type);
     });
+    bindFaceSymbolPicker({ q, setStatus, documentRef });
     bindStudioVisualControls({
       q, updateDraft: draft.update, getDraft: draft.get, setDraft: draft.set,
       getSelectedDie: dice.get, getOwnerId: ownerId, refresh, setStatus,
