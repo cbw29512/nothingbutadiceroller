@@ -9,6 +9,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, '..');
 const dist = resolve(root, 'dist');
 const desktop = { width: 1440, height: 900, mobile: false };
+const CUSTOM_TRAY_COLOR = '#005577';
 
 async function run() {
   await access(resolve(dist, 'customize.html'));
@@ -78,27 +79,44 @@ async function run() {
       color.value = '#ff00ff';
       color.dispatchEvent(new Event('input', { bubbles: true }));
       document.querySelector('#apply-face')?.click();
+      const tray = document.querySelector('#tray-color');
+      tray.value = '${CUSTOM_TRAY_COLOR}';
+      tray.dispatchEvent(new Event('input', { bubbles: true }));
     })()`);
-    await waitFor(client, "document.querySelector('#studio-status')?.textContent.includes('Face 20 updated visually.')");
+    await waitFor(client, "document.querySelector('.studio-preview-die[data-die=\"d20\"] span')?.textContent === 'CRIT'");
     const edited = await client.evaluate(`(() => ({
       mode: document.querySelector('#face-mode')?.value || '',
       preview: document.querySelector('.studio-preview-die[data-die="d20"] span')?.textContent || '',
       map: document.querySelector('#face-map .face-node.active')?.textContent || '',
       result: document.querySelector('#logical-result-label')?.textContent || '',
       color: document.querySelector('#custom-face-color')?.value || '',
+      trayColor: document.querySelector('#tray-color')?.value || '',
+      useLabel: document.querySelector('#use-set')?.textContent || '',
     }))()`);
     assert.equal(edited.mode, 'custom', 'Applying a direct face edit must enter custom appearance mode automatically.');
     assert.equal(edited.preview, 'CRIT', 'The visible d20 face must update immediately after Apply Face.');
     assert.equal(edited.map, 'CRIT');
     assert.match(edited.result, /Always reports 20/);
     assert.equal(edited.color.toLowerCase(), '#ff00ff');
+    assert.equal(edited.trayColor.toLowerCase(), CUSTOM_TRAY_COLOR);
+    assert.match(edited.useLabel, /Use This Set.*Back to Roller/i, 'Activation control must make the roller handoff explicit.');
 
     await client.evaluate("document.querySelector('#save-set')?.click()");
     await waitFor(client, "document.querySelector('#studio-status')?.textContent.includes('Dice set saved.')");
     await client.evaluate("document.querySelector('#use-set')?.click()");
-    await waitFor(client, "document.querySelector('#studio-status')?.textContent.includes('Set marked active for the roller.')");
-    await client.evaluate("document.querySelector('.studio-header a[href=\"/\"]')?.click()");
     await waitFor(client, "location.pathname === '/' && document.querySelector('#physics-status')?.textContent.includes('3D physics ready.')", 30000);
+
+    const handoff = await client.evaluate(`(() => ({
+      activeClass: document.body.classList.contains('appearance-v2-active'),
+      trayVar: document.body.style.getPropertyValue('--appearance-v2-tray-bg'),
+      activeId: localStorage.getItem('ndr.appearance.activeSet.v2') || '',
+      snapshot: localStorage.getItem('ndr.appearance.activeSnapshot.v2') || '',
+    }))()`);
+    assert.equal(handoff.activeClass, true, 'Main roller must enable the active appearance class after Studio handoff.');
+    assert.match(handoff.trayVar.toLowerCase(), /#005577/, 'Main roller tray must visibly use the customized tray color.');
+    assert.notEqual(handoff.activeId, 'system_default', 'Main roller must keep the customized set active.');
+    assert.match(handoff.snapshot, /CRIT/, 'Active roller snapshot must contain the customized face.');
+
     await client.evaluate("document.querySelector('.die-btn[data-type=\"d20\"]')?.click()");
     await waitFor(client, "document.querySelector('#pool-summary')?.textContent.includes('d20')");
     await client.evaluate("document.querySelector('#roll-btn')?.click()");
@@ -106,7 +124,7 @@ async function run() {
     const total = await client.evaluate("Number(document.querySelector('#total-result')?.textContent)");
     assert.ok(total >= 1 && total <= 20, `Directly customized d20 must remain mechanically 1-20; received ${total}.`);
 
-    console.log('Default-face direct editor passed: from immutable Default Dice, clicking visible d20 20 automatically creates an editable copy, selects Face 20, CRIT applies, Default remains untouched, and the physical d20 remains 1-20.');
+    console.log('Studio-to-roller handoff passed: Default face auto-copy, CRIT face, custom tray color, Save, one-click Use+Back, visible roller tray application, active snapshot, and physical d20 mechanics all persist.');
   } finally {
     if (browser) await browser.close().catch((error) => console.warn('Browser cleanup failed:', error.message));
     if (server) await server.close().catch((error) => console.warn('Static server cleanup failed:', error.message));
