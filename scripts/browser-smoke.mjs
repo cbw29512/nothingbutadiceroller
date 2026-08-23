@@ -88,11 +88,9 @@ async function run() {
         assertPageAudit(await browser.client.evaluate(PAGE_AUDIT_EXPRESSION), `${viewport.name} ${path}`);
         const metrics = await browser.client.evaluate(PERFORMANCE_EXPRESSION);
         if (path === '/customize.html') {
-          assert.deepEqual(
-            [...new Set(metrics.appearanceScripts)],
-            ['/js/appearance/studio.js'],
-            'Dice Studio must load one bundled appearance script instead of a production module graph.',
-          );
+          assert.ok(metrics.scriptPaths.includes('/js/studio.js'), 'Dice Studio must load the bundled /js/studio.js entry.');
+          assert.equal(metrics.scriptPaths.filter((item) => item === '/js/studio.js').length, 1, 'Dice Studio bundle must load exactly once.');
+          assert.deepEqual(metrics.appearanceScripts, [], 'Dice Studio must not fetch its source /js/appearance/* module graph in production.');
         }
         performanceRecords.push(formatPerformance(`${viewport.name}:${path}`, metrics));
         completed.push(`${viewport.name}:${path}`);
