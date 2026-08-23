@@ -1,6 +1,8 @@
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { extname, resolve, sep } from 'node:path';
+import { decodeRuntimeThemePayload } from '../../js/appearance/runtime-theme-codec.mjs';
+import { buildRuntimeThemeConfig, buildRuntimeThemeSvg } from '../../js/appearance/runtime-theme-response.mjs';
 
 const PRODUCTION_CSP = "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; img-src 'self' data: blob:; connect-src 'self'; font-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'self' https://app.netlify.com; frame-ancestors 'self' https://app.netlify.com";
 const MIME = new Map([
@@ -25,16 +27,42 @@ function commonHeaders() {
   };
 }
 
-function json(response, body, status = 200) {
+function json(response, body, status = 200, extraHeaders = {}) {
   response.writeHead(status, {
     ...commonHeaders(),
     'Content-Type': 'application/json; charset=utf-8',
     'Cache-Control': 'no-store',
+    ...extraHeaders,
   });
   response.end(JSON.stringify(body));
 }
 
+function runtimeThemeApi(url, response) {
+  const match = url.pathname.match(/^\/api\/dice-theme\/([^/]+)\/(theme\.config\.json|diffuse\.svg)$/);
+  if (!match) return false;
+  try {
+    const payload = decodeRuntimeThemePayload(match[1]);
+    if (match[2] === 'theme.config.json') {
+      json(response, buildRuntimeThemeConfig(payload), 200, { 'Cache-Control': 'public, max-age=31536000, immutable' });
+      return true;
+    }
+    response.writeHead(200, {
+      ...commonHeaders(),
+      'Content-Type': 'image/svg+xml; charset=utf-8',
+      'Cache-Control': 'public, max-age=31536000, immutable',
+      'Cross-Origin-Resource-Policy': 'same-origin',
+    });
+    response.end(buildRuntimeThemeSvg(payload));
+    return true;
+  } catch (error) {
+    console.error('Built-site runtime theme request failed:', url.pathname, error?.message || error);
+    json(response, { error: 'Invalid runtime dice theme.' }, 400);
+    return true;
+  }
+}
+
 function stubApi(url, response) {
+  if (runtimeThemeApi(url, response)) return true;
   if (url.pathname === '/api/dice-sets' && url.searchParams.get('scope') === 'community') {
     json(response, { records: [] });
     return true;
