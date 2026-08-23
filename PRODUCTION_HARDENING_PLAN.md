@@ -65,10 +65,10 @@ Phase 4 evidence: exact head `9e55ef7d2d5d990ef7b5378c01480f8669eba451` passed F
 - [x] Self-host the pinned DiceBox runtime assets/models required for standard dice. **The default model/textures, all three world worker modes, and Ammo WASM required by DiceBox 1.1.4 are shipped same-origin; package provenance and required runtime files are regression checked.**
 - [x] Remove production execution dependency on jsDelivr/unpkg. **Production runtime/model loaders have no CDN fallback, and rendered Chrome asserts no DiceBox resource is fetched from jsDelivr or unpkg.**
 - [x] Tighten Content-Security-Policy after self-hosting. **Production CSP defaults to same-origin execution/resources, allows only the WASM/worker behavior required by DiceBox, and is exercised by the production-like browser server.**
-- [x] Add production clickjacking protection (`frame-ancestors`) without breaking Deploy Preview review workflow. **Framing is restricted to self and `https://app.netlify.com`, preserving Netlify review while blocking arbitrary embedding.**
+- [x] Add production clickjacking protection (`frame-ancestors`) without breaking Deploy Preview review workflow. **Framing is restricted to self and `https://app.netlify.com`, preserving Netlify review while blocking arbitrary embedding. The matching `frame-src` exception permits Netlify's own Deploy Preview Drawer without opening arbitrary frame sources.**
 - [x] Add regression checks proving no remote production module execution is required. **Hash/provenance, same-origin loader, worker/WASM presence, CSP, resource-timing, and a real physical d20 roll are release-gated.**
 
-Phase 5 evidence: exact consolidated head `39384cd998078deee37966ecceaca3f869688f06` passed the complete deterministic/build suite, rendered desktop/mobile Chrome matrix, CodeQL `security-extended`, and Netlify Deploy Preview with the self-hosted DiceBox runtime active under the hardened CSP.
+Phase 5 evidence: exact consolidated head `39384cd998078deee37966ecceaca3f869688f06` passed the complete deterministic/build suite, rendered desktop/mobile Chrome matrix, CodeQL `security-extended`, and Netlify Deploy Preview with the self-hosted DiceBox runtime active under the hardened CSP. Deploy Preview compatibility and unobstructed review capture were subsequently re-certified on exact head `c3d4b2003d5bb07085910df40e0430850247897d`.
 
 ## Phase 6 — Cloud concurrency and data integrity
 
@@ -129,10 +129,10 @@ Phase 10 code-owned evidence: exact head `39384cd998078deee37966ecceaca3f869688f
 - [x] Full deterministic contract/build suite passes on the current hardening line.
 - [x] Browser/E2E suite passes on desktop and mobile targets.
 - [x] Security/static-analysis workflow passes. **Exact hardening heads complete CodeQL `security-extended` successfully.**
-- [ ] Netlify Deploy Preview is green for the exact release head.
-- [ ] Manual visual acceptance passes on the exact Deploy Preview.
+- [x] Netlify Deploy Preview is green for the exact release head. **Exact code head `c3d4b2003d5bb07085910df40e0430850247897d` passed Netlify status and the dedicated live Deploy Preview Acceptance workflow.**
+- [x] Manual visual acceptance passes on the exact Deploy Preview. **The exact-head artifact was reviewed on desktop roller, desktop Dice Studio, mobile roller, and mobile Dice Studio; the preview drawer no longer obscures the app and no release-blocking visual defect was found.**
 - [ ] Authentication lifecycle passes.
-- [ ] Guest/browser persistence lifecycle passes.
+- [x] Guest/browser persistence lifecycle passes. **Live Deploy Preview Chrome verifies Keep Dice, sound preference, and roll history survive navigation/reload and restore into the UI.**
 - [ ] Cloud save/edit/reload lifecycle passes.
 - [ ] Community publish/private/republish/delete lifecycle passes.
 - [ ] Public image privacy/revocation checks pass.
@@ -140,6 +140,8 @@ Phase 10 code-owned evidence: exact head `39384cd998078deee37966ecceaca3f869688f
 - [x] RAW/ADV/DIS/critical/custom-dN/shortcut mechanics checks pass in the deterministic contract suite; normal d20 and custom d37 also pass the real-browser interaction gate.
 - [x] Production/nonproduction storage-isolation checks pass in the deterministic contract suite.
 - [x] No unresolved PR review blockers. **GitHub review-thread audit on the Phase 4 checkpoint shows both CodeQL threads resolved.**
-- [ ] `main` protection is verified enabled.
+- [ ] `main` protection is verified enabled. **Current GitHub branch metadata still reports `protected: false`; this must not be checked until the repository setting is actually enabled.**
 - [ ] Final release review finds no P0/P1 findings and no unaccepted P2 findings.
 - [ ] Explicit approval is received before merge/release.
+
+Exact release-acceptance evidence before this documentation update: code head `c3d4b2003d5bb07085910df40e0430850247897d` completed Full Release Validation #264, Deploy Preview Acceptance #9, and CodeQL Security Analysis #196 successfully. The documentation-only certification commit must itself return green before it becomes the current release candidate.
