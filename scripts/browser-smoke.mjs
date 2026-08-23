@@ -23,6 +23,22 @@ const viewports = [
 ];
 const pages = ['/', '/customize.html', '/rolls.html', '/how-to.html', '/privacy.html', '/legal.html', '/moderation.html'];
 
+async function customRollDiagnostic(client) {
+  return client.evaluate(`(() => ({
+    physicsStatus: document.querySelector('#physics-status')?.textContent || '',
+    rollDisabled: Boolean(document.querySelector('#roll-btn')?.disabled),
+    total: document.querySelector('#total-result')?.textContent || '',
+    breakdown: document.querySelector('#breakdown-text')?.textContent || '',
+    pool: document.querySelector('#pool-summary')?.textContent || '',
+    canvasCount: document.querySelectorAll('#dice-tray canvas').length,
+    activeId: localStorage.getItem('ndr.appearance.activeSet.v2'),
+    resources: performance.getEntriesByType('resource')
+      .map((entry) => entry.name)
+      .filter((url) => url.includes('/api/dice-theme/') || url.includes('/vendor/dice-box-1.1.4/'))
+      .slice(-40),
+  }))()`);
+}
+
 async function assertStudioCreationFlow(client, origin) {
   const viewport = viewports[0];
   await navigate(client, `${origin}/`, viewport);
@@ -111,7 +127,35 @@ async function assertStudioCreationFlow(client, origin) {
   })()`);
   assert.equal(restored.snapshotId, restored.id, 'Custom set must stay active after returning to the roller.');
   assert.equal(restored.snapshotName, 'New Dice Set');
-  console.log('Dice Studio creation flow passed: roller navigation, New Set, custom d20 face, Save, Use, and return-to-roller persistence are wired.');
+
+  await client.evaluate("document.querySelector('.die-btn[data-type=\"d20\"]')?.click()");
+  await waitFor(client, "document.querySelector('#pool-summary')?.textContent.includes('d20')");
+  await client.evaluate("document.querySelector('#roll-btn')?.click()");
+  try {
+    await waitFor(client, "Number(document.querySelector('#total-result')?.textContent) >= 1 && !document.querySelector('#roll-btn')?.disabled", 30000);
+  } catch (error) {
+    throw new Error(`Custom-themed physical d20 did not settle: ${JSON.stringify(await customRollDiagnostic(client))}. ${error.message}`);
+  }
+
+  const customResult = await client.evaluate(`(() => ({
+    total: Number(document.querySelector('#total-result')?.textContent),
+    breakdown: document.querySelector('#breakdown-text')?.textContent || '',
+    resources: performance.getEntriesByType('resource').map((entry) => entry.name),
+  }))()`);
+  assert.ok(customResult.total >= 1 && customResult.total <= 20, `Custom-themed d20 result must remain 1-20; received ${customResult.total}.`);
+  assert.match(customResult.breakdown, /d20/i);
+  assert.ok(customResult.resources.some((url) => /\/api\/dice-theme\/[^/]+\/theme\.config\.json/.test(url)),
+    'Custom-themed roll must load its same-origin runtime theme config.');
+  assert.ok(customResult.resources.some((url) => /\/api\/dice-theme\/[^/]+\/diffuse\.svg/.test(url)),
+    'Custom-themed roll must load its same-origin runtime theme texture.');
+  assert.ok(customResult.resources.some((url) => url.includes('/vendor/dice-box-1.1.4/Dice.min.js')),
+    'Custom-themed roll must use the self-hosted DiceBox onscreen runtime.');
+
+  await client.evaluate(`(() => {
+    localStorage.removeItem('ndr.appearance.activeSet.v2');
+    localStorage.removeItem('ndr.appearance.activeSnapshot.v2');
+  })()`);
+  console.log('Dice Studio creation flow passed: navigation, New Set, custom d20 face, Save, Use, return-to-roller persistence, and a physical custom-themed d20 roll are wired.');
 }
 
 async function assertRuntimeSurfaces(client, origin, path, viewport) {
