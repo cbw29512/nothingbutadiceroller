@@ -6,7 +6,7 @@ import {
   openDiceSetStore, publicRecordKey, userDiceSetPrefix,
 } from './dice-set-store.mjs';
 import {
-  LEGACY_THEME_COMMUNITY_INDEX, legacyThemeIndexKey, legacyThemeKey,
+  LEGACY_THEME_COMMUNITY_INDEX, legacyThemeIndexKey, legacyThemePrefix,
   openLegacyThemeStore, readLegacyCommunityIndex,
 } from './legacy-theme-store.mjs';
 import { deleteBlob, listAllBlobKeys, readJsonEntries } from './privacy-store-utils.mjs';
@@ -80,21 +80,29 @@ async function markLegacyThemeDeleting(store, themeKey, theme) {
 }
 
 async function deleteLegacyThemes(store, userId) {
+  const prefix = legacyThemePrefix(userId);
   const indexKey = legacyThemeIndexKey(userId);
-  const index = await store.get(indexKey, { type: 'json' }).catch(() => []);
-  const items = Array.isArray(index) ? index.filter((item) => item?.themeId) : [];
+  const allKeys = await listAllBlobKeys(store, prefix);
+  const themeRecordKeys = allKeys.filter((key) => key.endsWith('.json') && key !== indexKey);
   let deleted = 0;
-  for (const item of items) {
-    const key = legacyThemeKey(userId, item.themeId);
+
+  for (const key of themeRecordKeys) {
     const theme = await store.get(key, { type: 'json' }).catch(() => null);
-    if (!theme) continue;
+    if (!theme) {
+      await deleteBlob(store, key, 'unreadable legacy theme record');
+      continue;
+    }
     const tombstone = await markLegacyThemeDeleting(store, key, theme);
     if (tombstone.imageKey) await deleteBlob(store, tombstone.imageKey, 'legacy theme image');
     await deleteBlob(store, key, 'legacy theme record');
     deleted += 1;
   }
 
-  await deleteBlob(store, indexKey, 'legacy theme user index');
+  // The index is not authoritative for privacy deletion. Sweep the entire user-owned
+  // legacy prefix so stale index entries or orphan image blobs cannot survive.
+  const remainingKeys = await listAllBlobKeys(store, prefix);
+  for (const key of remainingKeys) await deleteBlob(store, key, 'legacy theme orphan');
+
   const community = await readLegacyCommunityIndex(store);
   const nextCommunity = community.filter((item) => item?.ownerId !== userId);
   if (nextCommunity.length !== community.length) {
