@@ -1,9 +1,4 @@
-const FONT_STACKS = Object.freeze({
-  default: 'Arial, sans-serif',
-  fantasy: 'Georgia, serif',
-  runic: 'Georgia, serif',
-  mono: '"Courier New", monospace',
-});
+import { faceFontStack } from './face-fonts.mjs';
 
 function graphemeCount(value) {
   const text = String(value || '');
@@ -96,7 +91,7 @@ export function renderDiceBoxAtlas(glyphPlan, dieType, { size = 1024, canvas = n
     context.textBaseline = 'middle';
     for (const operation of buildDiceBoxAtlasDrawOperations(glyphPlan, dieType, size)) {
       context.fillStyle = operation.color;
-      context.font = `700 ${operation.fontPx}px ${FONT_STACKS[operation.fontId] || FONT_STACKS.default}`;
+      context.font = `700 ${operation.fontPx}px ${faceFontStack(operation.fontId)}`;
       context.fillText(operation.text, operation.x, operation.y, operation.maxWidth);
     }
     return target;

@@ -7,6 +7,7 @@ import {
   SYSTEM_DEFAULT_DICE_SET_ID,
 } from './defaults.mjs';
 import { countFaceDisplayGraphemes, isValidFaceDisplayValue } from './face-display.mjs';
+import { isSupportedFaceFontId } from './face-fonts.mjs';
 import { isCanonicalFaceResult } from './face-values.mjs';
 import { isValidDiceSetId } from './identifiers.mjs';
 import { validateEdgeInlay } from './inlay-style.mjs';
@@ -98,7 +99,7 @@ function checkFace(face, path, errors) {
   rejectUnknownKeys(face, FACE_KEYS, path, errors);
   if (!FACE_KINDS.has(face.kind)) errors.push(`${path}.kind is unsupported.`);
   if (face.color != null && !HEX.test(String(face.color))) errors.push(`${path}.color is invalid.`);
-  if (face.fontId != null && (typeof face.fontId !== 'string' || face.fontId.length > 80 || CONTROL_RE.test(face.fontId))) errors.push(`${path}.fontId must reference a supported font.`);
+  if (face.fontId != null && !isSupportedFaceFontId(face.fontId)) errors.push(`${path}.fontId must reference a supported font.`);
   if (face.kind === 'text' && !isValidFaceDisplayValue(face.value)) errors.push(`${path}.value must be a short visible label.`);
   if (face.kind === 'icon') {
     const value = typeof face.value === 'string' ? face.value.trim() : '';

@@ -1,6 +1,6 @@
+import { faceFontIdFromWireCode, faceFontWireCode } from './face-fonts.mjs';
+
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
-const FONT_TO_CODE = new Map([['', 0], ['default', 1], ['fantasy', 2], ['runic', 3], ['mono', 4]]);
-const CODE_TO_FONT = ['', 'default', 'fantasy', 'runic', 'mono'];
 const WIRE_MARKER = 'v6c';
 const COORD_SCALE = 4095;
 
@@ -36,8 +36,7 @@ function expandColor(color) {
 }
 function packOperations(operations) {
   return operations.map(([text, color, fontId, x, y, fontPx]) => {
-    const fontCode = FONT_TO_CODE.get(String(fontId || ''));
-    if (!Number.isInteger(fontCode)) throw new Error('Compact runtime font is invalid.');
+    const fontCode = faceFontWireCode(String(fontId || ''));
     const metrics = encodeFixed(Number(x) * 100, 3) + encodeFixed(Number(y) * 100, 3) + encodeFixed(Number(fontPx) * 100, 3);
     return [text, compactColor(color), fontCode, metrics];
   });
@@ -47,10 +46,7 @@ function unpackOperations(operations) {
   return operations.map((operation) => {
     if (!Array.isArray(operation) || operation.length !== 4 || String(operation[3]).length !== 9) throw new Error('Compact runtime operation is invalid.');
     const [text, color, fontCode, metrics] = operation;
-    if (!Number.isInteger(fontCode) || !CODE_TO_FONT[fontCode]) {
-      if (fontCode !== 0) throw new Error('Compact runtime font code is invalid.');
-    }
-    return [text, expandColor(color), CODE_TO_FONT[fontCode], decodeFixed(metrics.slice(0, 3)) / 100, decodeFixed(metrics.slice(3, 6)) / 100, decodeFixed(metrics.slice(6, 9)) / 100];
+    return [text, expandColor(color), faceFontIdFromWireCode(fontCode), decodeFixed(metrics.slice(0, 3)) / 100, decodeFixed(metrics.slice(3, 6)) / 100, decodeFixed(metrics.slice(6, 9)) / 100];
   });
 }
 function packBoundaries(boundaries, size) {

@@ -1,6 +1,7 @@
 import { getCanonicalFaceLabel } from './face-values.mjs';
 import { getFaceLayout } from './face-layouts.mjs';
 import { getVisualFace } from './face-customization.mjs';
+import { faceFontStack } from './face-fonts.mjs';
 import { buildAppearanceRenderPlan } from './render-plan.mjs';
 
 const LEGACY_ICONS = { skull: '☠', star: '★', flame: '🔥', shield: '◆', heart: '♥', sword: '⚔' };
@@ -26,6 +27,7 @@ export function renderFaceMap(set, selectedDie, selectedFace, onSelect) {
       button.style.top = `${position.y}%`;
       button.style.background = style.bodyColor;
       button.style.color = face.color || style.faceColor;
+      button.style.fontFamily = faceFontStack(face.fontId);
       button.textContent = visualText(face);
       button.setAttribute('aria-label', `Face ${faceLabel}, shows ${visualText(face)}, logical result ${position.logicalFace}`);
       button.addEventListener('click', () => onSelect(position.logicalFace));

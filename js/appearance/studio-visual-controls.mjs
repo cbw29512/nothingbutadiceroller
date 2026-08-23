@@ -1,6 +1,7 @@
 import { CUSTOM_FACE_MODE } from './defaults.mjs';
 import { canEditDiceSet } from './authorization.mjs';
 import { replaceVisualFace, removeVisualFace, useRawFaces } from './face-customization.mjs';
+import { normalizeFaceFontId } from './face-fonts.mjs';
 import { buildAppearanceRenderPlan } from './render-plan.mjs';
 import { MAX_BROWSER_TRAY_IMAGE_BYTES, MAX_TRAY_IMAGE_BYTES } from './tray-image.mjs';
 
@@ -90,7 +91,10 @@ export function bindStudioVisualControls(context) {
       if (!canEditDiceSet(set, getOwnerId())) throw new Error('Unlock this set before editing faces.');
       const logicalFace = q('logical-face').value;
       const next = replaceVisualFace(set, getSelectedDie(), logicalFace, {
-        kind: 'text', value: q('face-value').value.trim(), color: q('custom-face-color').value,
+        kind: 'text',
+        value: q('face-value').value.trim(),
+        color: q('custom-face-color').value,
+        fontId: normalizeFaceFontId(q('face-font')?.value),
       });
       setDraft(next); refresh(); setStatus(`Face ${logicalFace} updated visually. It still rolls ${logicalFace}.`, 'ready');
     } catch (error) { console.error('Failed to apply face appearance:', error); setStatus(error.message, 'error'); }

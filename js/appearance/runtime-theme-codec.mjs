@@ -1,5 +1,6 @@
 import { CANONICAL_DICE } from './defaults.mjs';
 import { isValidFaceDisplayValue } from './face-display.mjs';
+import { isSupportedFaceFontId } from './face-fonts.mjs';
 import { getCanonicalFaceResults } from './face-values.mjs';
 import { EDGE_INLAY_TYPES } from './inlay-style.mjs';
 import { SURFACE_PATTERN_TYPES } from './pattern-style.mjs';
@@ -10,7 +11,6 @@ import { isPackedRuntimeThemeV6, packRuntimeThemeV6, unpackRuntimeThemeV6 } from
 export const RUNTIME_THEME_VERSION = 6;
 const LEGACY_RUNTIME_THEME_VERSIONS = new Set([1, 2, 3, 4, 5]);
 const HEX = /^#[0-9a-f]{6}$/i;
-const FONT_IDS = new Set(['', 'default', 'fantasy', 'runic', 'mono']);
 const INTERIOR_TYPES = new Set(INTERIOR_EFFECT_TYPES);
 const FINISH_TYPES = new Set(SURFACE_FINISH_TYPES);
 const PATTERN_TYPES = new Set(SURFACE_PATTERN_TYPES);
@@ -113,7 +113,7 @@ export function validateRuntimeThemePayload(payload) {
       const [text, color, fontId, x, y, fontPx] = operation;
       if (!isValidFaceDisplayValue(text)) errors.push(`Operation ${index} text must be a short visible label.`);
       if (!HEX.test(String(color || ''))) errors.push(`Operation ${index} color is invalid.`);
-      if (!FONT_IDS.has(String(fontId || ''))) errors.push(`Operation ${index} font is invalid.`);
+      if (!isSupportedFaceFontId(String(fontId || ''))) errors.push(`Operation ${index} font is invalid.`);
       if (![x, y].every((value) => Number.isFinite(value) && value >= 0 && value <= payload.s)) errors.push(`Operation ${index} position is invalid.`);
       if (!Number.isFinite(fontPx) || fontPx < 6 || fontPx > 200) errors.push(`Operation ${index} font size is invalid.`);
     }
