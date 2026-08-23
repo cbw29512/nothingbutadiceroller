@@ -1,5 +1,5 @@
 import { createServer } from 'node:http';
-import { readFile, stat } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
 import { extname, resolve, sep } from 'node:path';
 
 const MIME = new Map([
@@ -48,21 +48,20 @@ export async function startBuiltSiteServer(dist) {
     try {
       const url = new URL(request.url || '/', 'http://127.0.0.1');
       if (stubApi(url, response)) return;
-      let target = safeTarget(dist, url.pathname);
+      const target = safeTarget(dist, url.pathname);
       if (!target) {
         response.writeHead(403);
         response.end('Forbidden');
         return;
       }
-      const info = await stat(target).catch(() => null);
-      if (info?.isDirectory()) target = resolve(target, 'index.html');
       const data = await readFile(target);
       response.writeHead(200, {
         'Content-Type': MIME.get(extname(target).toLowerCase()) || 'application/octet-stream',
         'Cache-Control': 'no-store',
       });
       response.end(data);
-    } catch {
+    } catch (error) {
+      console.error('Built-site test server request failed:', error?.code || error?.name || 'unknown-error');
       response.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
       response.end('Not Found');
     }
