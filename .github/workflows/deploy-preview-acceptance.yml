@@ -68,6 +68,9 @@ jobs:
       - name: Verify live d4 number glow
         run: node scripts/deploy-preview-d4-glow.mjs
 
+      - name: Verify live direct d20 face editing
+        run: node scripts/deploy-preview-direct-face-edit.mjs
+
       - name: Upload acceptance screenshots
         if: always()
         uses: actions/upload-artifact@v4
