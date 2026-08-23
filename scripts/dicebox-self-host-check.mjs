@@ -29,6 +29,11 @@ try {
   assert.equal(DICEBOX_ASSET_PATH, '/vendor/dice-box-1.1.4/assets/');
   assert.equal(DICEBOX_DEFAULT_MODEL_URL, '/vendor/dice-box-1.1.4/assets/themes/default/default.json');
 
+  const packageJson = JSON.parse(await source('package.json'));
+  const lockJson = JSON.parse(await source('package-lock.json'));
+  assert.equal(packageJson.dependencies?.['@3d-dice/dice-box'], APPEARANCE_DICEBOX_VERSION, 'DiceBox build source must be pinned exactly.');
+  assert.equal(lockJson.packages?.['node_modules/@3d-dice/dice-box']?.version, APPEARANCE_DICEBOX_VERSION, 'Lockfile must pin the exact DiceBox build source.');
+
   const upstream = JSON.parse(await readFile(resolve(vendorRoot, 'upstream-package.json'), 'utf8'));
   assert.equal(upstream.name, '@3d-dice/dice-box');
   assert.equal(upstream.version, APPEARANCE_DICEBOX_VERSION);
@@ -53,11 +58,12 @@ try {
   ];
   await Promise.all(requiredVendorFiles.map((path) => readFile(resolve(vendorRoot, path))));
 
-  const [physics, loader, selfHost, build, netlify, privacy] = await Promise.all([
+  const [physics, loader, selfHost, build, runtimeVendor, netlify, privacy] = await Promise.all([
     source('js/physics.js'),
     source('js/appearance/dicebox-model-loader.mjs'),
     source('js/appearance/dicebox-self-host.mjs'),
     source('scripts/build.mjs'),
+    source('scripts/vendor-dicebox-runtime.mjs'),
     source('netlify.toml'),
     source('privacy.html'),
   ]);
@@ -71,6 +77,11 @@ try {
   assert.ok(build.includes("const directories = ['js', 'vendor'];"));
   assert.ok(build.includes('vendor/dice-box-1.1.4/dice-box.es.min.js'));
   assert.ok(build.includes('Vendored DiceBox provenance does not match pinned @3d-dice/dice-box 1.1.4.'));
+  assert.ok(packageJson.scripts?.build?.includes('scripts/vendor-dicebox-runtime.mjs'), 'Release build must copy required DiceBox worker/WASM assets.');
+  assert.ok(runtimeVendor.includes("node_modules/@3d-dice/dice-box/dist"), 'Runtime assets must come from the exact locked DiceBox package.');
+  assert.ok(runtimeVendor.includes("world.offscreen.min.js"), 'Release must include DiceBox offscreen worker.');
+  assert.ok(runtimeVendor.includes("assets/ammo"), 'Release must include DiceBox Ammo runtime directory.');
+  assert.ok(runtimeVendor.includes("ammo.wasm.wasm"), 'Release must verify Ammo WASM exists.');
 
   for (const policy of [
     "default-src 'self'",
@@ -85,7 +96,7 @@ try {
   assert.ok(netlify.includes('for = "/vendor/dice-box-1.1.4/*"'));
   assert.equal(privacy.includes('DiceBox distribution CDNs'), false, 'Privacy page must not claim runtime CDN dependence after self-hosting.');
 
-  console.log('DiceBox self-host contract passed: pinned 1.1.4 vendor hashes/provenance verify, production runtime/model loads are same-origin only, build ships the required default assets, and CSP/frame protections are tightened.');
+  console.log('DiceBox self-host contract passed: pinned 1.1.4 vendor provenance, same-origin runtime/model paths, required offscreen worker + Ammo WASM release copying, and hardened CSP/frame protections are enforced.');
 } catch (error) {
   console.error('DiceBox self-host contract failed:', error);
   process.exitCode = 1;
