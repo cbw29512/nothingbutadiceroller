@@ -14,7 +14,7 @@ const screenshotsDir = resolve('artifacts', 'deploy-preview-acceptance');
 const desktop = { width: 1440, height: 900, mobile: false };
 const mobile = { width: 390, height: 844, mobile: true };
 const retryableStatuses = new Set([502, 503, 504]);
-const retryableNavigation = /ERR_(?:CONNECTION_CLOSED|CONNECTION_RESET|HTTP2_PROTOCOL_ERROR|NETWORK_CHANGED|TIMED_OUT)/;
+const retryableNavigation = /ERR_(?:CONNECTION_CLOSED|CONNECTION_RESET|HTTP2_PROTOCOL_ERROR|NETWORK_CHANGED|TIMED_OUT|CERT_VERIFIER_CHANGED)/;
 
 function previewPage(pathname = '/') {
   const url = new URL(pathname, `${origin}/`);
