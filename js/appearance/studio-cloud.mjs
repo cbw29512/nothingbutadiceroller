@@ -7,6 +7,7 @@ async function parse(response) {
     error.code = data.code || null;
     error.record = data.record || null;
     error.version = data.version ?? null;
+    error.details = data.details ?? null;
     error.status = response.status;
     throw error;
   }
