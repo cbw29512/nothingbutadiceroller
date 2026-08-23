@@ -134,8 +134,6 @@ function bindEvents() {
 async function boot() {
   try {
     assertStylesLoaded();
-    ensureStylesheet('community-styles', '/community.css');
-    ensureStylesheet('custom-controls-styles', '/custom.css');
     ensureStylesheet('shortcut-toolbar-styles', '/shortcut-toolbar.css');
     ensureShortcutRuntimeMarkup();
     loadPreferences();
