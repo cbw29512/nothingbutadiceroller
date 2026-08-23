@@ -65,11 +65,7 @@ async function copySite() {
 async function bundleBrowserApps() {
   try {
     await build({
-      entryPoints: {
-        app: resolve(root, 'js/app.js'),
-        rolls: resolve(root, 'js/rolls.js'),
-        studio: resolve(root, 'js/appearance/studio.js'),
-      },
+      entryPoints: { app: resolve(root, 'js/app.js'), rolls: resolve(root, 'js/rolls.js') },
       bundle: true,
       format: 'esm',
       platform: 'browser',
@@ -95,7 +91,7 @@ async function validateBuild() {
     const required = [
       ...files,
       ...diceBoxVendorFiles,
-      'js/app.js', 'js/rolls.js', 'js/studio.js', 'js/account.js', 'js/account-api.js', 'js/account-ui.js', 'js/auth-ui.js',
+      'js/app.js', 'js/rolls.js', 'js/account.js', 'js/account-api.js', 'js/account-ui.js', 'js/auth-ui.js',
       'js/community-moderation.js', 'js/custom-controls.js', 'js/custom-roll.js', 'js/deployment.js', 'js/drawer-controls.js', 'js/physics.js',
       'js/roll-results.js', 'js/roller.js', 'js/style-picker.js', 'js/theme-community.js', 'js/tray-controls.js',
       'js/shortcut-harness.js', 'js/appearance/studio.js', 'js/appearance/studio-persistence.mjs',
@@ -105,14 +101,14 @@ async function validateBuild() {
     ];
     await Promise.all(required.map(path => access(resolve(dist, path))));
 
-    const [html, studioHtml, appearanceHarnessHtml, rollsHtml, harnessHtml, browserApp, browserRolls, browserStudio, accountApi, authUi, customControls, customRoll, trayControls, appearanceProof] = await Promise.all([
+    const [html, studioHtml, appearanceHarnessHtml, rollsHtml, harnessHtml, browserApp, browserRolls, accountApi, authUi, customControls, customRoll, trayControls, appearanceProof] = await Promise.all([
       readFile(resolve(dist, 'index.html'), 'utf8'), readFile(resolve(dist, 'customize.html'), 'utf8'),
       readFile(resolve(dist, 'appearance-harness.html'), 'utf8'), readFile(resolve(dist, 'rolls.html'), 'utf8'),
       readFile(resolve(dist, 'shortcut-harness.html'), 'utf8'), readFile(resolve(dist, 'js/app.js'), 'utf8'),
-      readFile(resolve(dist, 'js/rolls.js'), 'utf8'), readFile(resolve(dist, 'js/studio.js'), 'utf8'),
-      readFile(resolve(dist, 'js/account-api.js'), 'utf8'), readFile(resolve(dist, 'js/auth-ui.js'), 'utf8'),
-      readFile(resolve(dist, 'js/custom-controls.js'), 'utf8'), readFile(resolve(dist, 'js/custom-roll.js'), 'utf8'),
-      readFile(resolve(dist, 'js/tray-controls.js'), 'utf8'), readFile(resolve(dist, 'js/appearance/dicebox-proof-harness.js'), 'utf8'),
+      readFile(resolve(dist, 'js/rolls.js'), 'utf8'), readFile(resolve(dist, 'js/account-api.js'), 'utf8'),
+      readFile(resolve(dist, 'js/auth-ui.js'), 'utf8'), readFile(resolve(dist, 'js/custom-controls.js'), 'utf8'),
+      readFile(resolve(dist, 'js/custom-roll.js'), 'utf8'), readFile(resolve(dist, 'js/tray-controls.js'), 'utf8'),
+      readFile(resolve(dist, 'js/appearance/dicebox-proof-harness.js'), 'utf8'),
     ]);
     const [howToHtml, privacyHtml, legalHtml, moderationHtml, upstreamDiceBox] = await Promise.all([
       readFile(resolve(dist, 'how-to.html'), 'utf8'),
@@ -138,10 +134,8 @@ async function validateBuild() {
     requireReferences(studioHtml, [
       'DICE STUDIO', 'id="studio-library"', 'id="studio-preview-tray"', 'id="reset-default"',
       'id="lock-set"', 'RAW — standard numbers', 'id="community-report-dialog"', 'id="load-more-community"',
-      'Community sets must be safe to share', 'src="/js/studio.js"', 'href="/how-to.html"',
+      'Community sets must be safe to share', 'src="/js/appearance/studio.js"', 'href="/how-to.html"',
     ], 'Dice Studio reference');
-    if (studioHtml.includes('src="/js/appearance/studio.js"')) throw new Error('Production Dice Studio must load its bundled entry.');
-    requireReferences(browserStudio, ['DICE STUDIO', 'loadCloudDiceSets', 'saveCloudDiceSet'], 'bundled Dice Studio behavior');
 
     requireReferences(howToHtml, [
       'Roll first. Customize only when you want to.', 'Visual faces never change results.',
@@ -199,9 +193,7 @@ async function validateBuild() {
     for (const reference of ['handleAuthCallback', 'processIdentityCallback', 'onAuthChange']) {
       if (!accountApi.includes(reference) && !authUi.includes(reference)) throw new Error(`Missing browser Identity callback behavior: ${reference}`);
     }
-    if (browserApp.includes("from '@netlify/identity'") || browserRolls.includes("from '@netlify/identity'") || browserStudio.includes("from '@netlify/identity'")) {
-      throw new Error('Browser bundles must not ship an unresolved @netlify/identity import.');
-    }
+    if (browserApp.includes("from '@netlify/identity'") || browserRolls.includes("from '@netlify/identity'")) throw new Error('Browser bundles must not ship an unresolved @netlify/identity import.');
     if (html.includes('netlify-identity-widget') || rollsHtml.includes('netlify-identity-widget')) throw new Error('Legacy Netlify Identity widget must not ship.');
 
     console.log('Build validation passed:', required.join(', '));
