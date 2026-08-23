@@ -10,6 +10,11 @@
   external_node_modules = ["sharp"]
 
 [[redirects]]
+  from = "/favicon.ico"
+  to = "/favicon.svg"
+  status = 301
+
+[[redirects]]
   from = "/api/save-theme"
   to = "/.netlify/functions/save-theme"
   status = 200

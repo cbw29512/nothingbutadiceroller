@@ -59,6 +59,11 @@ export async function startBuiltSiteServer(dist) {
     try {
       const url = new URL(requestPath, 'http://127.0.0.1');
       requestPath = url.pathname;
+      if (url.pathname === '/favicon.ico') {
+        response.writeHead(301, { ...commonHeaders(), Location: '/favicon.svg' });
+        response.end();
+        return;
+      }
       if (stubApi(url, response)) return;
       const target = safeTarget(dist, url.pathname);
       if (!target) {
