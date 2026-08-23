@@ -60,27 +60,27 @@ try {
 
   const legacyReads = [];
   const legacyIndex = [1, 2, 3].map((index) => ({ ownerId: `legacy_owner_${index}`, setId: `legacy_set_${index}` }));
+  const legacyRecords = new Map(legacyIndex.map(({ ownerId, setId }) => [
+    recordKey(ownerId, setId),
+    {
+      set: { id: setId, ownerId, locked: true, visibility: 'public' },
+      createdAt: '2026-08-22T00:00:00.000Z',
+      updatedAt: '2026-08-22T00:00:00.000Z',
+    },
+  ]));
   const legacyStore = {
     async get(key) {
       if (key === LEGACY_COMMUNITY_INDEX) return legacyIndex;
+      if (!legacyRecords.has(key)) return null;
       legacyReads.push(key);
-      return {
-        set: {
-          id: key.includes('legacy_set_1') ? 'legacy_set_1' : 'legacy_set_2',
-          ownerId: key.includes('legacy_owner_1') ? 'legacy_owner_1' : 'legacy_owner_2',
-          locked: true,
-          visibility: 'public',
-        },
-        createdAt: '2026-08-22T00:00:00.000Z',
-        updatedAt: '2026-08-22T00:00:00.000Z',
-      };
+      return legacyRecords.get(key);
     },
   };
   const legacy = await listLegacyPublicProjections(legacyStore, new Set(), 2);
   assert.equal(legacy.length, 2, 'Legacy Community migration reads must respect the explicit candidate cap.');
   assert.equal(legacyReads.length, 2, 'Legacy Community migration must not fan out beyond its candidate cap.');
 
-  console.log('Community pagination passed: current Blob enumeration stops after one bounded page and legacy migration fan-out is capped.');
+  console.log('Community pagination passed: current Blob enumeration stops after one bounded page and legacy migration fan-out is capped while moderation lookups remain fail-closed.');
 } catch (error) {
   console.error('Community pagination check failed:', error);
   process.exitCode = 1;
