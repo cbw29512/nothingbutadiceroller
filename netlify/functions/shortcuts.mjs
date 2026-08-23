@@ -1,4 +1,3 @@
-import { getStore } from '@netlify/blobs';
 import { getUser, verifyRequestOrigin } from '@netlify/identity';
 import {
   DEFAULT_SHORTCUT_OPTIONS,
@@ -10,8 +9,8 @@ import {
   normalizeShortcutSlots,
   validateStoredShortcutWorkspace,
 } from '../../js/shortcuts/persistence.mjs';
+import { openShortcutStore, shortcutKey } from './user-data-store.mjs';
 
-const STORE_NAME = 'dice-user-shortcuts-v1';
 const WRITE_KEYS = new Set(['version', 'shortcuts', 'options']);
 const CLEAR_KEYS = new Set(['version']);
 
@@ -32,17 +31,6 @@ function responseHeaders() {
 
 function json(body, status = 200) {
   return Response.json(body, { status, headers: responseHeaders() });
-}
-
-function userKey(userId) {
-  return `users/${encodeURIComponent(String(userId))}/shortcuts-v1.json`;
-}
-
-function shortcutStore(context) {
-  if (String(context?.deploy?.context || 'dev') === 'production') {
-    return getStore({ name: STORE_NAME, consistency: 'strong' });
-  }
-  return getStore({ name: `${STORE_NAME}-nonprod`, consistency: 'strong' });
 }
 
 function isPlainObject(value) {
@@ -85,7 +73,7 @@ async function readJsonBody(request, allowedKeys) {
   return body;
 }
 
-async function readWorkspace(store, key) {
+export async function readShortcutWorkspace(store, key) {
   let entry;
   try {
     entry = await store.getWithMetadata(key, { type: 'json', consistency: 'strong' });
@@ -143,14 +131,14 @@ async function saveWorkspace(request, store, key, clear = false) {
   const expectedVersion = requireVersion(body);
   const shortcuts = clear ? [] : normalizeShortcutSlots(body.shortcuts);
   const options = clear ? DEFAULT_SHORTCUT_OPTIONS : normalizeShortcutOptions(body.options);
-  const current = await readWorkspace(store, key);
+  const current = await readShortcutWorkspace(store, key);
 
   if (expectedVersion !== current.version) return conflict(current);
 
   const saved = await conditionalWrite(store, key, current, shortcuts, options);
   if (saved) return json(saved);
 
-  const latest = await readWorkspace(store, key);
+  const latest = await readShortcutWorkspace(store, key);
   return conflict(latest);
 }
 
@@ -159,11 +147,11 @@ export default async (request, context) => {
     const user = await getUser();
     if (!user) return json({ error: 'Authentication required.', code: 'authentication-required' }, 401);
 
-    const store = shortcutStore(context);
-    const key = userKey(user.id);
+    const store = openShortcutStore(context);
+    const key = shortcutKey(user.id);
 
     if (request.method === 'GET') {
-      const current = await readWorkspace(store, key);
+      const current = await readShortcutWorkspace(store, key);
       return json(current);
     }
     if (request.method === 'PUT') return await saveWorkspace(request, store, key, false);
