@@ -9,6 +9,7 @@ import {
 import { countFaceDisplayGraphemes, isValidFaceDisplayValue } from './face-display.mjs';
 import { isCanonicalFaceResult } from './face-values.mjs';
 import { isValidDiceSetId } from './identifiers.mjs';
+import { INTERIOR_EFFECT_TYPES } from './resin-style.mjs';
 import { validateTrayImage } from './tray-image.mjs';
 
 const HEX = /^#[0-9a-f]{6}$/i;
@@ -17,15 +18,18 @@ const FACE_KINDS = new Set(['text', 'icon']);
 const LEGACY_ICON_IDS = new Set(['skull', 'star', 'flame', 'shield', 'heart', 'sword']);
 const FACE_MODES = new Set([RAW_FACE_MODE, CUSTOM_FACE_MODE]);
 const VISIBILITIES = new Set(['private', 'public', 'system']);
+const INTERIOR_TYPES = new Set(INTERIOR_EFFECT_TYPES);
 const SET_KEYS = new Set(['schemaVersion', 'id', 'ownerId', 'name', 'systemOwned', 'locked', 'visibility', 'appearance']);
 const APPEARANCE_KEYS = new Set(['diceSet', 'tray']);
 const DICE_SET_KEYS = new Set(['defaultStyle', 'dice']);
-const BASE_STYLE_KEYS = new Set(['bodyColor', 'faceColor', 'opacity', 'glow']);
+const BASE_STYLE_KEYS = new Set(['bodyColor', 'faceColor', 'opacity', 'glow', 'translucency', 'interior']);
 const TRAY_KEYS = new Set(['color', 'image', 'glow']);
 const DIE_KEYS = new Set(['shapeId', 'logicalDie', 'faceMode', 'styleOverrides', 'faces']);
 const FACE_KEYS = new Set(['kind', 'value', 'color', 'fontId']);
 const GLOW_KEYS = new Set(['enabled', 'color', 'intensity']);
-const STYLE_OVERRIDE_KEYS = new Set(['bodyColor', 'faceColor', 'opacity', 'glow']);
+const TRANSLUCENCY_KEYS = new Set(['enabled', 'opacity', 'frost', 'tintColor']);
+const INTERIOR_KEYS = new Set(['enabled', 'type', 'primaryColor', 'secondaryColor', 'density', 'intensity']);
+const STYLE_OVERRIDE_KEYS = new Set(['bodyColor', 'faceColor', 'opacity', 'glow', 'translucency', 'interior']);
 
 function isPlainObject(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
@@ -44,6 +48,25 @@ function checkGlow(glow, path, errors) {
   if (!HEX.test(String(glow.color || ''))) errors.push(`${path}.color must be a 6-digit hex color.`);
   if (!Number.isFinite(glow.intensity) || glow.intensity < 0 || glow.intensity > 1) errors.push(`${path}.intensity must be between 0 and 1.`);
 }
+function checkTranslucency(value, path, errors) {
+  if (!isPlainObject(value)) return errors.push(`${path} must be an object.`);
+  rejectUnknownKeys(value, TRANSLUCENCY_KEYS, path, errors);
+  if (typeof value.enabled !== 'boolean') errors.push(`${path}.enabled must be boolean.`);
+  if (!Number.isFinite(value.opacity) || value.opacity < 0.25 || value.opacity > 1) errors.push(`${path}.opacity must be between 0.25 and 1.`);
+  if (!Number.isFinite(value.frost) || value.frost < 0 || value.frost > 1) errors.push(`${path}.frost must be between 0 and 1.`);
+  if (!HEX.test(String(value.tintColor || ''))) errors.push(`${path}.tintColor is invalid.`);
+}
+function checkInterior(value, path, errors) {
+  if (!isPlainObject(value)) return errors.push(`${path} must be an object.`);
+  rejectUnknownKeys(value, INTERIOR_KEYS, path, errors);
+  if (typeof value.enabled !== 'boolean') errors.push(`${path}.enabled must be boolean.`);
+  if (!INTERIOR_TYPES.has(String(value.type || ''))) errors.push(`${path}.type is unsupported.`);
+  if (value.enabled && value.type === 'none') errors.push(`${path}.type cannot be none while enabled.`);
+  if (!HEX.test(String(value.primaryColor || ''))) errors.push(`${path}.primaryColor is invalid.`);
+  if (!HEX.test(String(value.secondaryColor || ''))) errors.push(`${path}.secondaryColor is invalid.`);
+  if (!Number.isFinite(value.density) || value.density < 0 || value.density > 1) errors.push(`${path}.density must be between 0 and 1.`);
+  if (!Number.isFinite(value.intensity) || value.intensity < 0 || value.intensity > 1) errors.push(`${path}.intensity must be between 0 and 1.`);
+}
 function checkStyleOverrides(overrides, path, errors) {
   if (!isPlainObject(overrides)) return errors.push(`${path} must be an object.`);
   const unsupported = Object.keys(overrides).filter((key) => !STYLE_OVERRIDE_KEYS.has(key));
@@ -52,6 +75,8 @@ function checkStyleOverrides(overrides, path, errors) {
   if (overrides.faceColor != null && !HEX.test(String(overrides.faceColor))) errors.push(`${path}.faceColor is invalid.`);
   if (overrides.opacity != null && (!Number.isFinite(overrides.opacity) || overrides.opacity < 0.25 || overrides.opacity > 1)) errors.push(`${path}.opacity must be between 0.25 and 1.`);
   if (overrides.glow != null) checkGlow(overrides.glow, `${path}.glow`, errors);
+  if (overrides.translucency != null) checkTranslucency(overrides.translucency, `${path}.translucency`, errors);
+  if (overrides.interior != null) checkInterior(overrides.interior, `${path}.interior`, errors);
 }
 function checkFace(face, path, errors) {
   if (!isPlainObject(face)) return errors.push(`${path} must be an object.`);
@@ -93,6 +118,8 @@ function checkAppearance(appearance, errors) {
   if (!HEX.test(String(style.faceColor || ''))) errors.push('Default dice faceColor is invalid.');
   if (!Number.isFinite(style.opacity) || style.opacity < 0.25 || style.opacity > 1) errors.push('Default dice opacity must be between 0.25 and 1.');
   checkGlow(style.glow, 'appearance.diceSet.defaultStyle.glow', errors);
+  if (style.translucency != null) checkTranslucency(style.translucency, 'appearance.diceSet.defaultStyle.translucency', errors);
+  if (style.interior != null) checkInterior(style.interior, 'appearance.diceSet.defaultStyle.interior', errors);
   const dice = diceSet.dice;
   if (!isPlainObject(dice)) return errors.push('appearance.diceSet.dice is required.');
   const unsupportedDice = Object.keys(dice).filter((type) => !Object.hasOwn(CANONICAL_DICE, type));
