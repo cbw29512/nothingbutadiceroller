@@ -1,0 +1,9 @@
+release_candidate=a375f373ff8f4430c0ae34439fe5823bce301b81
+preview_origin=https://deploy-preview-19--nothingbutattrpgdiceroller.netlify.app
+identity_settings_status=200
+identity_safe_settings={"disable_signup":false,"mailer_autoconfirm":null,"email_enabled":true,"github_enabled":false,"google_enabled":false,"bitbucket_enabled":false,"gitlab_enabled":false}
+community_status=200
+community_record_count=0
+community_has_public_image=false
+anonymous_account_status=401
+anonymous_account_code=authentication-required
