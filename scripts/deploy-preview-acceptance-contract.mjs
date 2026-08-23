@@ -4,9 +4,10 @@ import { readFile } from 'node:fs/promises';
 async function read(path) { return readFile(new URL(`../${path}`, import.meta.url), 'utf8'); }
 
 try {
-  const [workflow, acceptance, pkgSource] = await Promise.all([
+  const [workflow, acceptance, liveSurface, pkgSource] = await Promise.all([
     read('.github/workflows/deploy-preview-acceptance.yml'),
     read('scripts/deploy-preview-acceptance.mjs'),
+    read('scripts/deploy-preview-surface-finish.mjs'),
     read('package.json'),
   ]);
   const pkg = JSON.parse(pkgSource);
@@ -17,6 +18,7 @@ try {
     'Wait for Netlify success on this exact head',
     'Live Deploy Preview Acceptance',
     'node scripts/deploy-preview-acceptance.mjs',
+    'node scripts/deploy-preview-surface-finish.mjs',
     'actions/upload-artifact@v4',
     'statuses: read',
     'cancel-in-progress: true',
@@ -37,10 +39,22 @@ try {
     'Page.captureScreenshot',
   ]) assert.ok(acceptance.includes(marker), `Deploy Preview acceptance is missing: ${marker}`);
 
+  for (const marker of [
+    'DEPLOY_PREVIEW_ORIGIN',
+    "'#surface-finish'",
+    "'metallic'",
+    "'pearl'",
+    'surfaceMetallic',
+    "data-die=\"d20\"",
+    "data-die=\"d6\"",
+    'total >= 1 && roll.total <= 20',
+    'selectHeight >= 40',
+  ]) assert.ok(liveSurface.includes(marker), `Live surface-finish acceptance is missing: ${marker}`);
+
   assert.equal(pkg.scripts?.['test:preview'], 'node scripts/deploy-preview-acceptance.mjs');
   assert.ok(pkg.scripts?.check?.includes('node scripts/deploy-preview-acceptance-contract.mjs'));
 
-  console.log('Deploy Preview acceptance contract passed: exact-head Netlify synchronization, live hosted browser checks, guest persistence, and screenshot evidence are release-enforced.');
+  console.log('Deploy Preview acceptance contract passed: exact-head Netlify synchronization, live hosted browser checks including surface finishes, guest persistence, and screenshot evidence are release-enforced.');
 } catch (error) {
   console.error('Deploy Preview acceptance contract failed:', error);
   process.exitCode = 1;
