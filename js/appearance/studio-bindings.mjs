@@ -8,7 +8,13 @@ export function bindStudioControls(context) {
   try {
     q('new-set').addEventListener('click', actions.newSet); q('save-set').addEventListener('click', actions.saveDraft);
     q('lock-set').addEventListener('click', actions.toggleLock); q('publish-set').addEventListener('click', actions.togglePublish);
-    q('use-set').addEventListener('click', actions.activateDraft); q('delete-set').addEventListener('click', actions.deleteDraft);
+    const useButton = q('use-set');
+    useButton.textContent = 'Use This Set & Back to Roller';
+    useButton.addEventListener('click', () => {
+      actions.activateDraft();
+      if (q('active-badge')?.textContent === 'ACTIVE') windowRef.location.assign('/');
+    });
+    q('delete-set').addEventListener('click', actions.deleteDraft);
     q('import-browser-sets').addEventListener('click', actions.importBrowserCollection);
     q('refresh-community').addEventListener('click', actions.reloadCommunity);
     q('load-more-community').addEventListener('click', actions.loadMoreCommunity);
