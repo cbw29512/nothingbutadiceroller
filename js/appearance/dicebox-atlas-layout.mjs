@@ -1,8 +1,7 @@
 import { CANONICAL_DICE } from './defaults.mjs';
 import { getCanonicalFaceResults, isCanonicalFaceResult } from './face-values.mjs';
+import { CANONICAL_FACE_EDGE_COUNTS, expandCoplanarRenderFace } from './dicebox-face-expansion.mjs';
 import { matchColliderFaceToRenderFace } from './dicebox-render-face-match.mjs';
-
-const FACE_EDGE_COUNTS = Object.freeze({ d6: 4, d8: 3, d10: 4, d12: 5, d20: 3, d100: 4 });
 
 function getRenderMesh(modelData, dieType) {
   const mesh = modelData?.meshes?.find((item) => item?.name === dieType);
@@ -55,7 +54,7 @@ function edgeSegments(triangles, dieType, logicalResult) {
     }
   }
   const boundary = [...edges.values()].filter((edge) => edge.count === 1).sort((a, b) => a.key.localeCompare(b.key));
-  const expected = FACE_EDGE_COUNTS[dieType];
+  const expected = CANONICAL_FACE_EDGE_COUNTS[dieType];
   if (!Number.isInteger(expected)) throw new Error(`No physical edge-count contract exists for ${dieType}.`);
   if (boundary.length !== expected) throw new Error(`${dieType} face ${logicalResult} must expose ${expected} physical outer edges; found ${boundary.length}.`);
   if (boundary.some(({ uvA, uvB }) => !validUvEdge(uvA, uvB))) throw new Error(`${dieType} face ${logicalResult} contains a zero-length UV edge.`);
@@ -83,18 +82,20 @@ export function extractDiceBoxFaceRegions(modelData, dieType, { includeEdgeSegme
     const mesh = getRenderMesh(modelData, dieType); const colliderMesh = getColliderMesh(modelData, dieType);
     const colliderMap = modelData?.colliderFaceMap?.[dieType];
     if (!colliderMap || typeof colliderMap !== 'object') throw new Error(`Canonical ${dieType} colliderFaceMap is missing.`);
-    const grouped = new Map(); const usedRenderFaces = new Set();
+    const seedsByResult = new Map(); const usedRenderFaces = new Set();
     for (const [rawFaceId, rawResult] of Object.entries(colliderMap)) {
       const faceId = Number(rawFaceId); const logicalResult = Number(rawResult);
       if (!Number.isInteger(faceId) || !isCanonicalFaceResult(dieType, logicalResult)) throw new Error(`${dieType} collider mapping contains an invalid face.`);
       const needsGeometryMatch = Boolean(colliderMesh && (dieType === 'd20' || includeEdgeSegments));
       const renderFaceId = needsGeometryMatch ? matchColliderFaceToRenderFace(mesh, colliderMesh, faceId, usedRenderFaces) : faceId;
-      const triangles = grouped.get(logicalResult) || []; triangles.push(triangleData(mesh, renderFaceId)); grouped.set(logicalResult, triangles);
+      const seeds = seedsByResult.get(logicalResult) || []; seeds.push(renderFaceId); seedsByResult.set(logicalResult, seeds);
     }
     const expected = getCanonicalFaceResults(dieType);
-    if (grouped.size !== expected.length || expected.some((result) => !grouped.has(result))) throw new Error(`${dieType} collider mapping does not cover every physical result.`);
+    if (seedsByResult.size !== expected.length || expected.some((result) => !seedsByResult.has(result))) throw new Error(`${dieType} collider mapping does not cover every physical result.`);
     return Object.fromEntries(expected.map((logicalResult) => {
-      const triangles = grouped.get(logicalResult); const points = uniqueUvPoints(triangles);
+      const seeds = seedsByResult.get(logicalResult);
+      const faceIds = includeEdgeSegments && colliderMesh ? expandCoplanarRenderFace(mesh, seeds, dieType, logicalResult) : seeds;
+      const triangles = faceIds.map((faceId) => triangleData(mesh, faceId)); const points = uniqueUvPoints(triangles);
       return [String(logicalResult), { logicalResult, points, ...regionMetrics(points, triangles), ...(includeEdgeSegments ? { edgeSegments: edgeSegments(triangles, dieType, logicalResult) } : {}) }];
     }));
   } catch (error) {
