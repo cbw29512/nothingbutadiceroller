@@ -18,6 +18,7 @@ const files = [
   'rolls.html',
   'favicon.svg',
   'social-card.svg',
+  'social-card.png',
   'site.webmanifest',
   'sitemap.xml',
   'robots.txt',
@@ -130,7 +131,9 @@ async function validateBuild() {
     requireReferences(html, [
       'href="/styles.css"', 'href="/themes.css"', 'href="/account.css"', 'href="/mobile.css"',
       'href="/community.css"', 'href="/custom.css"', 'href="/favicon.svg"', 'href="/site.webmanifest"',
-      'property="og:image" content="https://nothingbutattrpgdiceroller.netlify.app/social-card.svg"',
+      'property="og:image" content="https://nothingbutattrpgdiceroller.netlify.app/social-card.png"',
+      'property="og:image:type" content="image/png"',
+      'name="twitter:image" content="https://nothingbutattrpgdiceroller.netlify.app/social-card.png"',
       'name="twitter:card" content="summary_large_image"',
       'src="/js/app.js"', 'id="desktop-custom-die-btn"',
       'popovertarget="desktop-custom-die-popover"', 'id="desktop-custom-die-popover"', 'popover="auto"',
