@@ -19,7 +19,7 @@ const viewports = [
   { name: 'desktop', width: 1440, height: 900, mobile: false },
   { name: 'mobile', width: 390, height: 844, mobile: true },
 ];
-const pages = ['/', '/customize.html', '/rolls.html', '/how-to.html', '/privacy.html', '/legal.html'];
+const pages = ['/', '/customize.html', '/rolls.html', '/how-to.html', '/privacy.html', '/legal.html', '/moderation.html'];
 
 async function assertRuntimeSurfaces(client, origin, path, viewport) {
   if (path === '/') {
@@ -61,6 +61,9 @@ async function assertRuntimeSurfaces(client, origin, path, viewport) {
   }
   if (path === '/rolls.html') {
     await waitFor(client, "document.querySelector('#manager-status')?.textContent.includes('Guest shortcuts are saved in this browser.')");
+  }
+  if (path === '/moderation.html') {
+    await waitFor(client, "document.querySelector('#moderation-status') && document.querySelector('#moderation-reports')");
   }
   assert.equal(await client.evaluate('location.href'), `${origin}${path}`);
 }
