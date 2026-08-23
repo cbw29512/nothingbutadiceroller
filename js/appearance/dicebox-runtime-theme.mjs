@@ -2,6 +2,7 @@ import { CANONICAL_DICE } from './defaults.mjs';
 import { buildDiceBoxAtlasDrawOperations } from './dicebox-atlas-renderer.mjs';
 import { buildRuntimeThemeIdentity } from './runtime-theme-identity.mjs';
 import { RUNTIME_THEME_VERSION, encodeRuntimeThemePayload } from './runtime-theme-codec.mjs';
+import { normalizeInterior, normalizeTranslucency, simulatedResinBodyColor } from './resin-style.mjs';
 
 function round(value) {
   return Math.round(Number(value) * 100) / 100;
@@ -16,7 +17,10 @@ export function buildDiceBoxRuntimeTheme(glyphPlan, themePlan, dieType, { size =
     const dieTheme = themePlan?.dice?.[dieType];
     if (!dieTheme) throw new Error(`Missing ${dieType} DiceBox theme instructions.`);
     const operations = buildDiceBoxAtlasDrawOperations(glyphPlan, dieType, size);
-    const glow = dieTheme.material?.glowHint || {};
+    const material = dieTheme.material || {};
+    const glow = material.glowHint || {};
+    const translucency = normalizeTranslucency(material.translucency, material.bodyColor);
+    const interior = normalizeInterior(material.interior);
     const payload = {
       v: RUNTIME_THEME_VERSION,
       d: dieType,
@@ -30,13 +34,25 @@ export function buildDiceBoxRuntimeTheme(glyphPlan, themePlan, dieType, { size =
         round(operation.fontPx),
       ]),
       g: [Boolean(glow.enabled), String(glow.color || '#ffffff'), round(clamp01(glow.intensity))],
+      r: [
+        Boolean(translucency.enabled),
+        round(Math.max(0.25, translucency.opacity)),
+        round(clamp01(translucency.frost)),
+        translucency.tintColor,
+        Boolean(interior.enabled),
+        interior.type,
+        interior.primaryColor,
+        interior.secondaryColor,
+        round(clamp01(interior.density)),
+        round(clamp01(interior.intensity)),
+      ],
     };
     const token = encodeRuntimeThemePayload(payload);
     return {
       dieType,
       themeName: buildRuntimeThemeIdentity(dieType, token),
       basePath: `/api/dice-theme/${token}`,
-      themeColor: dieTheme.material.bodyColor,
+      themeColor: simulatedResinBodyColor(material),
       token,
     };
   } catch (error) {
