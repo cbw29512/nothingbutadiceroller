@@ -62,12 +62,14 @@ export function bindStudioPatternControls({ q, updateDraft, getSelectedDie, refr
       updateDraft((set) => { editableTarget(set, type, scope).type = value; });
       setStatus(`${scope === 'selected' ? type.toUpperCase() : 'Set'} ${value} pattern selected. Save the set to keep it.`, 'ready');
     });
-    for (const [id, key] of [['pattern-primary-color', 'primaryColor'], ['pattern-secondary-color', 'secondaryColor']]) {
-      q(id).addEventListener('input', () => {
-        const scope = scopeValue(q); const type = getSelectedDie();
-        updateDraft((set) => { editableTarget(set, type, scope)[key] = q(id).value; });
-      });
-    }
+    q('pattern-primary-color').addEventListener('input', () => {
+      const scope = scopeValue(q); const type = getSelectedDie();
+      updateDraft((set) => { editableTarget(set, type, scope).primaryColor = q('pattern-primary-color').value; });
+    });
+    q('pattern-secondary-color').addEventListener('input', () => {
+      const scope = scopeValue(q); const type = getSelectedDie();
+      updateDraft((set) => { editableTarget(set, type, scope).secondaryColor = q('pattern-secondary-color').value; });
+    });
     for (const [id, key, outputId] of [
       ['pattern-intensity', 'intensity', 'pattern-intensity-output'],
       ['pattern-scale', 'scale', 'pattern-scale-output'],
