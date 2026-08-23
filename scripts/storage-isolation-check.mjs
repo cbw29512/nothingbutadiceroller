@@ -80,6 +80,7 @@ for (const required of [
   "worker-src 'self' blob:",
   "object-src 'none'",
   "base-uri 'self'",
+  "frame-src 'self' https://app.netlify.com",
   "frame-ancestors 'self' https://app.netlify.com",
 ]) assert.ok(netlifyConfig.includes(required), `Missing static security header/CSP directive: ${required}`);
 
