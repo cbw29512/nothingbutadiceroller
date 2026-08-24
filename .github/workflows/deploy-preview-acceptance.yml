@@ -1,0 +1,96 @@
+name: Deploy Preview Acceptance
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+  statuses: read
+
+concurrency:
+  group: deploy-preview-acceptance-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  live-preview:
+    name: Live Deploy Preview Acceptance
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      DEPLOY_PREVIEW_ORIGIN: https://deploy-preview-${{ github.event.pull_request.number }}--nothingbutattrpgdiceroller.netlify.app
+    steps:
+      - name: Checkout PR head
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Use Node 22
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22.16.0
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Wait for Netlify success on this exact head
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          CONTEXT='netlify/nothingbutattrpgdiceroller/deploy-preview'
+          for attempt in $(seq 1 72); do
+            JSON="$(curl --fail-with-body --silent --show-error \
+              -H 'Accept: application/vnd.github+json' \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/commits/${HEAD_SHA}/status")"
+            STATE="$(printf '%s' "$JSON" | node -e "const fs=require('fs');const d=JSON.parse(fs.readFileSync(0,'utf8'));const s=d.statuses.find(x=>x.context==='${CONTEXT}');process.stdout.write(s?.state||'missing')")"
+            echo "Netlify status for ${HEAD_SHA}: ${STATE} (attempt ${attempt}/72)"
+            if [ "$STATE" = 'success' ]; then
+              exit 0
+            fi
+            if [ "$STATE" = 'failure' ] || [ "$STATE" = 'error' ]; then
+              echo 'Netlify reported a terminal failure for this exact PR head.' >&2
+              exit 1
+            fi
+            sleep 10
+          done
+          echo 'Timed out waiting for Netlify Deploy Preview success on this exact PR head.' >&2
+          exit 1
+
+      - name: Run live Deploy Preview browser acceptance
+        run: node scripts/deploy-preview-acceptance.mjs
+
+      - name: Verify live d4 number glow
+        run: node scripts/deploy-preview-d4-glow.mjs
+
+      - name: Verify live direct d20 face editing
+        run: node scripts/deploy-preview-direct-face-edit.mjs
+
+      - name: Verify live face symbol picker
+        run: node scripts/deploy-preview-face-symbol-picker.mjs
+
+      - name: Verify live clear resin and interior effects
+        run: node scripts/deploy-preview-resin-customization.mjs
+
+      - name: Verify live surface finishes
+        run: node scripts/deploy-preview-surface-finish.mjs
+
+      - name: Verify live surface patterns
+        run: node scripts/deploy-preview-surface-pattern.mjs
+
+      - name: Verify live face-edge inlays
+        run: node scripts/deploy-preview-edge-inlay.mjs
+
+      - name: Upload acceptance screenshots
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: deploy-preview-acceptance-${{ github.event.pull_request.head.sha }}
+          path: artifacts/deploy-preview-acceptance/*.png
+          if-no-files-found: warn
+          retention-days: 14

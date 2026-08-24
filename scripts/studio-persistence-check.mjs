@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { SYSTEM_DEFAULT_DICE_SET_ID } from '../js/appearance/defaults.mjs';
 import { createUserDiceSet } from '../js/appearance/schema.mjs';
+import { createSecureId } from '../js/appearance/secure-id.mjs';
 import { lockDiceSet, publishDiceSet } from '../js/appearance/transitions.mjs';
 import {
   ACTIVE_SET_KEY, ACTIVE_SNAPSHOT_KEY, deleteDiceSetLocal, getActiveDiceSetId, getActiveDiceSetSnapshot,
@@ -25,6 +27,27 @@ function failOnceStorage(base, failKey, error) {
     },
   };
 }
+
+const fixedUuid = '11111111-2222-4333-8444-555555555555';
+assert.equal(createSecureId('set', { randomUUID: () => fixedUuid }), `set_${fixedUuid}`);
+const byteCrypto = {
+  getRandomValues(values) {
+    values.fill(0);
+    return values;
+  },
+};
+assert.equal(
+  createSecureId('local', byteCrypto),
+  'local_00000000-0000-4000-8000-000000000000',
+  'Secure byte fallback must produce an RFC 4122 version-4 UUID shape.',
+);
+assert.throws(() => createSecureId('set', {}), /Secure random values are unavailable/);
+const idSources = [
+  '../js/appearance/secure-id.mjs',
+  '../js/appearance/studio-persistence.mjs',
+  '../js/appearance/studio.js',
+].map((path) => readFileSync(new URL(path, import.meta.url), 'utf8')).join('\n');
+assert.doesNotMatch(idSources, /\bMath\.random\s*\(/, 'Dice Studio identity paths must not use Math.random().');
 
 const storage = memoryStorage();
 const ownerId = 'owner_test';
@@ -74,4 +97,4 @@ assert.throws(
   () => saveDiceSetLocal(set, quotaStorage, ownerId),
   /Browser storage is full\. Delete a browser dice set or sign in to save this set to your account\./,
 );
-console.log('Studio persistence passed: save, atomic active snapshots, community ownership, non-destructive reset, delete protection, and clear browser-quota errors.');
+console.log('Studio persistence passed: secure IDs, save, atomic active snapshots, community ownership, non-destructive reset, delete protection, and clear browser-quota errors.');

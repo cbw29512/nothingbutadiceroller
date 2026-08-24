@@ -1,0 +1,52 @@
+name: Polish Targeted Validation
+
+on:
+  push:
+    branches:
+      - polish/final-product-pass-20260823
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: polish-targeted-validation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  behavior:
+    name: Polish product contracts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 32
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+      - name: Use Node 22
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22.16.0
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Build and run deterministic contracts
+        run: npm run build
+      - name: Verify mobile roller header
+        run: node scripts/browser-mobile-header-menu.mjs
+      - name: Verify shortcut onboarding
+        run: node scripts/browser-shortcut-onboarding.mjs
+      - name: Verify custom die result presentation
+        run: node scripts/browser-custom-die-presentation.mjs
+      - name: Verify roll history actions
+        run: node scripts/browser-history-actions.mjs
+      - name: Verify mobile selected-dice quantities
+        run: node scripts/browser-mobile-dice-quantity.mjs
+      - name: Verify offline Default Roller
+        run: node scripts/browser-offline-basic.mjs
+      - name: Verify mobile Dice Studio flow
+        run: node scripts/browser-studio-mobile-navigation.mjs
+      - name: Verify physical Dice Studio preview
+        run: node scripts/browser-studio-preview-geometry.mjs
+      - name: Verify progressive Dice Studio controls
+        run: node scripts/browser-studio-progressive-sections.mjs
+      - name: Verify Dice Studio Save and Use workflow
+        run: node scripts/browser-studio-action-workflow.mjs

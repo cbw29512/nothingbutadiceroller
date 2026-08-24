@@ -1,0 +1,21 @@
+.resin-editor-group{background:linear-gradient(180deg,#111927,#0d131d);border-color:#334155}.resin-editor-group legend{color:#e2e8f0}#surface-finish-group{background:linear-gradient(180deg,#151823,#0e121b);border-color:#3f4655}#surface-finish-group legend{color:#e2e8f0}#surface-pattern-group{background:linear-gradient(180deg,#171723,#10111b);border-color:#454055}#surface-pattern-group legend{color:#e2e8f0}#edge-inlay-group{background:linear-gradient(180deg,#171923,#10121a);border-color:#4b5563}#edge-inlay-group legend{color:#e2e8f0}.range-field{display:grid;grid-template-columns:minmax(0,1fr) 54px;align-items:center;gap:10px}.range-field input[type=range]{padding:0;height:36px;accent-color:#e2e8f0}.range-field output{min-width:54px;text-align:center;border:1px solid #334155;border-radius:8px;background:#0b1018;color:#e2e8f0;padding:7px 5px;font-weight:800;font-variant-numeric:tabular-nums}.resin-colors,.pattern-colors{grid-template-columns:1fr 1fr}.studio-preview-die[data-clear-resin=true]{border-color:#ffffff66;backdrop-filter:blur(1px);-webkit-backdrop-filter:blur(1px)}.studio-preview-die[data-clear-resin=true] small{opacity:.84}.studio-preview-die[data-interior-effect]:not([data-interior-effect=none]){background-blend-mode:screen,screen,normal;filter:saturate(1.08)}
+
+/* Keep the explicit Use action readable without allowing its sticky grid item to widen the Studio. */
+.studio-primary-action-bar #use-set{max-width:11rem;white-space:normal;line-height:1.15;text-wrap:balance}
+
+@media(max-width:720px){
+  .resin-editor-group,#surface-finish-group,#surface-pattern-group,#edge-inlay-group{padding:14px}
+  .range-field{grid-template-columns:minmax(0,1fr) 50px}
+  .resin-colors,.pattern-colors{grid-template-columns:1fr 1fr}
+  .resin-editor-group .studio-field,#surface-finish-group .studio-field,#surface-pattern-group .studio-field,#edge-inlay-group .studio-field{margin-bottom:14px}
+  .resin-editor-group select,.resin-editor-group input[type=color],#surface-finish-group select,#surface-finish-group input[type=color],#surface-pattern-group select,#surface-pattern-group input[type=color],#edge-inlay-group select,#edge-inlay-group input[type=color]{min-height:44px}
+  .resin-editor-group .check-row{min-height:44px;margin-top:4px}
+  .studio-primary-action-bar #use-set{max-width:none}
+  .studio-header{gap:14px;margin-bottom:14px}
+  .studio-header>.button-row{display:grid;grid-template-columns:minmax(84px,.34fr) minmax(0,1fr);gap:8px;width:100%}
+  .studio-header>.button-row .btn{min-width:0;min-height:44px;display:flex;align-items:center;justify-content:center;text-align:center;padding:.55rem .6rem;line-height:1.15}
+  .studio-primary-action-bar{row-gap:.35rem}
+  .studio-primary-action-state[data-dirty="false"]{grid-template-columns:1fr}
+  .studio-primary-action-state[data-dirty="false"] small{display:none}
+}
+@media(max-width:420px){.resin-colors,.pattern-colors{grid-template-columns:1fr}.range-field{grid-template-columns:minmax(0,1fr) 48px}}

@@ -1,41 +1,17 @@
 import { decorateDiceBoxNotation } from './appearance/dicebox-visual-adapter.mjs';
 import { SYSTEM_DEFAULT_DICE_SET } from './appearance/defaults.mjs';
 import { buildLivePhysicsConfig } from './appearance/live-integration.mjs';
+import {
+  APPEARANCE_DICEBOX_VERSION as DICEBOX_VERSION,
+  DICEBOX_ASSET_PATH,
+  diceBoxOrigin,
+  loadSelfHostedDiceBox,
+} from './appearance/dicebox-self-host.mjs';
 
 let diceBox = null;
-let DiceBoxClass = null;
 let liveRuntimeThemes = null;
 const SYSTEM_DEFAULT_DICE_COLOR = SYSTEM_DEFAULT_DICE_SET.appearance.diceSet.defaultStyle.bodyColor;
 let liveThemeColor = SYSTEM_DEFAULT_DICE_COLOR;
-
-const DICEBOX_VERSION = '1.1.4';
-const DICEBOX_SOURCES = [
-  `https://cdn.jsdelivr.net/npm/@3d-dice/dice-box@${DICEBOX_VERSION}/dist/dice-box.es.min.js`,
-  `https://unpkg.com/@3d-dice/dice-box@${DICEBOX_VERSION}/dist/dice-box.es.min.js`,
-];
-
-async function loadDiceBoxModule() {
-  if (DiceBoxClass) return DiceBoxClass;
-
-  const failures = [];
-  for (const source of DICEBOX_SOURCES) {
-    try {
-      const module = await import(source);
-      const candidate = module?.default || module?.DiceBox;
-      if (typeof candidate !== 'function') {
-        throw new Error('DiceBox constructor was not exported.');
-      }
-      DiceBoxClass = candidate;
-      console.info(`DiceBox ${DICEBOX_VERSION} loaded from ${source}`);
-      return DiceBoxClass;
-    } catch (err) {
-      failures.push(`${source}: ${err?.message || err}`);
-      console.warn('DiceBox source failed:', source, err);
-    }
-  }
-
-  throw new Error(`Unable to load DiceBox ${DICEBOX_VERSION}. ${failures.join(' | ')}`);
-}
 
 function getDiceScale() {
   try {
@@ -48,14 +24,15 @@ function getDiceScale() {
 
 export async function initDicePhysics(themeColor = SYSTEM_DEFAULT_DICE_COLOR, appearanceRuntime = null) {
   try {
-    const DiceBox = await loadDiceBoxModule();
+    const DiceBox = await loadSelfHostedDiceBox();
+    console.info(`DiceBox ${DICEBOX_VERSION} loaded from same-origin vendor runtime.`);
     const liveAppearance = buildLivePhysicsConfig(appearanceRuntime, themeColor);
     liveRuntimeThemes = liveAppearance.runtimeThemes;
     liveThemeColor = liveAppearance.themeColor;
     diceBox = new DiceBox({
       container: '#dice-tray',
-      assetPath: 'assets/',
-      origin: `https://unpkg.com/@3d-dice/dice-box@${DICEBOX_VERSION}/dist/`,
+      assetPath: DICEBOX_ASSET_PATH,
+      origin: diceBoxOrigin(window.location),
       theme: 'default',
       themeColor: liveThemeColor,
       gravity: 1,

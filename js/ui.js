@@ -1,4 +1,6 @@
 import { state } from './state.js';
+import { canRerollHistoryItem } from './history-records.mjs';
+import { syncMobileDiceQuantities } from './mobile-dice-quantity.js';
 import { countDice } from './utils.js';
 
 export function formatRollButtonLabel(selectedDice = state.selectedDice) {
@@ -15,6 +17,12 @@ export function formatRollButtonLabel(selectedDice = state.selectedDice) {
     console.error('Failed to format roll button label:', err);
     return 'Roll Dice';
   }
+}
+
+export function formatNaturalRollFeedback(kind) {
+  if (kind === 'nat20') return '🎉 NATURAL 20! 🎉';
+  if (kind === 'nat1') return '💀 NATURAL 1! 💀';
+  return '';
 }
 
 function syncRollButtonLabels() {
@@ -42,6 +50,7 @@ export function renderPool() {
       ? entries.map(([type, count]) => `${count}${type}`).join(' + ')
       : 'No dice selected';
     syncRollButtonLabels();
+    syncMobileDiceQuantities(counts);
 
     entries.forEach(([type, count]) => {
       const chip = document.createElement('button');
@@ -83,7 +92,7 @@ export function renderHistory() {
       return;
     }
 
-    state.history.forEach(item => {
+    state.history.forEach((item, index) => {
       const row = document.createElement('div');
       row.className = 'history-item';
       ['formula', 'time', 'breakdown', 'total'].forEach(key => {
@@ -92,6 +101,31 @@ export function renderHistory() {
         cell.textContent = item[key];
         row.appendChild(cell);
       });
+
+      const actions = document.createElement('div');
+      actions.className = 'history-actions';
+
+      const reroll = document.createElement('button');
+      reroll.type = 'button';
+      reroll.className = 'btn ghost history-action-btn history-reroll-btn';
+      reroll.dataset.historyAction = 'reroll';
+      reroll.dataset.historyIndex = String(index);
+      reroll.textContent = 'Reroll';
+      reroll.disabled = !canRerollHistoryItem(item);
+      reroll.title = reroll.disabled
+        ? 'Exact reroll is unavailable for this older or non-replayable history entry.'
+        : `Reroll ${item.formula}`;
+
+      const copy = document.createElement('button');
+      copy.type = 'button';
+      copy.className = 'btn ghost history-action-btn history-copy-btn';
+      copy.dataset.historyAction = 'copy';
+      copy.dataset.historyIndex = String(index);
+      copy.textContent = 'Copy';
+      copy.title = `Copy ${item.formula}`;
+
+      actions.append(reroll, copy);
+      row.appendChild(actions);
       list.appendChild(row);
     });
   } catch (err) {
@@ -127,12 +161,15 @@ export function showCrit(kind) {
     if (!host) return;
     host.replaceChildren();
 
+    const message = formatNaturalRollFeedback(kind);
+    if (!message) return;
+
     const banner = document.createElement('div');
     banner.className = `crit-banner ${kind}`;
-    banner.textContent = kind === 'nat20' ? '🎉 NATURAL 20! 🎉' : '💀 CRITICAL FAIL! 💀';
+    banner.textContent = message;
     host.appendChild(banner);
     setTimeout(() => host.replaceChildren(), 1700);
   } catch (err) {
-    console.error('Failed to render critical-roll effect:', err);
+    console.error('Failed to render natural-roll effect:', err);
   }
 }

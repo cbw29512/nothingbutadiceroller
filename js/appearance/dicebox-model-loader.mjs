@@ -1,11 +1,9 @@
 import { CANONICAL_DICE } from './defaults.mjs';
 import { getCanonicalFaceResults } from './face-values.mjs';
+import { APPEARANCE_DICEBOX_VERSION, DICEBOX_DEFAULT_MODEL_URL } from './dicebox-self-host.mjs';
 
-export const APPEARANCE_DICEBOX_VERSION = '1.1.4';
-export const CANONICAL_MODEL_URLS = Object.freeze([
-  `https://cdn.jsdelivr.net/npm/@3d-dice/dice-box@${APPEARANCE_DICEBOX_VERSION}/dist/assets/themes/default/default.json`,
-  `https://unpkg.com/@3d-dice/dice-box@${APPEARANCE_DICEBOX_VERSION}/dist/assets/themes/default/default.json`,
-]);
+export { APPEARANCE_DICEBOX_VERSION };
+export const CANONICAL_MODEL_URLS = Object.freeze([DICEBOX_DEFAULT_MODEL_URL]);
 
 let cachedModelPromise = null;
 function clone(value) { return structuredClone(value); }
@@ -48,17 +46,14 @@ export function normalizeCanonicalDiceBoxModel(rawModelData) {
 }
 
 async function fetchModel(fetchImpl) {
-  const failures = [];
-  for (const url of CANONICAL_MODEL_URLS) {
-    try {
-      const response = await fetchImpl(url);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      return normalizeCanonicalDiceBoxModel(await response.json());
-    } catch (error) {
-      failures.push(`${url}: ${error?.message || error}`);
-    }
+  const url = CANONICAL_MODEL_URLS[0];
+  try {
+    const response = await fetchImpl(url);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return normalizeCanonicalDiceBoxModel(await response.json());
+  } catch (error) {
+    throw new Error(`Unable to load self-hosted canonical DiceBox ${APPEARANCE_DICEBOX_VERSION} model from ${url}. ${error?.message || error}`);
   }
-  throw new Error(`Unable to load canonical DiceBox ${APPEARANCE_DICEBOX_VERSION} model. ${failures.join(' | ')}`);
 }
 
 export function loadCanonicalDiceBoxModel(fetchImpl = fetch) {

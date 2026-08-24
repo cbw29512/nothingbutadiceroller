@@ -7,6 +7,7 @@ import {
   loadCanonicalDiceBoxModel,
   normalizeCanonicalDiceBoxModel,
 } from '../js/appearance/dicebox-model-loader.mjs';
+import { DICEBOX_DEFAULT_MODEL_URL } from '../js/appearance/dicebox-self-host.mjs';
 
 function baseModel() {
   const model = { meshes: [], colliderFaceMap: {} };
@@ -30,17 +31,18 @@ assert.deepEqual(
 let calls = 0;
 const fakeFetch = async (url) => {
   calls += 1;
-  if (calls === 1) return { ok: false, status: 503, json: async () => ({}) };
-  assert.equal(url, CANONICAL_MODEL_URLS[1]);
+  assert.equal(url, DICEBOX_DEFAULT_MODEL_URL);
   return { ok: true, status: 200, json: async () => baseModel() };
 };
 const loaded = await loadCanonicalDiceBoxModel(fakeFetch);
-assert.equal(calls, 2, 'Canonical model loader must fall back to the second pinned CDN source.');
+assert.equal(calls, 1, 'Canonical model loader must use exactly one same-origin pinned model source.');
+assert.deepEqual(CANONICAL_MODEL_URLS, [DICEBOX_DEFAULT_MODEL_URL]);
 assert.ok(loaded.colliderFaceMap.d100);
 
 const bad = baseModel();
 bad.colliderFaceMap.d20[0] = 99;
 assert.throws(() => normalizeCanonicalDiceBoxModel(bad), /standard physical die/);
 const physicsSource = await readFile(new URL('../js/physics.js', import.meta.url), 'utf8');
-assert.ok(physicsSource.includes(`DICEBOX_VERSION = '${APPEARANCE_DICEBOX_VERSION}'`), 'Appearance compiler and live DiceBox must stay pinned to the same version.');
-console.log(`DiceBox model loader passed: version ${APPEARANCE_DICEBOX_VERSION} pinned, CDN fallback works, and d100 mirrors DiceBox's standard d10 percentile fallback.`);
+assert.ok(physicsSource.includes('APPEARANCE_DICEBOX_VERSION as DICEBOX_VERSION'), 'Appearance compiler and live DiceBox must share the centralized pinned version.');
+assert.ok(physicsSource.includes('loadSelfHostedDiceBox()'), 'Live DiceBox must load only the self-hosted module.');
+console.log(`DiceBox model loader passed: version ${APPEARANCE_DICEBOX_VERSION} is centralized, same-origin only, and d100 mirrors DiceBox's standard d10 percentile fallback.`);

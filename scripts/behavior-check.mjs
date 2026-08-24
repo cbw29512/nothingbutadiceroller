@@ -3,7 +3,7 @@ import { buildPhysicsNotation } from '../js/utils.js';
 import { getCriticalOutcome, parseRollResults } from '../js/roll-results.js';
 import { normalizeCustomSides, secureCustomRoll } from '../js/custom-roll.js';
 import { canRollFromTray } from '../js/tray-controls.js';
-import { formatRollButtonLabel } from '../js/ui.js';
+import { formatNaturalRollFeedback, formatRollButtonLabel } from '../js/ui.js';
 
 function group(values, sides = 20, id = 0) {
   return [{
@@ -101,6 +101,10 @@ assert.equal(getCriticalOutcome(
   multipleD20s.keptD20s,
 ), null);
 
+assert.equal(formatNaturalRollFeedback('nat20'), '🎉 NATURAL 20! 🎉');
+assert.equal(formatNaturalRollFeedback('nat1'), '💀 NATURAL 1! 💀');
+assert.equal(formatNaturalRollFeedback('other'), '');
+
 assert.equal(normalizeCustomSides(2), 2);
 assert.equal(normalizeCustomSides(3), 3);
 assert.equal(normalizeCustomSides('3'), 3);
@@ -150,5 +154,5 @@ assert.equal(formatRollButtonLabel([
 ]), 'Roll 2d20 + d6');
 
 console.log(
-  'Behavior checks passed: all seven standard dice, mixed pools/totals, d100, ADV/DIS, kept-d20 criticals, multi-d20 gating, custom dN boundaries/ranges, tray roll eligibility, and dynamic roll labels.',
+  'Behavior checks passed: all seven standard dice, mixed pools/totals, d100, ADV/DIS, rules-neutral natural d20 feedback, multi-d20 gating, custom dN boundaries/ranges, tray roll eligibility, and dynamic roll labels.',
 );

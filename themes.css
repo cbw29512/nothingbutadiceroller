@@ -123,6 +123,23 @@
   text-align: left;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .crit-banner {
+    animation: none !important;
+  }
+
+  .die-btn,
+  .adv-btn,
+  .btn,
+  .pool-chip,
+  .swatch-btn,
+  .mobile-die-btn,
+  .mobile-mode-btn {
+    transition: none !important;
+    transform: none !important;
+  }
+}
+
 @media (max-width: 430px) {
   .picker-grid {
     grid-template-columns: 1fr;

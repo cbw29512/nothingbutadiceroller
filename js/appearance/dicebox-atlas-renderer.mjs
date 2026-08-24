@@ -1,9 +1,6 @@
-const FONT_STACKS = Object.freeze({
-  default: 'Arial, sans-serif',
-  fantasy: 'Georgia, serif',
-  runic: 'Georgia, serif',
-  mono: '"Courier New", monospace',
-});
+import { faceFontStack } from './face-fonts.mjs';
+import { faceGlyphPositionOffset } from './face-glyph-position.mjs';
+import { normalizeFaceGlyphScale } from './face-glyph-scale.mjs';
 
 function graphemeCount(value) {
   const text = String(value || '');
@@ -19,22 +16,32 @@ function fitFont(text, maxWidth, maxHeight) {
   const widthLimited = maxWidth / Math.max(0.8, count * 0.62);
   return Math.max(8, Math.min(180, maxHeight * 0.82, widthLimited));
 }
+function scaledFont(text, maxWidth, maxHeight, scale) {
+  return Math.max(6, Math.min(200, fitFont(text, maxWidth, maxHeight) * normalizeFaceGlyphScale(scale)));
+}
+function positionedPoint(baseX, baseY, spanX, spanY, size, position) {
+  const offset = faceGlyphPositionOffset(position);
+  return { x: baseX + (offset.x * spanX * size), y: baseY + (offset.y * spanY * size) };
+}
 
 function centeredOperation(command, size) {
   const region = command.region;
-  const maxWidth = Math.max(8, (region.maxU - region.minU) * size * 0.72);
-  const maxHeight = Math.max(8, (region.maxV - region.minV) * size * 0.64);
+  const spanU = region.maxU - region.minU;
+  const spanV = region.maxV - region.minV;
+  const maxWidth = Math.max(8, spanU * size * 0.72);
+  const maxHeight = Math.max(8, spanV * size * 0.64);
+  const point = positionedPoint(region.centerU * size, (1 - region.centerV) * size, spanU, spanV, size, command.position);
   return {
     dieType: command.dieType,
     logicalResult: command.logicalResult,
     text: command.text,
     color: command.color,
     fontId: command.fontId,
-    x: region.centerU * size,
-    y: (1 - region.centerV) * size,
+    x: point.x,
+    y: point.y,
     maxWidth,
     maxHeight,
-    fontPx: fitFont(command.text, maxWidth, maxHeight),
+    fontPx: scaledFont(command.text, maxWidth, maxHeight, command.scale),
     strategy: command.strategy,
   };
 }
@@ -45,17 +52,18 @@ function d4Operations(command, size) {
     const spanV = mark.region.maxV - mark.region.minV;
     const maxWidth = Math.max(8, spanU * size * 0.25);
     const maxHeight = Math.max(8, spanV * size * 0.22);
+    const point = positionedPoint(mark.u * size, (1 - mark.v) * size, spanU, spanV, size, command.position);
     return {
       dieType: command.dieType,
       logicalResult: command.logicalResult,
       text: command.text,
       color: command.color,
       fontId: command.fontId,
-      x: mark.u * size,
-      y: (1 - mark.v) * size,
+      x: point.x,
+      y: point.y,
       maxWidth,
       maxHeight,
-      fontPx: fitFont(command.text, maxWidth, maxHeight),
+      fontPx: scaledFont(command.text, maxWidth, maxHeight, command.scale),
       strategy: command.strategy,
     };
   });
@@ -96,7 +104,7 @@ export function renderDiceBoxAtlas(glyphPlan, dieType, { size = 1024, canvas = n
     context.textBaseline = 'middle';
     for (const operation of buildDiceBoxAtlasDrawOperations(glyphPlan, dieType, size)) {
       context.fillStyle = operation.color;
-      context.font = `700 ${operation.fontPx}px ${FONT_STACKS[operation.fontId] || FONT_STACKS.default}`;
+      context.font = `700 ${operation.fontPx}px ${faceFontStack(operation.fontId)}`;
       context.fillText(operation.text, operation.x, operation.y, operation.maxWidth);
     }
     return target;

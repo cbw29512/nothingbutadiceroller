@@ -1,4 +1,5 @@
 import { getUser, verifyRequestOrigin } from '@netlify/identity';
+import { apiErrorResponse } from './api-errors.mjs';
 import {
   LEGACY_THEME_COMMUNITY_INDEX,
   legacyThemeIndexKey,
@@ -46,27 +47,25 @@ export default async (request, context) => {
     const store = openLegacyThemeStore(context);
     const url = new URL(request.url);
     const scope = url.searchParams.get('scope') || 'mine';
-    if (request.method === 'GET' && scope === 'community') {
-      return json({ themes: await readCommunity(store) });
-    }
+    if (request.method === 'GET' && scope === 'community') return json({ themes: await readCommunity(store) });
 
     const user = await getUser();
-    if (!user) return json({ error: 'Authentication required.' }, 401);
+    if (!user) return json({ error: 'Authentication required.', code: 'authentication-required' }, 401);
     if (request.method === 'GET') {
       const requestedId = url.searchParams.get('id');
       if (requestedId) {
         const theme = await store.get(legacyThemeKey(user.id, requestedId), { type: 'json' }).catch(() => null);
-        return theme ? json({ theme }) : json({ error: 'Theme not found.' }, 404);
+        return theme ? json({ theme }) : json({ error: 'Theme not found.', code: 'theme-not-found' }, 404);
       }
       return json({ themes: await readMine(store, user.id) });
     }
     if (request.method === 'DELETE') {
       verifyRequestOrigin(request);
       const themeId = url.searchParams.get('id');
-      if (!themeId) return json({ error: 'Theme id is required.' }, 400);
+      if (!themeId) return json({ error: 'Theme id is required.', code: 'theme-id-required' }, 400);
       const key = legacyThemeKey(user.id, themeId);
       const existing = await store.get(key, { type: 'json' }).catch(() => null);
-      if (!existing) return json({ error: 'Theme not found.' }, 404);
+      if (!existing) return json({ error: 'Theme not found.', code: 'theme-not-found' }, 404);
 
       await store.delete(key);
       await bestEffortDelete(store, existing.imageKey, 'theme image');
@@ -83,12 +82,11 @@ export default async (request, context) => {
       }
       return json({ success: true });
     }
-    return json({ error: 'Method Not Allowed' }, 405);
+    return json({ error: 'Method Not Allowed', code: 'method-not-allowed' }, 405);
   } catch (error) {
-    const status = Number(error?.status || error?.statusCode) || 500;
-    if (status === 403) return json({ error: 'Request origin is not allowed.' }, 403);
     console.error('Themes API failed:', error);
-    return json({ error: error?.message || 'Theme request failed.' }, status >= 400 && status < 600 ? status : 500);
+    const safe = apiErrorResponse(error, 'Theme request failed.');
+    return json(safe.body, safe.status);
   }
 };
 

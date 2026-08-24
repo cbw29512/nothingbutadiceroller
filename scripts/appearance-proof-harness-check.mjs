@@ -28,6 +28,9 @@ const required = [
   'callbackValues',
   'returnedValues',
   'NATURAL 20 DETECTED — MANUAL VISUAL GATE',
+  'loadSelfHostedDiceBox()',
+  'assetPath: DICEBOX_ASSET_PATH',
+  'origin: diceBoxOrigin(window.location)',
 ];
 
 for (const reference of required) {
@@ -53,5 +56,7 @@ assert.ok(source.includes('offscreen: false'),
   'Isolated proof harness must use the deterministic onscreen renderer until the visual gate passes.');
 assert.equal(source.includes('diceBox.updateConfig'), false,
   'Isolated proof harness must not mutate live DiceBox mechanics/config after initialization.');
+assert.equal(/cdn\.jsdelivr\.net|unpkg\.com/i.test(source), false,
+  'Proof harness must not execute or fetch DiceBox runtime/assets from public CDNs.');
 
-console.log('Appearance proof harness passed: external theme identity, visible full-size canvas, deterministic onscreen proof rendering, timeout diagnostics, canonical mesh, numeric results, and natural-20 manual visual gate are enforced.');
+console.log('Appearance proof harness passed: same-origin pinned DiceBox, external theme identity, visible full-size canvas, deterministic onscreen proof rendering, timeout diagnostics, canonical mesh, numeric results, and natural-20 manual visual gate are enforced.');

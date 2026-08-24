@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://nothingbutattrpgdiceroller.netlify.app/sitemap.xml

@@ -1,5 +1,6 @@
 import { state, savePreferences } from './state.js';
 import { clearPhysics } from './physics.js';
+import { createCustomHistoryReroll } from './history-records.mjs';
 import { renderHistory, renderResults } from './ui.js';
 
 const MAX_CUSTOM_SIDES = 1_000_000;
@@ -56,7 +57,7 @@ function showCustomTrayResult(sides, result) {
   display.className = 'custom-roll-display';
   display.setAttribute(
     'aria-label',
-    `Custom d${sides} result ${result}. Random range 1 through ${sides}.`,
+    `Custom d${sides} result ${result}. Secure random range 1 through ${sides}.`,
   );
   display.style.setProperty(
     '--custom-result-die-color',
@@ -77,10 +78,19 @@ function showCustomTrayResult(sides, result) {
 
   const caption = document.createElement('span');
   caption.className = 'custom-result-caption';
-  caption.textContent = `SECURE CUSTOM ROLL • RANGE 1–${sides.toLocaleString()}`;
+  caption.textContent = `Secure random • range 1–${sides.toLocaleString()}`;
+
+  const proof = document.createElement('details');
+  proof.className = 'custom-random-proof';
+  proof.dataset.auditLabel = 'SECURE CUSTOM ROLL';
+  const proofSummary = document.createElement('summary');
+  proofSummary.textContent = 'How randomness works';
+  const proofText = document.createElement('p');
+  proofText.textContent = `Web Crypto CSPRNG + rejection sampling gives every result from 1 through ${sides.toLocaleString()} the same chance.`;
+  proof.append(proofSummary, proofText);
 
   die.append(type, value);
-  display.append(die, caption);
+  display.append(die, caption, proof);
   trayMessage.replaceChildren(display);
   trayMessage.classList.remove('hidden');
 }
@@ -99,7 +109,7 @@ export async function performCustomRoll(rawSides) {
     setPhysicsBadgeVisible(false);
     state.hasRolled = true;
 
-    const breakdown = `Custom d${sides} = ${result} • Web Crypto CSPRNG • range 1–${sides}`;
+    const breakdown = `Custom d${sides} = ${result} • Secure random • range 1–${sides}`;
     renderResults(result, breakdown);
     showCustomTrayResult(sides, result);
 
@@ -109,9 +119,10 @@ export async function performCustomRoll(rawSides) {
         minute: '2-digit',
         second: '2-digit',
       }),
-      formula: `1d${sides} (CSPRNG)`,
+      formula: `1d${sides} custom`,
       breakdown,
       total: String(result),
+      reroll: createCustomHistoryReroll(sides),
     });
 
     if (state.history.length > 30) state.history.length = 30;

@@ -53,9 +53,18 @@ const staleAccessId = 'public_fedcba9876543210fedcba9876543210';
 const staleProjection = buildPublicProjection({ set: staleSource }, staleAccessId);
 const currentRecord = { ...record, publicAccessId };
 const staleOwnerRecord = { set: { ...staleSource, visibility: 'private' }, publicAccessId: null };
+const projectionKeys = [{ key: publicRecordKey(publicAccessId) }, { key: publicRecordKey(staleAccessId) }];
 const projectionStore = {
-  async list({ prefix }) {
-    return { blobs: [{ key: publicRecordKey(publicAccessId) }, { key: publicRecordKey(staleAccessId) }].filter((item) => item.key.startsWith(prefix)) };
+  list({ prefix, paginate = false }) {
+    const blobs = projectionKeys.filter((item) => item.key.startsWith(prefix));
+    if (paginate) {
+      return {
+        async *[Symbol.asyncIterator]() {
+          yield { blobs };
+        },
+      };
+    }
+    return Promise.resolve({ blobs });
   },
   async get(key) {
     if (key === publicRecordKey(publicAccessId)) return projection;

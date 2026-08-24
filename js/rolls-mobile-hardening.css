@@ -1,0 +1,67 @@
+@media (max-width: 620px) {
+  .rolls-header {
+    flex-wrap: wrap;
+  }
+
+  .manager-panel,
+  .manager-section-heading > *,
+  .group-builder-heading > *,
+  .option-row > *,
+  .organizer-controls > *,
+  .raw-card > *,
+  .raw-card-controls > *,
+  .homebrew-grid > *,
+  .manager-form-grid > *,
+  .group-fields > *,
+  .group-damage-fields > *,
+  .manager-save-bar > * {
+    min-width: 0;
+  }
+
+  .group-builder-heading,
+  .manager-save-bar {
+    flex-wrap: wrap;
+  }
+
+  .manager-save-bar .manager-save-actions {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+
+  .manager-save-bar .manager-save-actions .btn {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 460px) {
+  .rolls-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: .5rem;
+  }
+
+  .rolls-header .manager-save-actions {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .rolls-header .manager-save-actions .btn {
+    flex: 1;
+    min-width: 0;
+    padding: .55rem .4rem;
+    text-align: center;
+  }
+
+  .manager-form-grid,
+  .raw-card-controls,
+  .group-fields,
+  .group-damage-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .group-builder-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

@@ -1,12 +1,29 @@
 import { CANONICAL_DICE, CUSTOM_FACE_MODE } from './defaults.mjs';
+import { normalizeEdgeInlay } from './inlay-style.mjs';
+import { normalizeSurfacePattern } from './pattern-style.mjs';
+import { normalizeInterior, normalizeTranslucency } from './resin-style.mjs';
+import { normalizeSurfaceFinish } from './surface-style.mjs';
 import { assertValidDiceSet } from './validation.mjs';
 
 function mergeStyle(base, overrides = {}) {
+  const bodyColor = overrides.bodyColor ?? base.bodyColor;
+  const baseTranslucency = normalizeTranslucency(base.translucency, base.bodyColor);
+  const baseInterior = normalizeInterior(base.interior);
+  const baseFinish = normalizeSurfaceFinish(base.finish);
+  const basePattern = normalizeSurfacePattern(base.pattern);
+  const baseInlay = normalizeEdgeInlay(base.inlay);
   return {
-    bodyColor: overrides.bodyColor ?? base.bodyColor,
+    bodyColor,
     faceColor: overrides.faceColor ?? base.faceColor,
     opacity: overrides.opacity ?? base.opacity,
     glow: overrides.glow ? { ...overrides.glow } : { ...base.glow },
+    translucency: overrides.translucency
+      ? normalizeTranslucency(overrides.translucency, bodyColor)
+      : normalizeTranslucency(baseTranslucency, bodyColor),
+    interior: overrides.interior ? normalizeInterior(overrides.interior) : normalizeInterior(baseInterior),
+    finish: overrides.finish ? normalizeSurfaceFinish(overrides.finish) : normalizeSurfaceFinish(baseFinish),
+    pattern: overrides.pattern ? normalizeSurfacePattern(overrides.pattern) : normalizeSurfacePattern(basePattern),
+    inlay: overrides.inlay ? normalizeEdgeInlay(overrides.inlay) : normalizeEdgeInlay(baseInlay),
   };
 }
 
@@ -20,6 +37,8 @@ function faceInstructions(die) {
       assetId: face.assetId ?? null,
       color: face.color ?? null,
       fontId: face.fontId ?? null,
+      scale: face.scale ?? 1,
+      position: face.position ?? 'center',
     },
   ]));
 }

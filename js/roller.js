@@ -3,6 +3,7 @@ import { playDiceSound, playNat20Fanfare, playNat1DoomSound } from './audio.js';
 import { buildPhysicsNotation, countDice, getSkinColor } from './utils.js';
 import { clearPhysics, rollPhysics } from './physics.js';
 import { getCriticalOutcome, parseRollResults } from './roll-results.js';
+import { createStandardHistoryReroll } from './history-records.mjs';
 import { renderHistory, renderPool, renderResults, setStatus, showCrit } from './ui.js';
 
 function emitRollState() {
@@ -67,6 +68,10 @@ export async function performRoll(requestedMode = 'normal', options = {}) {
     ? requestedMode
     : 'normal';
   const quickD20 = Boolean(options.quickD20) && rollMode !== 'normal';
+  const poolOverride = Array.isArray(options.poolOverride)
+    ? options.poolOverride.map((die) => ({ type: die?.type }))
+    : null;
+  const preserveSelection = Boolean(options.preserveSelection);
   const previousHasRolled = state.hasRolled;
 
   state.rolling = true;
@@ -76,7 +81,7 @@ export async function performRoll(requestedMode = 'normal', options = {}) {
   try {
     if (!state.physicsReady) throw new Error('3D physics is not ready yet.');
 
-    const sourcePool = quickD20 ? [{ type: 'd20' }] : state.selectedDice;
+    const sourcePool = quickD20 ? [{ type: 'd20' }] : (poolOverride || state.selectedDice);
     const { pool, notation } = buildPhysicsNotation(sourcePool, rollMode);
     if (!notation.length) {
       setStatus('Choose at least one die.', 'error');
@@ -98,7 +103,7 @@ export async function performRoll(requestedMode = 'normal', options = {}) {
     const results = await rollPhysics(notation, activeDiceColor);
     const parsed = parseRollResults(results, rollMode);
 
-    state.hasRolled = quickD20 ? previousHasRolled : true;
+    state.hasRolled = preserveSelection || quickD20 ? previousHasRolled : true;
     renderResults(parsed.total, parsed.breakdown);
 
     state.history.unshift({
@@ -110,12 +115,13 @@ export async function performRoll(requestedMode = 'normal', options = {}) {
       formula: formulaFor(pool, rollMode),
       breakdown: parsed.breakdown,
       total: String(parsed.total),
+      reroll: createStandardHistoryReroll(pool, rollMode, quickD20),
     });
     if (state.history.length > 30) state.history.length = 30;
     savePreferences();
     renderHistory();
 
-    if (!quickD20 && !state.keepDice) {
+    if (!quickD20 && !preserveSelection && !state.keepDice) {
       state.selectedDice = [];
       renderPool();
     }
