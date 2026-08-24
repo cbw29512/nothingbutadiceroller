@@ -6,6 +6,7 @@ import { bindStudioFaceStyleBatchControl, ensureStudioFaceStyleBatchControl } fr
 import { bindStudioInlayControls, ensureStudioInlayControls } from './studio-inlay-controls.mjs';
 import { bindStudioMobileNavigation } from './studio-mobile-navigation.mjs';
 import { bindStudioPatternControls } from './studio-pattern-controls.mjs';
+import { bindStudioPreviewGeometry } from './studio-preview-geometry.mjs';
 import { bindStudioResinControls } from './studio-resin-controls.mjs';
 import { bindStudioSurfaceControls } from './studio-surface-controls.mjs';
 import { bindStudioVisualControls } from './studio-visual-controls.mjs';
@@ -22,6 +23,7 @@ export function bindStudioControls(context) {
     ensureStudioFacePositionControl(documentRef);
     ensureStudioFaceStyleBatchControl(documentRef);
     bindStudioMobileNavigation({ documentRef, windowRef });
+    bindStudioPreviewGeometry({ documentRef, windowRef });
     q('new-set').addEventListener('click', actions.newSet); q('save-set').addEventListener('click', actions.saveDraft);
     q('lock-set').addEventListener('click', actions.toggleLock); q('publish-set').addEventListener('click', actions.togglePublish);
     const useButton = q('use-set');

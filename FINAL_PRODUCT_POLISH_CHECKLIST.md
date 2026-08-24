@@ -38,6 +38,9 @@ These guardrails apply to every polish item and final release check.
   - Accessibility/flow requirements: all section controls at least 44px, visible focus, no horizontal overflow, global status remains visible, and desktop Dice Studio layout remains unchanged.
   - Validation required before checkoff: dedicated rendered mobile browser test must prove Edit-first visibility, all four section transitions, New Set handoff, preview-face handoff, target sizes, and no horizontal overflow.
 - [ ] 3. Upgrade Dice Studio preview to use the real physical die appearance/geometry where feasible.
+  - Decision: use geometry-faithful previews for d4/d6/d8/d10/d12/d20/d100 with distinct tabletop silhouettes and facet overlays while retaining the existing body/face/glow/resin/finish/pattern/inlay appearance plan. Do not load a second physics engine in Dice Studio; the main roller remains the authoritative 3D physics view.
+  - Performance/accessibility requirements: no extra DiceBox canvas/runtime in Studio, no horizontal overflow, preview selection remains keyboard/button based, and existing face-selection behavior remains intact.
+  - Validation required before checkoff: dedicated rendered browser test must prove seven distinct geometries, facet overlays, preserved appearance attributes, no physics canvas, die selection rerender, and no horizontal overflow.
 - [ ] 4. Group advanced Dice Studio controls into clear progressive sections without hiding power-user functionality.
 - [ ] 5. Add a persistent/sticky Dice Studio Save / Use workflow and move destructive/publishing actions out of the primary path.
 - [ ] 6. Declutter the mobile roller header while keeping Dice Studio, History, account/help/support accessible.
