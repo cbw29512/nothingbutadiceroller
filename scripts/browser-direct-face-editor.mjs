@@ -125,8 +125,6 @@ async function run() {
     await client.evaluate(`(() => { window.confirm = () => true; document.querySelector('#apply-face-style-all')?.click(); })()`);
     await waitFor(client, "document.querySelector('#studio-status')?.textContent.includes('Applied this visual style to all 20 D20 faces.')");
     const batch = await client.evaluate(`(() => {
-      const one = document.querySelector('#face-map .face-node[data-face="1"]');
-      const twenty = document.querySelector('#face-map .face-node[data-face="20"]');
       const sample = [...document.querySelectorAll('#face-map .face-node')].map((node) => ({
         face: node.dataset.face, text: node.textContent, font: node.style.fontFamily, size: node.style.fontSize,
         transform: node.querySelector('[data-face-glyph]')?.style.transform || '', color: node.style.color,
@@ -138,7 +136,7 @@ async function run() {
     assert.equal(batch.twenty.text, 'CRIT', 'Style All must preserve the selected custom face display.');
     for (const face of [batch.one, batch.twenty]) {
       assert.match(face.font, /Georgia|serif/i); assert.ok(parseFloat(face.size) > 0.72); assert.equal(face.transform, 'translate(0.24em, -0.24em)');
-      assert.equal(face.color.toLowerCase(), '#ff00ff');
+      assert.equal(face.color.replace(/\s+/g, ''), 'rgb(255,0,255)');
     }
 
     await client.evaluate("document.querySelector('#save-set')?.click()");

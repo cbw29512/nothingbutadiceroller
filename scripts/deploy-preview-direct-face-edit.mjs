@@ -96,7 +96,7 @@ async function run() {
     })()`);
     assert.equal(batch.count, 20); assert.equal(batch.one.text, '1'); assert.equal(batch.twenty.text, 'CRIT');
     for (const face of [batch.one, batch.twenty]) {
-      assert.match(face.font, /Georgia|serif/i); assert.ok(parseFloat(face.size) > 0.72); assert.equal(face.transform, 'translate(0.24em, -0.24em)'); assert.equal(face.color.toLowerCase(), '#ff00ff');
+      assert.match(face.font, /Georgia|serif/i); assert.ok(parseFloat(face.size) > 0.72); assert.equal(face.transform, 'translate(0.24em, -0.24em)'); assert.equal(face.color.replace(/\s+/g, ''), 'rgb(255,0,255)');
     }
 
     await client.evaluate("document.querySelector('#save-set')?.click()");
