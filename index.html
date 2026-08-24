@@ -4,12 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#090c12">
-  <meta name="description" content="Fast tabletop RPG dice roller with 3D standard dice, ADV/DIS, secure custom dN rolls, saved shortcuts, and visual dice customization.">
+  <meta name="description" content="Free tabletop RPG dice roller with 3D standard dice, ADV/DIS, secure custom dN rolls, saved shortcuts, and visual dice customization.">
+  <meta name="robots" content="index,follow,max-image-preview:large">
   <meta name="application-name" content="Nothing But A Dice Roller">
   <meta name="mobile-web-app-capable" content="yes">
   <link rel="canonical" href="https://nothingbutattrpgdiceroller.netlify.app/">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="manifest" href="/site.webmanifest">
+  <meta property="og:site_name" content="Nothing But A Dice Roller">
+  <meta property="og:locale" content="en_US">
   <meta property="og:title" content="Nothing But A Dice Roller">
   <meta property="og:description" content="Roll standard tabletop dice, ADV/DIS, custom dN, saved shortcuts, and custom visual dice sets.">
   <meta property="og:type" content="website">
@@ -24,7 +27,33 @@
   <meta name="twitter:description" content="Fast tabletop RPG dice rolling with physical 3D standard dice, ADV/DIS, secure custom dN rolls, and visual-only customization.">
   <meta name="twitter:image" content="https://nothingbutattrpgdiceroller.netlify.app/social-card.png">
   <meta name="twitter:image:alt" content="Nothing But A Dice Roller tabletop dice utility">
-  <title>Nothing But A Dice Roller</title>
+  <title>Free 3D TTRPG Dice Roller | Nothing But A Dice Roller</title>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "name": "Nothing But A Dice Roller",
+        "url": "https://nothingbutattrpgdiceroller.netlify.app/",
+        "description": "Free tabletop RPG dice roller with physical 3D standard dice, advantage and disadvantage, secure custom dN rolls, saved shortcuts, and visual dice customization."
+      },
+      {
+        "@type": "WebApplication",
+        "name": "Nothing But A Dice Roller",
+        "url": "https://nothingbutattrpgdiceroller.netlify.app/",
+        "applicationCategory": "UtilitiesApplication",
+        "operatingSystem": "Any",
+        "description": "A browser-based tabletop RPG dice roller with physical 3D standard dice and secure custom numerical dice.",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        }
+      }
+    ]
+  }
+  </script>
   <link rel="stylesheet" href="/styles.css">
   <link rel="stylesheet" href="/themes.css">
   <link rel="stylesheet" href="/account.css">
@@ -39,7 +68,7 @@
         <p class="eyebrow">TABLETOP UTILITY</p>
         <h1>Nothing But A Dice Roller</h1>
       </div>
-      <div class="header-controls">
+      <div class="header-controls" role="group" aria-label="Site controls">
         <button id="sound-toggle-btn" class="btn ghost" type="button" aria-pressed="true">🔊 ON</button>
         <button id="open-styles-btn" class="btn secondary" type="button" aria-label="Open Dice Studio">Dice Studio</button>
         <button id="open-history-btn" class="btn secondary" type="button">History</button>
@@ -48,14 +77,14 @@
       </div>
     </header>
 
-    <main class="app-container">
+    <main id="main-content" class="app-container">
       <section class="controls-panel" aria-label="Dice controls">
         <div>
           <div class="section-heading">
             <span class="section-label">Build your roll</span>
             <span id="pool-summary" class="pool-summary">No dice selected</span>
           </div>
-          <div class="dice-selector" aria-label="Dice selector">
+          <div class="dice-selector" role="group" aria-label="Dice selector">
             <button class="die-btn" data-type="d4" type="button">d4</button>
             <button class="die-btn" data-type="d6" type="button">d6</button>
             <button class="die-btn" data-type="d8" type="button">d8</button>
@@ -80,7 +109,7 @@
         <div>
           <span class="section-label">D20 quick rolls</span>
           <p class="control-help">Press once to roll immediately. ADV/DIS reset after the roll.</p>
-          <div class="adv-btn-group quick-roll-group" aria-label="D20 quick rolls">
+          <div class="adv-btn-group quick-roll-group" role="group" aria-label="D20 quick rolls">
             <button class="adv-btn" data-quick-roll="advantage" type="button" title="Roll d20 with advantage">ROLL ADV</button>
             <button class="adv-btn" data-quick-roll="disadvantage" type="button" title="Roll d20 with disadvantage">ROLL DIS</button>
           </div>
@@ -102,7 +131,7 @@
           <div id="tray-roll-hint" class="tray-roll-hint">SELECT DICE • CLICK / TAP TRAY TO ROLL</div>
         </div>
 
-        <div class="action-buttons tray-actions" aria-label="Roll actions">
+        <div class="action-buttons tray-actions" role="group" aria-label="Roll actions">
           <button id="clear-btn" class="btn danger" type="button">Clear</button>
           <button id="roll-btn" class="btn primary" type="button">Roll Dice</button>
         </div>
@@ -117,7 +146,7 @@
       </section>
     </main>
 
-    <nav class="mobile-play-dock" aria-label="Mobile dice controls">
+    <section class="mobile-play-dock" aria-label="Mobile dice controls">
       <div id="custom-die-popover" class="custom-die-popover" popover="auto">
         <label for="custom-die-sides">CUSTOM DIE</label>
         <div class="custom-die-entry">
@@ -128,7 +157,7 @@
         <span class="custom-die-note">Enter 3 or d3. Secure random range 1–N, up to d1,000,000.</span>
       </div>
 
-      <div class="mobile-dice-row">
+      <div class="mobile-dice-row" role="group" aria-label="Dice selector">
         <button class="mobile-die-btn" data-type="d4" type="button">d4</button>
         <button class="mobile-die-btn" data-type="d6" type="button">d6</button>
         <button class="mobile-die-btn" data-type="d8" type="button">d8</button>
@@ -138,15 +167,15 @@
         <button class="mobile-die-btn" data-type="d100" type="button">d100</button>
         <button id="mobile-custom-die-btn" class="mobile-die-btn custom-die-btn" type="button" aria-expanded="false" aria-controls="custom-die-popover" popovertarget="custom-die-popover" popovertargetaction="toggle">CUSTOM</button>
       </div>
-      <div class="mobile-mode-row" aria-label="D20 quick rolls">
+      <div class="mobile-mode-row" role="group" aria-label="D20 quick rolls">
         <button class="mobile-mode-btn" data-quick-roll="advantage" type="button" aria-label="Roll with advantage">ADV</button>
         <button class="mobile-mode-btn" data-quick-roll="disadvantage" type="button" aria-label="Roll with disadvantage">DIS</button>
       </div>
-      <div class="mobile-action-row">
+      <div class="mobile-action-row" role="group" aria-label="Roll actions">
         <button id="mobile-clear-btn" class="btn danger" type="button">Clear</button>
         <button id="mobile-roll-btn" class="btn primary mobile-roll" type="button">ROLL DICE</button>
       </div>
-    </nav>
+    </section>
 
     <aside id="history-drawer" class="drawer hidden" aria-hidden="true">
       <button class="drawer-backdrop" type="button" aria-label="Close history"></button>
