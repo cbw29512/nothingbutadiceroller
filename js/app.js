@@ -7,6 +7,7 @@ import { assertStylesLoaded } from './deployment.js';
 import { initAccount } from './account.js';
 import { closeCustomDieControls, initCustomDieControls } from './custom-controls.js';
 import { closeDrawers, initDrawerControls } from './drawer-controls.js';
+import { initMobileHeaderMenu } from './mobile-header-menu.js';
 import { canRollFromTray, initTrayControls } from './tray-controls.js';
 import { prepareActiveDiceAppearance } from './appearance/appearance-runtime.mjs';
 import { applyLiveTrayAppearance } from './appearance/live-integration.mjs';
@@ -98,6 +99,7 @@ function bindEvents() {
     bindDiceButtons('.mobile-die-btn[data-type]');
     bindQuickRollButtons();
     initCustomDieControls();
+    initMobileHeaderMenu();
     initDrawerControls();
     initTrayControls(performActiveRoll, canRollActiveFromTray);
     document.addEventListener('rollstatechange', syncControls);

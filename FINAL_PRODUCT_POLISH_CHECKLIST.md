@@ -16,8 +16,6 @@ This checklist is the source of truth for the final product-polish pass. We will
 
 ## Site-wide product quality guardrails
 
-These guardrails apply to every polish item and final release check.
-
 - The main roller interaction is protected UX: the dice selector, tray, shortcut toolbar, ADV/DIS controls, roll action, and result remain the primary path. Do not replace them with a marketing hero, onboarding wall, modal, or feature dashboard.
 - Preserve the fast guest path. A user must be able to arrive, choose dice, and roll without creating an account or understanding advanced features.
 - Secondary features remain secondary: Dice Studio, History, account, help, support, Community, and shortcut management must stay discoverable without competing with the core roll task.
@@ -50,6 +48,9 @@ These guardrails apply to every polish item and final release check.
   - Accessibility/flow requirements: sticky bar must not obscure focused controls, mobile action targets remain at least 44px, destructive actions remain explicitly labeled, and all existing save/use/lock/publish/delete authorization rules remain unchanged.
   - Validation required before checkoff: desktop/mobile rendered test must prove action placement, sticky positioning, dirty/clean feedback, save recovery, secondary disclosure, mobile target size/focus visibility, and no horizontal overflow.
 - [ ] 6. Declutter the mobile roller header while keeping Dice Studio, History, account/help/support accessible.
+  - Decision: mobile header exposes four primary controls — `Sound`, `Dice Studio`, `History`, and `More`. `More` contains Sign In/My Dice, How To & Help, and Support Project. Desktop keeps the existing full header.
+  - Accessibility/flow requirements: primary and menu targets at least 44px, Escape/outside-click closure, account drawer returns focus to the mobile account opener, no horizontal overflow, and protected tray/dice controls remain untouched.
+  - Validation required before checkoff: rendered mobile/desktop test must prove visibility rules, menu links, account drawer focus return, Escape behavior, target sizes, desktop preservation, tray/dice structural preservation, and no horizontal overflow.
 - [ ] 7. Polish shortcut-manager onboarding/gear affordance without changing the protected shortcut mechanics.
 - [ ] 8. Simplify technical custom-die result copy while retaining an accessible secure-random explanation.
 - [ ] 9. Add useful roll-history actions such as exact reroll and copy, without changing logged roll semantics.

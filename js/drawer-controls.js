@@ -21,6 +21,12 @@ function getDrawers() {
   ];
 }
 
+function getDrawerOpeners(name) {
+  const primary = document.getElementById(`open-${name}-btn`);
+  const extras = [...document.querySelectorAll(`[data-drawer-open="${name}"]`)];
+  return [...new Set([primary, ...extras].filter(Boolean))];
+}
+
 function setDrawerVisible(drawer, open) {
   if (!drawer) return;
   drawer.classList.toggle('hidden', !open);
@@ -94,13 +100,14 @@ function trapDrawerFocus(event) {
 export function initDrawerControls() {
   try {
     getDrawers().forEach(([name, drawer]) => {
-      const opener = document.getElementById(`open-${name}-btn`);
-      opener?.addEventListener('click', () => {
-        if (name === 'styles') {
-          window.location.assign('/customize.html');
-          return;
-        }
-        openDrawer(drawer, opener);
+      getDrawerOpeners(name).forEach((opener) => {
+        opener.addEventListener('click', () => {
+          if (name === 'styles') {
+            window.location.assign('/customize.html');
+            return;
+          }
+          openDrawer(drawer, opener);
+        });
       });
       document.getElementById(`close-${name}-btn`)?.addEventListener('click', closeDrawers);
     });
