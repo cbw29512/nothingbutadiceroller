@@ -34,13 +34,9 @@ function oneMatch(source, regex, label) {
   return matches[0][1];
 }
 
-function decodeBasicEntities(value) {
-  return value.replaceAll('&amp;', '&').replaceAll('&quot;', '"').replaceAll('&#39;', "'");
-}
-
 async function validateGrowthPage(path, canonical) {
   const html = await readFile(resolve(root, path), 'utf8');
-  const title = decodeBasicEntities(oneMatch(html, /<title>([^<]+)<\/title>/gi, `${path} title`)).trim();
+  const title = oneMatch(html, /<title>([^<]+)<\/title>/gi, `${path} title`).trim();
   const description = oneMatch(html, /<meta\s+name="description"\s+content="([^"]+)"/gi, `${path} meta description`).trim();
   const robots = oneMatch(html, /<meta\s+name="robots"\s+content="([^"]+)"/gi, `${path} robots`).toLowerCase();
   const actualCanonical = oneMatch(html, /<link\s+rel="canonical"\s+href="([^"]+)"/gi, `${path} canonical`);
