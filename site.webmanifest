@@ -2,12 +2,37 @@
   "id": "/",
   "name": "Nothing But A Dice Roller",
   "short_name": "Dice Roller",
-  "description": "Fast tabletop RPG dice roller with physical 3D standard dice and secure custom dN rolls.",
+  "description": "Fast tabletop RPG dice roller with physical 3D standard dice, ADV/DIS, secure custom dN rolls, and free dice probability resources.",
+  "lang": "en-US",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "background_color": "#090c12",
   "theme_color": "#090c12",
+  "categories": ["games", "utilities", "entertainment"],
+  "shortcuts": [
+    {
+      "name": "Roll Dice",
+      "short_name": "Roll Dice",
+      "description": "Open the main tabletop RPG dice roller.",
+      "url": "/",
+      "icons": [{"src": "/pwa-icon-192.png", "sizes": "192x192", "type": "image/png"}]
+    },
+    {
+      "name": "D20 Probability",
+      "short_name": "D20 Odds",
+      "description": "Compare normal, advantage, and disadvantage d20 odds.",
+      "url": "/dice-probability.html",
+      "icons": [{"src": "/pwa-icon-192.png", "sizes": "192x192", "type": "image/png"}]
+    },
+    {
+      "name": "Dice Resources",
+      "short_name": "Resources",
+      "description": "Open free dice guides, probability tools, and roller resources.",
+      "url": "/resources.html",
+      "icons": [{"src": "/pwa-icon-192.png", "sizes": "192x192", "type": "image/png"}]
+    }
+  ],
   "icons": [
     {
       "src": "/favicon.svg",
