@@ -149,6 +149,13 @@ export function createShortcutPressController({
   });
 }
 
+function showFocusFallback(button, item) {
+  const host = button.closest('.shortcut-toolbar-section')?.querySelector('.shortcut-tooltip');
+  if (!host) return;
+  host.textContent = item.name.trim();
+  host.hidden = false;
+}
+
 function bindPress(button, item, { onActivate, onInfo, onInfoHide }) {
   const controller = createShortcutPressController({
     onActivate: (source) => onActivate?.(item, { source }),
@@ -168,7 +175,14 @@ function bindPress(button, item, { onActivate, onInfo, onInfoHide }) {
   button.addEventListener('click', () => {
     if (!button.disabled) controller.click();
   });
-  button.addEventListener('focus', () => controller.focus());
+  button.addEventListener('focus', () => {
+    showFocusFallback(button, item);
+    try {
+      controller.focus();
+    } catch (error) {
+      console.error('Failed to enrich focused shortcut details:', error);
+    }
+  });
   button.addEventListener('blur', () => controller.blur());
   button.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') controller.blur();
