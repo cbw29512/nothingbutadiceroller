@@ -45,6 +45,7 @@ async function run() {
       '/',
       '/js/app.js',
       '/vendor/dice-box-1.1.4/dice-box.es.min.js',
+      '/vendor/dice-box-1.1.4/Dice.min.js',
       '/vendor/dice-box-1.1.4/world.offscreen.min.js',
       '/vendor/dice-box-1.1.4/assets/ammo/ammo.wasm.wasm',
       '/vendor/dice-box-1.1.4/assets/themes/default/default.json',
@@ -77,7 +78,7 @@ async function run() {
     const apiFailedOffline = await client.evaluate(`fetch('/api/configurations').then(() => false).catch(() => true)`);
     assert.equal(apiFailedOffline, true, 'API requests must remain network-only and fail offline rather than returning cached account data.');
 
-    console.log('Offline basic roller passed: root shell and pinned Default DiceBox assets work offline, physical d20 remains 1-20, and API/Identity paths are excluded from cache.');
+    console.log('Offline basic roller passed: root shell and every pinned Default DiceBox runtime asset work offline, physical d20 remains 1-20, and API/Identity paths are excluded from cache.');
   } finally {
     if (browser?.client) {
       await browser.client.send('Network.emulateNetworkConditions', {

@@ -17,6 +17,7 @@ const manifest = JSON.parse(manifestSource);
 for (const path of [
   "'/js/app.js'",
   "'/vendor/dice-box-1.1.4/dice-box.es.min.js'",
+  "'/vendor/dice-box-1.1.4/Dice.min.js'",
   "'/vendor/dice-box-1.1.4/world.none.min.js'",
   "'/vendor/dice-box-1.1.4/world.offscreen.min.js'",
   "'/vendor/dice-box-1.1.4/world.onscreen.min.js'",
@@ -46,8 +47,9 @@ assert.ok(app.includes('Offline mode uses Default Dice.'), 'Offline mode must te
 assert.ok(appearance.includes("if (!allowCustom) return defaultRuntime('Offline mode uses immutable Default Dice.');"), 'Appearance runtime must fail closed to immutable Default Dice offline.');
 
 assert.ok(pkg.scripts?.build?.includes('node scripts/offline-build.mjs'), 'Production build must copy sw.js only after the main dist build exists.');
+assert.ok(pkg.scripts?.build?.includes('node scripts/vendor-dicebox-runtime.mjs'), 'Production build must stage the locked DiceBox runtime required by the offline core.');
 assert.equal(manifest.display, 'standalone');
 assert.equal(manifest.start_url, '/');
 assert.equal(manifest.scope, '/');
 
-console.log('Offline support contract passed: installable shell is root-only, APIs/Identity/custom cloud data are network-only, registration is post-load, and offline appearance fails closed to immutable Default Dice.');
+console.log('Offline support contract passed: installable shell includes every pinned Default Dice runtime asset, APIs/Identity/custom cloud data are network-only, registration is post-load, and offline appearance fails closed to immutable Default Dice.');
