@@ -4,6 +4,7 @@ import { replaceVisualFace, removeVisualFace, useRawFaces } from './face-customi
 import { normalizeFaceFontId } from './face-fonts.mjs';
 import { normalizeFaceGlyphPosition } from './face-glyph-position.mjs';
 import { normalizeFaceGlyphScale } from './face-glyph-scale.mjs';
+import { setGlowEnabled } from './glow-controls.mjs';
 import { buildAppearanceRenderPlan } from './render-plan.mjs';
 import { MAX_BROWSER_TRAY_IMAGE_BYTES, MAX_TRAY_IMAGE_BYTES } from './tray-image.mjs';
 
@@ -57,7 +58,7 @@ export function bindStudioVisualControls(context) {
   });
   q('dice-glow-enabled').addEventListener('change', () => {
     const enabled = q('dice-glow-enabled').checked;
-    updateDraft((set) => { set.appearance.diceSet.defaultStyle.glow.enabled = enabled; });
+    updateDraft((set) => { setGlowEnabled(set.appearance.diceSet.defaultStyle.glow, enabled); });
     setStatus(enabled ? 'Number glow enabled for every die. Save the set to keep it.' : 'Set-wide number glow disabled. Save the set to keep it.', 'ready');
   });
   q('dice-glow-color').addEventListener('input', () => updateDraft((set) => {
@@ -73,7 +74,7 @@ export function bindStudioVisualControls(context) {
   });
   q('die-glow-enabled').addEventListener('change', () => {
     const type = getSelectedDie(); const enabled = q('die-glow-enabled').checked;
-    updateDraft((set) => { ensureDieGlow(set, type).enabled = enabled; });
+    updateDraft((set) => { setGlowEnabled(ensureDieGlow(set, type), enabled); });
     setStatus(enabled
       ? `${type.toUpperCase()} number glow enabled for every face on this die. Save the set to keep it.`
       : `${type.toUpperCase()} number glow disabled. Save the set to keep it.`, 'ready');
@@ -82,7 +83,7 @@ export function bindStudioVisualControls(context) {
     const glow = ensureDieGlow(set, getSelectedDie()); glow.color = q('die-glow-color').value; glow.intensity = 0.75;
   }));
   q('tray-color').addEventListener('input', () => updateDraft((set) => { set.appearance.tray.color = q('tray-color').value; }));
-  q('tray-glow-enabled').addEventListener('change', () => updateDraft((set) => { set.appearance.tray.glow.enabled = q('tray-glow-enabled').checked; }));
+  q('tray-glow-enabled').addEventListener('change', () => updateDraft((set) => { setGlowEnabled(set.appearance.tray.glow, q('tray-glow-enabled').checked); }));
   q('tray-glow-color').addEventListener('input', () => updateDraft((set) => {
     set.appearance.tray.glow.color = q('tray-glow-color').value; set.appearance.tray.glow.intensity = 0.75;
   }));
