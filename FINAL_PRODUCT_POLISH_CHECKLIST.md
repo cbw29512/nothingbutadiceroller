@@ -42,6 +42,9 @@ These guardrails apply to every polish item and final release check.
   - Performance/accessibility requirements: no extra DiceBox canvas/runtime in Studio, no horizontal overflow, preview selection remains keyboard/button based, and existing face-selection behavior remains intact.
   - Validation required before checkoff: dedicated rendered browser test must prove seven distinct geometries, facet overlays, preserved appearance attributes, no physics canvas, die selection rerender, and no horizontal overflow.
 - [ ] 4. Group advanced Dice Studio controls into clear progressive sections without hiding power-user functionality.
+  - Decision: group the existing editor into native progressive sections: `Dice`, `Material`, `Surface`, `Faces`, and `Tray`. `Dice` opens by default; other sections remain one tap/click away and all existing controls stay in the DOM.
+  - Flow/accessibility requirements: native keyboard-operable disclosure controls, at least 44px targets on mobile, visible focus, no horizontal overflow, New Set/owned-set selection opens Dice, and selecting a preview face opens Faces and focuses the face editor.
+  - Validation required before checkoff: rendered desktop/mobile test must prove all five sections, correct fieldset grouping, no lost controls, target size, New Set handoff, face-edit handoff, and no horizontal overflow.
 - [ ] 5. Add a persistent/sticky Dice Studio Save / Use workflow and move destructive/publishing actions out of the primary path.
 - [ ] 6. Declutter the mobile roller header while keeping Dice Studio, History, account/help/support accessible.
 - [ ] 7. Polish shortcut-manager onboarding/gear affordance without changing the protected shortcut mechanics.

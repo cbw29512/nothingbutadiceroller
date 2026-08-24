@@ -7,6 +7,7 @@ import { bindStudioInlayControls, ensureStudioInlayControls } from './studio-inl
 import { bindStudioMobileNavigation } from './studio-mobile-navigation.mjs';
 import { bindStudioPatternControls } from './studio-pattern-controls.mjs';
 import { bindStudioPreviewGeometry } from './studio-preview-geometry.mjs';
+import { bindStudioProgressiveSections } from './studio-progressive-sections.mjs';
 import { bindStudioResinControls } from './studio-resin-controls.mjs';
 import { bindStudioSurfaceControls } from './studio-surface-controls.mjs';
 import { bindStudioVisualControls } from './studio-visual-controls.mjs';
@@ -24,6 +25,7 @@ export function bindStudioControls(context) {
     ensureStudioFaceStyleBatchControl(documentRef);
     bindStudioMobileNavigation({ documentRef, windowRef });
     bindStudioPreviewGeometry({ documentRef, windowRef });
+    const progressiveSections = bindStudioProgressiveSections({ documentRef });
     q('new-set').addEventListener('click', actions.newSet); q('save-set').addEventListener('click', actions.saveDraft);
     q('lock-set').addEventListener('click', actions.toggleLock); q('publish-set').addEventListener('click', actions.togglePublish);
     const useButton = q('use-set');
@@ -59,6 +61,7 @@ export function bindStudioControls(context) {
           }
           q('logical-face').value = logicalFace;
           dice.select(type);
+          progressiveSections?.open('faces');
           const editor = q('face-value');
           if (editor && !editor.disabled) {
             editor.focus(); editor.select();
@@ -72,7 +75,7 @@ export function bindStudioControls(context) {
         return;
       }
       const type = event.target.closest('[data-die]')?.dataset.die;
-      if (type) dice.select(type);
+      if (type) { dice.select(type); progressiveSections?.open('dice'); }
     });
     bindFaceSymbolPicker({ q, setStatus, documentRef });
     bindStudioVisualControls({
