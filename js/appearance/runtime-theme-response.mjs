@@ -28,9 +28,20 @@ function glowSettings(payload) {
 
 function glowFilter(glow) {
   if (!glow.enabled || glow.intensity <= 0) return '';
-  const blur = (2 + (10 * glow.intensity)).toFixed(2);
-  const opacity = (0.3 + (0.7 * glow.intensity)).toFixed(2);
-  return `<filter id="numberGlow" x="-70%" y="-70%" width="240%" height="240%" color-interpolation-filters="sRGB"><feGaussianBlur in="SourceAlpha" stdDeviation="${blur}" result="blur"/><feFlood flood-color="${escapeXml(glow.color)}" flood-opacity="${opacity}" result="glowColor"/><feComposite in="glowColor" in2="blur" operator="in" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>`;
+  const spread = (1.5 + (5.5 * glow.intensity)).toFixed(2);
+  const blur = (5 + (18 * glow.intensity)).toFixed(2);
+  const opacity = (0.65 + (0.35 * glow.intensity)).toFixed(2);
+  return `<filter id="numberGlow" x="-100%" y="-100%" width="300%" height="300%" color-interpolation-filters="sRGB"><feMorphology in="SourceAlpha" operator="dilate" radius="${spread}" result="expanded"/><feGaussianBlur in="expanded" stdDeviation="${blur}" result="blur"/><feFlood flood-color="${escapeXml(glow.color)}" flood-opacity="${opacity}" result="glowColor"/><feComposite in="glowColor" in2="blur" operator="in" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>`;
+}
+
+function faceText(entry, glow) {
+  const [value, color, fontId, x, y, fontPx] = entry;
+  const common = `x="${x}" y="${y}" font-family="${escapeXml(faceFontStack(fontId))}" font-size="${fontPx}" font-weight="700" text-anchor="middle" dominant-baseline="central"`;
+  const escaped = escapeXml(value);
+  const halo = glow.enabled && glow.intensity > 0
+    ? `<text ${common} fill="${escapeXml(glow.color)}" stroke="${escapeXml(glow.color)}" stroke-width="${(1.5 + (4.5 * glow.intensity)).toFixed(2)}" stroke-linejoin="round" paint-order="stroke fill" filter="url(#numberGlow)" data-number-glow="halo">${escaped}</text>`
+    : '';
+  return `${halo}<text ${common} fill="${escapeXml(color)}" data-number-glow="face">${escaped}</text>`;
 }
 
 export function buildRuntimeThemeConfig(payload) {
@@ -58,10 +69,7 @@ export function buildRuntimeThemeSvg(payload) {
   const surface = runtimeSurfaceSettings(valid);
   const pattern = runtimePatternSettings(valid);
   const inlay = runtimeInlaySettings(valid);
-  const filterAttribute = glow.enabled && glow.intensity > 0 ? ' filter="url(#numberGlow)"' : '';
   const defs = glowFilter(glow) + runtimeResinDefs(resin) + runtimePatternDefs(pattern) + runtimeSurfaceDefs(surface);
-  const text = valid.o.map(([value, color, fontId, x, y, fontPx]) => (
-    `<text x="${x}" y="${y}" fill="${color}" font-family="${faceFontStack(fontId)}" font-size="${fontPx}" font-weight="700" text-anchor="middle" dominant-baseline="central"${filterAttribute}>${escapeXml(value)}</text>`
-  )).join('');
+  const text = valid.o.map((entry) => faceText(entry, glow)).join('');
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${valid.s}" height="${valid.s}" viewBox="0 0 ${valid.s} ${valid.s}">${defs ? `<defs>${defs}</defs>` : ''}${runtimeResinArtwork(resin, valid)}${runtimePatternArtwork(pattern, valid)}${runtimeSurfaceArtwork(surface)}${runtimeInlayArtwork(inlay, valid)}${text}</svg>`;
 }

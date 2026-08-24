@@ -59,6 +59,8 @@ async function run() {
       result: document.querySelector('#logical-result-label')?.textContent || '',
       text: document.querySelector('.studio-preview-die[data-die="d4"] span')?.textContent || '',
       shadow: document.querySelector('.studio-preview-die[data-die="d4"] span')?.style.textShadow || '',
+      mapShadow: document.querySelector('#face-map [data-face="4"] [data-face-glyph]')?.style.textShadow || '',
+      mapGlow: document.querySelector('#face-map [data-face="4"] [data-face-glyph]')?.dataset.numberGlow || '',
       glowChecked: Boolean(document.querySelector('#die-glow-enabled')?.checked),
       glowColor: document.querySelector('#die-glow-color')?.value || '',
     }))()`);
@@ -67,7 +69,9 @@ async function run() {
     assert.equal(preview.text, '4');
     assert.equal(preview.glowChecked, true);
     assert.equal(preview.glowColor.toLowerCase(), '#00ffcc');
-    assert.ok(preview.shadow && preview.shadow !== 'none', 'Live d4 face 4 must visibly glow in the Studio preview.');
+    assert.ok(preview.shadow && preview.shadow !== 'none', 'Live d4 face 4 must visibly glow in the Studio model preview.');
+    assert.equal(preview.mapGlow, 'active', 'Live d4 face map must identify enabled number glow.');
+    assert.ok(preview.mapShadow && preview.mapShadow !== 'none', 'Live d4 face map must visibly render number glow too.');
 
     await client.evaluate("document.querySelector('#save-set')?.click()");
     await waitFor(client, "document.querySelector('#studio-status')?.textContent.includes('Dice set saved.')");
@@ -91,14 +95,39 @@ async function run() {
     assert.match(roll.breakdown, /d4/i);
     assert.ok(roll.diffuse.length >= 1, 'Live glowing d4 must request a generated diffuse texture.');
 
-    let generatedGlowFound = false;
+    let generatedGlowUrl = '';
     for (const url of roll.diffuse) {
       const svg = await fetchTextWithRetry(url);
-      if (svg.includes('id="numberGlow"') && svg.toLowerCase().includes('#00ffcc')) generatedGlowFound = true;
+      if (svg.includes('id="numberGlow"') && svg.toLowerCase().includes('#00ffcc') && svg.includes('data-number-glow="halo"')) {
+        generatedGlowUrl = url;
+        break;
+      }
     }
-    assert.equal(generatedGlowFound, true, 'Live generated d4 texture must contain the selected #00ffcc number glow.');
+    assert.ok(generatedGlowUrl, 'Live generated d4 texture must contain the selected #00ffcc baked number halo.');
 
-    console.log('Live d4 number-glow acceptance passed: face 4 preview glows, Save/Use paths work, generated Netlify texture contains the glow, and the physical d4 still returns 1-4.');
+    const raster = await client.evaluate(`(async () => {
+      const response = await fetch(${JSON.stringify(generatedGlowUrl)}, { cache: 'no-store' });
+      const svg = await response.text();
+      const objectUrl = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
+      try {
+        const image = new Image();
+        image.src = objectUrl;
+        await new Promise((resolve, reject) => { image.onload = resolve; image.onerror = () => reject(new Error('Glow SVG did not rasterize.')); });
+        const canvas = document.createElement('canvas'); canvas.width = image.naturalWidth; canvas.height = image.naturalHeight;
+        const context = canvas.getContext('2d', { willReadFrequently: true }); context.drawImage(image, 0, 0);
+        const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
+        let cyanPixels = 0;
+        for (let index = 0; index < pixels.length; index += 4) {
+          const r = pixels[index], g = pixels[index + 1], b = pixels[index + 2], a = pixels[index + 3];
+          if (a > 25 && r < 90 && g > 145 && b > 120) cyanPixels += 1;
+        }
+        return { width: canvas.width, height: canvas.height, cyanPixels };
+      } finally { URL.revokeObjectURL(objectUrl); }
+    })()`);
+    assert.equal(raster.width, 1024); assert.equal(raster.height, 1024);
+    assert.ok(raster.cyanPixels > 100, `Rendered glow texture must contain a visible cyan halo; received ${raster.cyanPixels} cyan pixels.`);
+
+    console.log(`Live d4 number-glow acceptance passed: model + face-map glow are visible, generated texture rasterized ${raster.cyanPixels} cyan halo pixels, Save/Use works, and physical d4 remains 1-4.`);
   } finally {
     if (browser) await browser.close().catch((error) => console.warn('D4 glow browser cleanup failed:', error.message));
   }

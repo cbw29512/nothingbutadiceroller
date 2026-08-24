@@ -79,11 +79,11 @@ export function bindStudioControls(context) {
       const type = event.target.closest('[data-die]')?.dataset.die;
       if (type) { dice.select(type); progressiveSections?.open('dice'); }
     });
-    bindFaceSymbolPicker({ q, setStatus, documentRef });
-    bindStudioVisualControls({
+    const visualControls = bindStudioVisualControls({
       q, updateDraft: draft.update, getDraft: draft.get, setDraft: draft.set,
       getSelectedDie: dice.get, getOwnerId: ownerId, refresh, setStatus,
     });
+    bindFaceSymbolPicker({ q, setStatus, applyFace: visualControls.applyFace, documentRef });
     bindStudioFaceStyleBatchControl({
       q, getDraft: draft.get, setDraft: draft.set, getSelectedDie: dice.get,
       getOwnerId: ownerId, refresh, setStatus, windowRef,

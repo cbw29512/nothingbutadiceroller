@@ -5,6 +5,7 @@ import { getVisualFace } from './face-customization.mjs';
 import { faceFontStack } from './face-fonts.mjs';
 import { faceGlyphPreviewTransform } from './face-glyph-position.mjs';
 import { normalizeFaceGlyphScale } from './face-glyph-scale.mjs';
+import { numberGlowTextShadow } from './number-glow.mjs';
 import { buildAppearanceRenderPlan } from './render-plan.mjs';
 import { renderFaceMap } from './studio-face-map.mjs';
 import { ensureStudioFaceFontControl, fillStudioFaceFontControl } from './studio-face-font-controls.mjs';
@@ -22,12 +23,6 @@ const LEGACY_ICONS = { skull: '☠', star: '★', flame: '🔥', shield: '◆', 
 const FACE_EDITOR_DICE = new Set(getSupportedFaceEditorDice());
 function q(id) { return document.getElementById(id); }
 function visualText(face) { return face.kind === 'icon' ? (LEGACY_ICONS[face.value] || String(face.value || '◆')) : String(face.value); }
-function numberGlowShadow(glow) {
-  if (!glow?.enabled) return 'none';
-  const intensity = Number.isFinite(glow.intensity) ? Math.max(0, Math.min(1, glow.intensity)) : 0;
-  const blur = Math.round(5 + (13 * intensity));
-  return `0 0 ${blur}px ${glow.color}, 0 0 ${Math.max(2, Math.round(blur / 2))}px ${glow.color}`;
-}
 function makeSetCard(set, selectedId, onSelect, subtitle) {
   const button = document.createElement('button');
   button.type = 'button'; button.className = `studio-set-card${set.id === selectedId ? ' active' : ''}`;
@@ -57,7 +52,7 @@ export function renderCommunity(sets, selectedId, onSelect) {
   if (!sets.length) { const empty = document.createElement('p'); empty.className = 'studio-note'; empty.textContent = 'No public locked dice sets yet.'; host.replaceChildren(empty); return; }
   host.replaceChildren(...sets.map((set) => makeSetCard(set, selectedId, onSelect, 'Public • Locked • Read only')));
 }
-export function renderPreview(set, selectedDie) {
+export function renderPreview(set, selectedDie, selectedFace = null) {
   const plan = buildAppearanceRenderPlan(set);
   const tray = q('studio-preview-tray');
   const image = safeTrayImageUrl(plan.tray.image);
@@ -78,15 +73,20 @@ export function renderPreview(set, selectedDie) {
     die.style.color = style.faceColor;
     die.style.opacity = style.translucency?.enabled ? '1' : String(style.opacity);
     die.style.boxShadow = buildSurfacePreviewShadow(style);
-    const results = getCanonicalFaceResults(type); const previewResult = type === 'd100' ? 0 : results.at(-1);
+    const results = getCanonicalFaceResults(type);
+    const requestedFace = Number(selectedFace);
+    const previewResult = type === selectedDie && results.includes(requestedFace)
+      ? requestedFace
+      : (type === 'd100' ? 0 : results.at(-1));
     const face = getVisualFace(set, type, previewResult);
     die.innerHTML = `<span></span><small>${type}</small>`;
     const faceText = die.querySelector('span');
+    faceText.dataset.numberGlow = style.glow?.enabled ? 'active' : 'off';
     faceText.textContent = visualText(face);
     faceText.style.fontFamily = faceFontStack(face.fontId);
     faceText.style.fontSize = `${normalizeFaceGlyphScale(face.scale)}em`;
     faceText.style.transform = faceGlyphPreviewTransform(face.position);
-    faceText.style.textShadow = numberGlowShadow(style.glow);
+    faceText.style.textShadow = numberGlowTextShadow(style.glow);
     if (FACE_EDITOR_DICE.has(type)) {
       faceText.dataset.previewFace = String(previewResult);
       faceText.title = `Edit face ${getCanonicalFaceLabel(type, previewResult)}`;
@@ -131,7 +131,9 @@ export function fillEditor(set, selectedDie, activeId, ownerId, cloudEnabled) {
     fillStudioFaceFontControl({ q, face, editable });
     fillStudioFaceScaleControl({ q, face, editable });
     fillStudioFacePositionControl({ q, face, editable });
-    document.querySelectorAll('[data-face-edit-control]').forEach((el) => { el.disabled = !editable; }); renderFaceMap(set, selectedDie, faceNumber, selectFace);
+    document.querySelectorAll('[data-face-edit-control]').forEach((el) => { el.disabled = !editable; });
+    renderFaceMap(set, selectedDie, faceNumber, selectFace);
+    renderPreview(set, selectedDie, faceNumber);
   };
   selectFace(selectedFace);
 }

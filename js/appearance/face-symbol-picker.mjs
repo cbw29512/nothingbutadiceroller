@@ -52,7 +52,7 @@ function buildPicker(documentRef) {
 
   const intro = documentRef.createElement('p');
   intro.className = 'studio-note';
-  intro.textContent = 'Tap a symbol to put it on the selected face. No keyboard shortcut needed.';
+  intro.textContent = 'Tap a symbol to apply it immediately to the selected face. No extra Apply Face step is required.';
   details.append(intro);
 
   for (const group of SYMBOL_GROUPS) {
@@ -68,9 +68,10 @@ function buildPicker(documentRef) {
   return details;
 }
 
-export function bindFaceSymbolPicker({ q, setStatus, documentRef = document }) {
+export function bindFaceSymbolPicker({ q, setStatus, applyFace, documentRef = document }) {
   const input = q('face-value');
   if (!input || documentRef.getElementById('face-symbol-picker')) return;
+  if (typeof applyFace !== 'function') throw new Error('Face symbol picker requires the audited face-commit action.');
   const picker = buildPicker(documentRef);
   input.closest('.studio-field')?.insertAdjacentElement('afterend', picker);
 
@@ -79,15 +80,13 @@ export function bindFaceSymbolPicker({ q, setStatus, documentRef = document }) {
     if (!button || button.disabled || input.disabled) return;
     const symbol = button.dataset.faceSymbol;
     if (!symbol) return;
-    const start = input.selectionStart ?? 0;
-    const end = input.selectionEnd ?? 0;
-    input.value = start !== end
-      ? `${input.value.slice(0, start)}${symbol}${input.value.slice(end)}`
-      : symbol;
+    input.value = symbol;
     input.dispatchEvent(new Event('input', { bubbles: true }));
+    const applied = applyFace();
+    if (!applied) return;
     input.focus();
     input.setSelectionRange(input.value.length, input.value.length);
-    setStatus(`${button.title} selected for this face. Press Apply Face to keep it.`, 'ready');
+    setStatus(`${button.title} applied to face ${q('logical-face')?.value}. Save the dice set to keep it.`, 'ready');
   });
 }
 

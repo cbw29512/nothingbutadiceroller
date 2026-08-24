@@ -28,6 +28,28 @@ function readImageFile(file, maxBytes = MAX_TRAY_IMAGE_BYTES) {
     reader.readAsDataURL(file);
   });
 }
+
+export function applyStudioFaceAppearance(context) {
+  const { q, getDraft, setDraft, getSelectedDie, getOwnerId, refresh, setStatus } = context;
+  try {
+    const set = getDraft();
+    if (!canEditDiceSet(set, getOwnerId())) throw new Error('Unlock this set before editing faces.');
+    const logicalFace = q('logical-face').value;
+    const next = replaceVisualFace(set, getSelectedDie(), logicalFace, {
+      kind: 'text',
+      value: q('face-value').value.trim(),
+      color: q('custom-face-color').value,
+      fontId: normalizeFaceFontId(q('face-font')?.value),
+      scale: normalizeFaceGlyphScale(Number(q('face-scale')?.value || 100) / 100),
+      position: normalizeFaceGlyphPosition(q('face-position')?.value),
+    });
+    setDraft(next); refresh(); setStatus(`Face ${logicalFace} updated visually. It still rolls ${logicalFace}.`, 'ready');
+    return true;
+  } catch (error) {
+    console.error('Failed to apply face appearance:', error); setStatus(error.message, 'error'); return false;
+  }
+}
+
 export function bindStudioVisualControls(context) {
   const { q, updateDraft, getDraft, setDraft, getSelectedDie, getOwnerId, refresh, setStatus } = context;
   [['dice-body-color', 'bodyColor'], ['dice-face-color', 'faceColor']].forEach(([id, key]) => {
@@ -91,22 +113,8 @@ export function bindStudioVisualControls(context) {
     const output = q('face-scale-output');
     if (output) output.textContent = `${q('face-scale').value}%`;
   });
-  q('apply-face').addEventListener('click', () => {
-    try {
-      const set = getDraft();
-      if (!canEditDiceSet(set, getOwnerId())) throw new Error('Unlock this set before editing faces.');
-      const logicalFace = q('logical-face').value;
-      const next = replaceVisualFace(set, getSelectedDie(), logicalFace, {
-        kind: 'text',
-        value: q('face-value').value.trim(),
-        color: q('custom-face-color').value,
-        fontId: normalizeFaceFontId(q('face-font')?.value),
-        scale: normalizeFaceGlyphScale(Number(q('face-scale')?.value || 100) / 100),
-        position: normalizeFaceGlyphPosition(q('face-position')?.value),
-      });
-      setDraft(next); refresh(); setStatus(`Face ${logicalFace} updated visually. It still rolls ${logicalFace}.`, 'ready');
-    } catch (error) { console.error('Failed to apply face appearance:', error); setStatus(error.message, 'error'); }
-  });
+  const applyFace = () => applyStudioFaceAppearance(context);
+  q('apply-face').addEventListener('click', applyFace);
   q('remove-face').addEventListener('click', () => {
     try {
       const set = getDraft();
@@ -116,4 +124,5 @@ export function bindStudioVisualControls(context) {
       setStatus(`Face ${logicalFace} restored to its standard number.`, 'ready');
     } catch (error) { console.error('Failed to restore canonical face:', error); setStatus(error.message, 'error'); }
   });
+  return { applyFace };
 }
