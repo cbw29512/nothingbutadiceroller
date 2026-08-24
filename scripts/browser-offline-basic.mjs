@@ -19,72 +19,6 @@ const REQUIRED_OFFLINE_RUNTIME_PATHS = Object.freeze([
   '/vendor/dice-box-1.1.4/assets/themes/default/default.json',
 ]);
 
-async function installBootDiagnostics(client) {
-  try {
-    await client.send('Page.addScriptToEvaluateOnNewDocument', {
-      source: `(() => {
-        const diagnostics = { errors: [], rejections: [], workers: [] };
-        Object.defineProperty(globalThis, '__ndrOfflineBootDiagnostics', {
-          value: diagnostics,
-          configurable: false,
-          enumerable: false,
-          writable: false,
-        });
-        addEventListener('error', (event) => diagnostics.errors.push({
-          message: String(event.message || ''),
-          filename: String(event.filename || ''),
-          line: Number(event.lineno || 0),
-          column: Number(event.colno || 0),
-        }));
-        addEventListener('unhandledrejection', (event) => diagnostics.rejections.push(String(event.reason?.stack || event.reason || 'unknown rejection')));
-        const NativeWorker = globalThis.Worker;
-        globalThis.Worker = new Proxy(NativeWorker, {
-          construct(target, args) {
-            const worker = Reflect.construct(target, args, target);
-            const entry = { url: String(args[0] || ''), errors: [], messageErrors: 0 };
-            diagnostics.workers.push(entry);
-            worker.addEventListener('error', (event) => entry.errors.push({
-              message: String(event.message || ''),
-              filename: String(event.filename || ''),
-              line: Number(event.lineno || 0),
-              column: Number(event.colno || 0),
-            }));
-            worker.addEventListener('messageerror', () => { entry.messageErrors += 1; });
-            return worker;
-          },
-        });
-      })();`,
-    });
-  } catch (error) {
-    console.error('Failed to install offline boot diagnostics:', error);
-    throw error;
-  }
-}
-
-async function collectBootDiagnostics(client) {
-  try {
-    return await client.evaluate(`(async () => ({
-      online: navigator.onLine,
-      status: document.querySelector('#physics-status')?.textContent || '',
-      statusClass: document.querySelector('#physics-status')?.className || '',
-      canvasCount: document.querySelectorAll('#dice-tray canvas').length,
-      controller: navigator.serviceWorker.controller?.scriptURL || null,
-      diagnostics: globalThis.__ndrOfflineBootDiagnostics || null,
-      vendorResources: performance.getEntriesByType('resource')
-        .filter((entry) => entry.name.includes('/vendor/dice-box-1.1.4/'))
-        .map((entry) => ({
-          name: entry.name,
-          initiatorType: entry.initiatorType,
-          duration: Math.round(entry.duration),
-          transferSize: entry.transferSize,
-        })),
-    }))()`);
-  } catch (error) {
-    console.error('Failed to collect offline boot diagnostics:', error);
-    return { diagnosticCollectionError: error.message };
-  }
-}
-
 async function run() {
   await access(resolve(dist, 'index.html'));
   await access(resolve(dist, 'sw.js'));
@@ -95,7 +29,6 @@ async function run() {
     browser = await launchBrowser();
     const client = browser.client;
     await client.send('Network.enable');
-    await installBootDiagnostics(client);
 
     await navigate(client, `${server.origin}/`, desktop);
     await waitFor(client, "document.querySelector('#physics-status')?.textContent.includes('3D physics ready.')", 30000);
@@ -134,7 +67,7 @@ async function run() {
     const offlineFetchProbe = await client.evaluate(`Promise.all(${JSON.stringify(REQUIRED_OFFLINE_RUNTIME_PATHS)}.map(async (path) => {
       try {
         const response = await fetch(path, { cache: 'no-store' });
-        return { path, ok: response.ok, status: response.status, type: response.type };
+        return { path, ok: response.ok, status: response.status };
       } catch (error) {
         return { path, ok: false, error: String(error?.message || error) };
       }
@@ -142,19 +75,13 @@ async function run() {
     assert.deepEqual(
       offlineFetchProbe.filter((entry) => !entry.ok),
       [],
-      `Controlled-page offline fetch probe failed: ${JSON.stringify(offlineFetchProbe)}`,
+      `Service worker failed to serve pinned offline runtime assets: ${JSON.stringify(offlineFetchProbe)}`,
     );
 
     const navigation = await client.send('Page.navigate', { url: `${server.origin}/` });
     if (navigation.errorText) throw new Error(`Offline service-worker navigation failed: ${navigation.errorText}`);
     await waitFor(client, `location.href === ${JSON.stringify(`${server.origin}/`)} && document.readyState === 'complete'`, 15000);
-    try {
-      await waitFor(client, "document.querySelector('#physics-status')?.textContent.includes('Offline mode uses Default Dice.')", 30000);
-    } catch (error) {
-      const diagnostics = await collectBootDiagnostics(client);
-      throw new Error(`${error.message}\nOffline boot diagnostics: ${JSON.stringify(diagnostics)}`, { cause: error });
-    }
-    assert.equal(await client.evaluate('navigator.onLine'), false, 'Browser should be in explicit offline mode for the acceptance roll.');
+    await waitFor(client, "document.querySelector('#physics-status')?.textContent.includes('Offline mode uses Default Dice.')", 30000);
     assert.ok(await client.evaluate("document.querySelectorAll('#dice-tray canvas').length"), 'Offline Default Dice physics must still create a DiceBox canvas.');
 
     await client.evaluate("document.querySelector('.die-btn[data-type=\"d20\"]')?.click()");
@@ -167,7 +94,10 @@ async function run() {
     const apiFailedOffline = await client.evaluate(`fetch('/api/configurations').then(() => false).catch(() => true)`);
     assert.equal(apiFailedOffline, true, 'API requests must remain network-only and fail offline rather than returning cached account data.');
 
-    console.log('Offline basic roller passed: root shell and every pinned Default DiceBox runtime asset work offline, physical d20 remains 1-20, and API/Identity paths are excluded from cache.');
+    console.log('Offline basic roller passed: verified connectivity detects hard offline even when navigator.onLine is unreliable, every pinned Default DiceBox asset works from the service worker, physical d20 remains 1-20, and API/Identity paths remain network-only.');
+  } catch (error) {
+    console.error('Offline browser acceptance execution failed:', error);
+    throw error;
   } finally {
     if (browser?.client) {
       await browser.client.send('Network.emulateNetworkConditions', {
@@ -176,7 +106,7 @@ async function run() {
         downloadThroughput: -1,
         uploadThroughput: -1,
         connectionType: 'wifi',
-      }).catch(() => {});
+      }).catch((error) => console.warn('Failed to restore browser network state:', error.message));
     }
     if (browser) await browser.close().catch((error) => console.warn('Browser cleanup failed:', error.message));
     if (server) await server.close().catch((error) => console.warn('Static server cleanup failed:', error.message));
