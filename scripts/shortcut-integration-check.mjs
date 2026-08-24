@@ -43,6 +43,10 @@ for (const required of [
   'section.hidden = false',
   'note.hidden = !hasShortcuts',
   'return Boolean(active);',
+  'let initializedSessionKey = null;',
+  'if (dedupeInit && initializedSessionKey === nextSessionKey) return;',
+  'restoreShortcutFocus(container, restoreFocusId);',
+  "identity.on('init', (user) => loadForSession(user, { dedupeInit: true }))",
 ]) {
   assert.ok(runtime.includes(required), `Phase 6 runtime contract missing: ${required}`);
 }

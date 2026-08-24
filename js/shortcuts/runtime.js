@@ -24,6 +24,7 @@ let active = null;
 let accountUser = null;
 let initialized = false;
 let demoMode = false;
+let initializedSessionKey = null;
 
 function emitState() {
   document.dispatchEvent(new Event('shortcutstatechange'));
@@ -37,6 +38,11 @@ function isDeployPreviewDemo() {
   } catch {
     return false;
   }
+}
+
+function sessionKey(user) {
+  const id = String(user?.id || '').trim();
+  return id ? `user:${id}` : 'guest';
 }
 
 function demoSlots() {
@@ -146,6 +152,22 @@ function hideShortcutInfo() {
   if (host) host.hidden = true;
 }
 
+function focusedShortcutId() {
+  const focused = document.activeElement;
+  return focused?.classList?.contains('shortcut-icon-btn') ? focused.dataset.shortcutId || null : null;
+}
+
+function restoreShortcutFocus(container, slotId) {
+  if (!slotId) return;
+  queueMicrotask(() => {
+    const replacement = [...container.querySelectorAll('.shortcut-icon-btn')]
+      .find((button) => button.dataset.shortcutId === slotId && !button.disabled);
+    if (!replacement) return;
+    replacement.focus();
+    if (document.activeElement === replacement) showShortcutInfo(slotId);
+  });
+}
+
 function renderToolbar() {
   const section = document.getElementById('shortcut-toolbar-section');
   const container = document.getElementById('shortcut-toolbar');
@@ -153,6 +175,7 @@ function renderToolbar() {
   const note = section?.querySelector('.shortcut-toolbar-note');
   if (!section || !container || !title || !note) return;
 
+  const restoreFocusId = focusedShortcutId();
   hydratedSlots = slots.map((slot) => ({ slot, hydrated: hydrateShortcutSlot(slot) }));
   const hasShortcuts = slots.length > 0;
   section.hidden = false;
@@ -173,6 +196,7 @@ function renderToolbar() {
   });
   setGearState();
   setRollLabels();
+  restoreShortcutFocus(container, restoreFocusId);
 }
 
 function restoreNormalRollLabel() {
@@ -302,7 +326,10 @@ export async function performPreparedShortcutRoll() {
   }
 }
 
-async function loadForSession(user) {
+async function loadForSession(user, { dedupeInit = false } = {}) {
+  const nextSessionKey = sessionKey(user);
+  if (dedupeInit && initializedSessionKey === nextSessionKey) return;
+  initializedSessionKey = nextSessionKey;
   accountUser = user || null;
   active = null;
   demoMode = isDeployPreviewDemo();
@@ -355,7 +382,7 @@ export function initShortcutRuntime() {
   renderToolbar();
 
   const identity = getIdentity();
-  identity.on('init', loadForSession);
-  identity.on('login', loadForSession);
+  identity.on('init', (user) => loadForSession(user, { dedupeInit: true }));
+  identity.on('login', (user) => loadForSession(user));
   identity.on('logout', () => loadForSession(null));
 }
