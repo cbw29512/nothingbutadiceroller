@@ -10,6 +10,7 @@ import { renderFaceMap } from './studio-face-map.mjs';
 import { ensureStudioFaceFontControl, fillStudioFaceFontControl } from './studio-face-font-controls.mjs';
 import { ensureStudioFacePositionControl, fillStudioFacePositionControl } from './studio-face-position-controls.mjs';
 import { ensureStudioFaceScaleControl, fillStudioFaceScaleControl } from './studio-face-scale-controls.mjs';
+import { ensureStudioFaceStyleBatchControl, fillStudioFaceStyleBatchControl } from './studio-face-style-batch-controls.mjs';
 import { fillStudioInlayControls } from './studio-inlay-controls.mjs';
 import { fillStudioPatternControls } from './studio-pattern-controls.mjs';
 import { fillStudioResinControls } from './studio-resin-controls.mjs';
@@ -97,6 +98,7 @@ export function fillEditor(set, selectedDie, activeId, ownerId, cloudEnabled) {
   ensureStudioFaceFontControl(document);
   ensureStudioFaceScaleControl(document);
   ensureStudioFacePositionControl(document);
+  ensureStudioFaceStyleBatchControl(document);
   const system = set.id === SYSTEM_DEFAULT_DICE_SET_ID; const owner = !system && set.ownerId === ownerId; const locked = set.locked;
   const editable = !system && !locked && owner;
   const style = set.appearance.diceSet.defaultStyle; const die = set.appearance.diceSet.dice[selectedDie];
@@ -116,6 +118,7 @@ export function fillEditor(set, selectedDie, activeId, ownerId, cloudEnabled) {
   fillStudioSurfaceControls({ q, set, selectedDie, editable });
   fillStudioPatternControls({ q, set, selectedDie, editable });
   fillStudioInlayControls({ q, set, selectedDie, editable });
+  fillStudioFaceStyleBatchControl({ q, selectedDie, editable });
   q('remove-tray-image').disabled = !editable || !set.appearance.tray.image;
   q('save-set').disabled = !editable; q('delete-set').disabled = system || !owner; q('lock-set').disabled = system || !owner;
   q('lock-set').textContent = locked ? 'Unlock Set' : 'Lock Set'; q('publish-set').disabled = system || !owner || !locked || !cloudEnabled;

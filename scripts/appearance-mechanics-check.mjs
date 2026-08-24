@@ -20,6 +20,7 @@ import {
   isValidFaceGlyphScale,
   normalizeFaceGlyphScale,
 } from '../js/appearance/face-glyph-scale.mjs';
+import { applyFaceStyleToDie } from '../js/appearance/face-style-batch.mjs';
 import { getCanonicalFaceLabel, getCanonicalFaceResults } from '../js/appearance/face-values.mjs';
 import { getFaceLayout, getSupportedFaceEditorDice } from '../js/appearance/face-layouts.mjs';
 import { createUserDiceSet } from '../js/appearance/schema.mjs';
@@ -104,9 +105,31 @@ assert.throws(() => replaceVisualFace(custom, 'd20', 20, { kind: 'text', value: 
 assert.throws(() => replaceVisualFace(custom, 'd20', 20, { kind: 'text', value: 'LARGE', scale: 1.21 }), /scale must be between 0\.6 and 1\.2/i);
 assert.throws(() => replaceVisualFace(custom, 'd20', 20, { kind: 'text', value: 'MOVE', position: 'x:999' }), /supported bounded face position/i);
 
+let batchSource = replaceVisualFace(rawStyled, 'd20', 20, { kind: 'text', value: 'CRIT', color: '#ffffff', fontId: 'default', scale: 1, position: 'center' });
+batchSource = replaceVisualFace(batchSource, 'd20', 1, { kind: 'text', value: 'MISS', color: '#00ff00', fontId: 'mono', scale: 0.8, position: 'left' });
+const batchStyle = { color: '#ff00ff', fontId: 'fantasy', scale: 1.2, position: 'top-right' };
+const batched = applyFaceStyleToDie(batchSource, 'd20', batchStyle);
+assert.equal(validateDiceSet(batched).ok, true, 'Batch face styling must produce a valid visual-only dice set.');
+assert.equal(getVisualFace(batched, 'd20', 20).value, 'CRIT', 'Batch styling must preserve the selected custom face display.');
+assert.equal(getVisualFace(batched, 'd20', 1).value, 'MISS', 'Batch styling must preserve another custom face display.');
+assert.equal(getVisualFace(batched, 'd20', 2).value, '2', 'Batch styling must preserve untouched canonical labels.');
+for (const result of getCanonicalFaceResults('d20')) {
+  const face = getVisualFace(batched, 'd20', result);
+  assert.equal(face.color, batchStyle.color); assert.equal(face.fontId, batchStyle.fontId);
+  assert.equal(face.scale, batchStyle.scale); assert.equal(face.position, batchStyle.position);
+}
+assert.equal(getVisualFace(batchSource, 'd20', 1).fontId, 'mono', 'Batch styling must not mutate the source dice set.');
+assert.equal(batched.appearance.diceSet.dice.d20.shapeId, 'canonical:d20'); assert.equal(batched.appearance.diceSet.dice.d20.logicalDie, 'd20');
+const percentileBatch = applyFaceStyleToDie(rawStyled, 'd100', batchStyle);
+assert.equal(getVisualFace(percentileBatch, 'd100', 0).value, '00', 'Batch styling must preserve the d100 zero label.');
+assert.equal(getVisualFace(percentileBatch, 'd100', 10).value, '10'); assert.equal(getVisualFace(percentileBatch, 'd100', 90).value, '90');
+assert.throws(() => applyFaceStyleToDie(rawStyled, 'd20', { ...batchStyle, position: 'freehand' }), /supported bounded face position/i);
+assert.throws(() => applyFaceStyleToDie(rawStyled, 'd20', { ...batchStyle, scale: 2 }), /scale must be between 0\.6 and 1\.2/i);
+assert.throws(() => applyFaceStyleToDie(rawStyled, 'd30', batchStyle), /Unsupported die type/i);
+
 custom = removeVisualFace(custom, 'd20', 20); assert.equal(getVisualFace(custom, 'd20', 20).value, '20');
 custom = useRawFaces(custom, 'd20'); assert.equal(custom.appearance.diceSet.dice.d20.faceMode, RAW_FACE_MODE); assert.deepEqual(custom.appearance.diceSet.dice.d20.faces, {});
 const wrongShape = structuredClone(custom); wrongShape.appearance.diceSet.dice.d20.shapeId = 'custom:d20'; assert.equal(validateDiceSet(wrongShape).ok, false);
 const wrongLogic = structuredClone(custom); wrongLogic.appearance.diceSet.dice.d20.logicalDie = 'd6'; assert.equal(validateDiceSet(wrongLogic).ok, false);
 const clone = cloneSystemDefaultAppearance(); clone.tray.color = '#123456'; assert.equal(SYSTEM_DEFAULT_DICE_SET.appearance.tray.color, '#000000');
-console.log('Appearance mechanics passed: customization is visual-only; canonical RPG dice/results are protected, typography, 60–120% glyph scale, and nine bounded positions are enforced.');
+console.log('Appearance mechanics passed: customization is visual-only; canonical RPG dice/results are protected, typography, 60–120% glyph scale, nine bounded positions, and style-only batch editing are enforced.');

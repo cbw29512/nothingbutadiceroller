@@ -2,6 +2,7 @@ import { bindFaceSymbolPicker } from './face-symbol-picker.mjs';
 import { ensureStudioFaceFontControl } from './studio-face-font-controls.mjs';
 import { ensureStudioFacePositionControl } from './studio-face-position-controls.mjs';
 import { ensureStudioFaceScaleControl } from './studio-face-scale-controls.mjs';
+import { bindStudioFaceStyleBatchControl, ensureStudioFaceStyleBatchControl } from './studio-face-style-batch-controls.mjs';
 import { bindStudioInlayControls, ensureStudioInlayControls } from './studio-inlay-controls.mjs';
 import { bindStudioPatternControls } from './studio-pattern-controls.mjs';
 import { bindStudioResinControls } from './studio-resin-controls.mjs';
@@ -18,6 +19,7 @@ export function bindStudioControls(context) {
     ensureStudioFaceFontControl(documentRef);
     ensureStudioFaceScaleControl(documentRef);
     ensureStudioFacePositionControl(documentRef);
+    ensureStudioFaceStyleBatchControl(documentRef);
     q('new-set').addEventListener('click', actions.newSet); q('save-set').addEventListener('click', actions.saveDraft);
     q('lock-set').addEventListener('click', actions.toggleLock); q('publish-set').addEventListener('click', actions.togglePublish);
     const useButton = q('use-set');
@@ -72,6 +74,10 @@ export function bindStudioControls(context) {
     bindStudioVisualControls({
       q, updateDraft: draft.update, getDraft: draft.get, setDraft: draft.set,
       getSelectedDie: dice.get, getOwnerId: ownerId, refresh, setStatus,
+    });
+    bindStudioFaceStyleBatchControl({
+      q, getDraft: draft.get, setDraft: draft.set, getSelectedDie: dice.get,
+      getOwnerId: ownerId, refresh, setStatus, windowRef,
     });
     bindStudioResinControls({
       q, updateDraft: draft.update, getSelectedDie: dice.get, refresh, setStatus,
