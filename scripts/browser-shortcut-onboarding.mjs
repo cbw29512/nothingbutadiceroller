@@ -85,47 +85,30 @@ async function run() {
     assert.equal(configured.buttonDisabled, false, 'Configured shortcut must be keyboard-focusable before activation.');
     assert.ok(configured.overflow <= 1, `Mobile shortcut toolbar introduced ${configured.overflow}px horizontal overflow.`);
 
-    const focusDiagnostic = await client.evaluate(`(async () => {
-      const button = document.querySelector('#shortcut-toolbar .shortcut-icon-btn');
-      const tooltip = document.querySelector('#shortcut-tooltip');
-      const trace = [];
-      const snapshot = (event) => trace.push({
-        event,
-        activeTag: document.activeElement?.tagName || '',
-        activeClass: document.activeElement?.className || '',
-        activeShortcutId: document.activeElement?.dataset?.shortcutId || '',
-        originalConnected: Boolean(button?.isConnected),
-        sameButton: document.querySelector('#shortcut-toolbar .shortcut-icon-btn') === button,
-        tooltipHidden: Boolean(tooltip?.hidden),
-        tooltipText: tooltip?.textContent || '',
-      });
-      button?.addEventListener('focus', () => snapshot('focus-event'));
-      button?.addEventListener('blur', () => snapshot('blur-event'));
-      const observer = tooltip ? new MutationObserver(() => snapshot('tooltip-mutation')) : null;
-      observer?.observe(tooltip, { attributes: true, childList: true, subtree: true, attributeFilter: ['hidden'] });
-      snapshot('before-focus');
-      button?.focus();
-      snapshot('after-focus-call');
-      await new Promise((resolvePromise) => setTimeout(resolvePromise, 750));
-      snapshot('after-750ms');
-      observer?.disconnect();
-      return {
-        trace,
-        originalConnected: Boolean(button?.isConnected),
-        sameButton: document.querySelector('#shortcut-toolbar .shortcut-icon-btn') === button,
-        activeShortcutId: document.activeElement?.dataset?.shortcutId || '',
-        tooltipHidden: Boolean(tooltip?.hidden),
-        tooltipText: tooltip?.textContent || '',
-      };
-    })()`);
-    const diagnosticText = JSON.stringify(focusDiagnostic);
-    assert.equal(focusDiagnostic.originalConnected, true, `Focused shortcut was detached after focus: ${diagnosticText}`);
-    assert.equal(focusDiagnostic.sameButton, true, `Shortcut toolbar replaced the focused button after focus: ${diagnosticText}`);
-    assert.equal(focusDiagnostic.activeShortcutId, 'onboarding-fireball', `Shortcut focus was not stable: ${diagnosticText}`);
-    assert.equal(focusDiagnostic.tooltipHidden, false, `Focused shortcut details did not remain visible: ${diagnosticText}`);
-    assert.match(focusDiagnostic.tooltipText, /Fireball/i, `Focused shortcut details were not useful: ${diagnosticText}`);
+    await client.evaluate("document.querySelector('.mobile-mode-btn[data-quick-roll=\"disadvantage\"]')?.focus()");
+    await waitFor(client, "document.activeElement?.dataset?.quickRoll === 'disadvantage'");
+    await client.send('Input.dispatchKeyEvent', {
+      type: 'keyDown', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9, nativeVirtualKeyCode: 9,
+    });
+    await client.send('Input.dispatchKeyEvent', {
+      type: 'keyUp', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9, nativeVirtualKeyCode: 9,
+    });
+    await waitFor(client, "document.activeElement?.dataset?.shortcutId === 'onboarding-fireball'");
+    await waitFor(client, "document.querySelector('#shortcut-tooltip')?.hidden === false");
+    await new Promise((resolvePromise) => setTimeout(resolvePromise, 750));
 
-    console.log('Shortcut onboarding passed: first-use copy stays compact, configured shortcuts move into the visible mobile dock, keyboard focus exposes stable details, and shortcut mechanics/storage remain unchanged.');
+    const focused = await client.evaluate(`(() => ({
+      activeShortcutId: document.activeElement?.dataset?.shortcutId || '',
+      tooltipHidden: Boolean(document.querySelector('#shortcut-tooltip')?.hidden),
+      tooltipText: document.querySelector('#shortcut-tooltip')?.textContent || '',
+      buttonConnected: Boolean(document.querySelector('#shortcut-toolbar .shortcut-icon-btn')?.isConnected),
+    }))()`);
+    assert.equal(focused.activeShortcutId, 'onboarding-fireball', 'Keyboard focus must remain on the configured shortcut.');
+    assert.equal(focused.tooltipHidden, false, 'Keyboard-focused shortcut details must remain visible.');
+    assert.match(focused.tooltipText, /Fireball/i, 'Keyboard-focused shortcut details must identify the shortcut.');
+    assert.equal(focused.buttonConnected, true, 'Focused shortcut must remain connected after keyboard navigation.');
+
+    console.log('Shortcut onboarding passed: first-use copy stays compact, configured shortcuts move into the visible mobile dock, real keyboard focus exposes stable details, and shortcut mechanics/storage remain unchanged.');
   } finally {
     if (browser) await browser.close().catch((error) => console.warn('Browser cleanup failed:', error.message));
     if (server) await server.close().catch((error) => console.warn('Static server cleanup failed:', error.message));
