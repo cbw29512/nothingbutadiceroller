@@ -1,5 +1,6 @@
 import { state } from './state.js';
 import { canRerollHistoryItem } from './history-records.mjs';
+import { syncMobileDiceQuantities } from './mobile-dice-quantity.js';
 import { countDice } from './utils.js';
 
 export function formatRollButtonLabel(selectedDice = state.selectedDice) {
@@ -49,6 +50,7 @@ export function renderPool() {
       ? entries.map(([type, count]) => `${count}${type}`).join(' + ')
       : 'No dice selected';
     syncRollButtonLabels();
+    syncMobileDiceQuantities(counts);
 
     entries.forEach(([type, count]) => {
       const chip = document.createElement('button');

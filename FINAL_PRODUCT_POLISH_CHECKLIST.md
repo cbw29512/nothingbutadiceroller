@@ -64,6 +64,9 @@ This checklist is the source of truth for the final product-polish pass. We will
   - Mechanics/accessibility requirements: standard reroll reuses the original canonical dice pool and ADV/DIS mode while preserving the user's currently selected dice; custom reroll reuses the original dN size; Copy emits stable plain text and never mutates history; mobile history actions are at least 44px.
   - Validation required before checkoff: deterministic replay-descriptor contract plus rendered browser test must prove exact standard replay, preservation of current selection, stable Copy output, fail-closed legacy/unsupported behavior, and unchanged history totals/breakdowns.
 - [ ] 10. Improve mobile selected-dice visibility with compact quantity feedback while preserving the compact dice row.
+  - Decision: each mobile canonical die button keeps its existing label and gains a compact count badge only while that die is selected. Counts update immediately on add, chip removal, and Clear; unselected dice show no badge.
+  - Accessibility/layout requirements: accessible labels announce the selected count and add-another action, the existing seven-button mobile row and minimum target size remain intact, and badges stay inside each button without widening the row or changing selection mechanics.
+  - Validation required before checkoff: rendered mobile test must prove multi-die counts, decrement and Clear synchronization, accessible labels, protected button height, and zero row/page horizontal overflow.
 - [ ] 11. Evaluate offline/installable basic roller support only after items 1–10 are complete; implement only if it can fail safely for cloud/account features.
 
 ## Final certification after all approved items
