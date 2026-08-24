@@ -66,24 +66,32 @@ assert.ok(runtime.includes('slots = loadLocalShortcutWorkspace().workspace.short
 
 for (const required of [
   "section.id = 'shortcut-toolbar-section'",
+  "anchor.id = 'shortcut-toolbar-desktop-anchor'",
   "toolbar.id = 'shortcut-toolbar'",
   "tooltip.id = 'shortcut-tooltip'",
   "wrapRollButton('roll-btn', 'shortcut-settings-btn'",
   "wrapRollButton('mobile-roll-btn', 'mobile-shortcut-settings-btn'",
-  "title.style.fontSize = '.86rem'",
-  "title.style.letterSpacing = '.04em'",
+  "title.className = 'section-label shortcut-toolbar-title'",
   "note.textContent = 'Hold or focus for details'",
   "hint.id = 'mobile-shortcut-hint'",
+  "hint.className = 'mobile-shortcut-hint'",
   "hint.textContent = 'Customize roll shortcuts → ⚙'",
-  "function syncShortcutOnboarding()",
+  "mount.id = 'mobile-shortcut-toolbar-mount'",
+  'function syncShortcutToolbarMount()',
+  "globalThis.matchMedia?.(MOBILE_SHORTCUT_QUERY)",
+  'if (mobileShortcutLayoutActive()) mobileMount.append(section)',
   "title.textContent = configured ? 'My shortcuts' : 'Customize roll shortcuts → ⚙'",
   'mobileHint.hidden = configured',
+  'mobileMount.hidden = !(configured && mobileShortcutLayoutActive())',
+  'observeShortcutToolbarMount()',
   'observeShortcutOnboarding()',
   'actionRow.before(hint)',
   'ensureMobileShortcutHint()',
+  'ensureMobileShortcutMount()',
 ]) {
   assert.ok(markup.includes(required), `Phase 6 runtime markup/onboarding missing: ${required}`);
 }
+assert.equal(markup.includes('.style.'), false, 'Shortcut runtime markup must not rely on CSP-blocked inline style properties.');
 
 assert.ok(tray.includes('export function initTrayControls(onRoll, canRoll = defaultCanRoll)'), 'Tray control must accept injected readiness without changing its default behavior.');
 assert.ok(tray.includes("document.addEventListener('shortcutstatechange', syncTrayState)"), 'Tray readiness must react to prepared shortcut state.');

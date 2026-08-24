@@ -168,9 +168,7 @@ function bindPress(button, item, { onActivate, onInfo, onInfoHide }) {
   button.addEventListener('click', () => {
     if (!button.disabled) controller.click();
   });
-  button.addEventListener('focus', () => {
-    if (button.matches(':focus-visible')) controller.focus();
-  });
+  button.addEventListener('focus', () => controller.focus());
   button.addEventListener('blur', () => controller.blur());
   button.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') controller.blur();
