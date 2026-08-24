@@ -85,6 +85,13 @@ try {
     assert.ok(resources.includes(`href="${href}"`), `Resource hub must link to ${href}.`);
   }
 
+  const home = await readFile(resolve(root, 'index.html'), 'utf8');
+  assert.ok(home.includes('id="discover-title"'), 'Homepage must keep the crawlable discovery section below the roller.');
+  for (const href of ['/resources.html', '/dice-probability.html', '/d20-roller.html', '/custom-dice-roller.html', '/custom-3d-dice.html', '/dice-randomness.html']) {
+    assert.ok(home.includes(`href="${href}"`), `Homepage discovery layer must link to ${href}.`);
+  }
+  assert.ok(home.indexOf('id="discover-title"') > home.indexOf('id="account-drawer"'), 'SEO discovery content must remain below the core application surface.');
+
   const manifest = JSON.parse(await readFile(resolve(root, 'site.webmanifest'), 'utf8'));
   assert.equal(manifest.start_url, '/');
   assert.equal(manifest.display, 'standalone');
@@ -101,7 +108,7 @@ try {
   assert.equal(d20ThresholdProbability(200, -100).normal, 0);
   assert.throws(() => d20ThresholdProbability(Number.NaN, 0), /finite numbers/);
 
-  console.log(`SEO/growth contract passed: ${growthPages.length} strict growth pages, ${sitemapPages.length} sitemap URLs, unique canonicals/titles, protected noindex tools, PWA shortcuts, and exact d20 odds.`);
+  console.log(`SEO/growth contract passed: ${growthPages.length} strict growth pages, ${sitemapPages.length} sitemap URLs, homepage discovery links, unique canonicals/titles, protected noindex tools, PWA shortcuts, and exact d20 odds.`);
 } catch (error) {
   console.error('SEO/growth contract failed:', error);
   process.exitCode = 1;
