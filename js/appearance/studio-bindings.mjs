@@ -1,5 +1,5 @@
 import { bindFaceSymbolPicker } from './face-symbol-picker.mjs';
-import { bindStudioActionWorkflow } from './studio-action-workflow.mjs';
+import { bindStudioActionWorkflow, STUDIO_USE_ACTION_LABEL } from './studio-action-workflow.mjs';
 import { ensureStudioFaceFontControl } from './studio-face-font-controls.mjs';
 import { ensureStudioFacePositionControl } from './studio-face-position-controls.mjs';
 import { ensureStudioFaceScaleControl } from './studio-face-scale-controls.mjs';
@@ -30,7 +30,7 @@ export function bindStudioControls(context) {
     q('new-set').addEventListener('click', actions.newSet); q('save-set').addEventListener('click', actions.saveDraft);
     q('lock-set').addEventListener('click', actions.toggleLock); q('publish-set').addEventListener('click', actions.togglePublish);
     const useButton = q('use-set');
-    useButton.textContent = 'Use This Set & Back to Roller';
+    useButton.textContent = STUDIO_USE_ACTION_LABEL;
     const backLink = documentRef.querySelector('.studio-header a[href="/"]');
     if (backLink) backLink.textContent = 'Back to Roller (Keep Current Set)';
     q('use-set').addEventListener('click', actions.activateDraft);
