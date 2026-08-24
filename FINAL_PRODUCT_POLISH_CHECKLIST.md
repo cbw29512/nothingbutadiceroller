@@ -14,6 +14,20 @@ This checklist is the source of truth for the final product-polish pass. We will
 - Validate each item before checking it off.
 - Do not merge to `main` until the entire pass is complete and a final full certification is green.
 
+## Site-wide product quality guardrails
+
+These guardrails apply to every polish item and final release check.
+
+- The main roller interaction is protected UX: the dice selector, tray, shortcut toolbar, ADV/DIS controls, roll action, and result remain the primary path. Do not replace them with a marketing hero, onboarding wall, modal, or feature dashboard.
+- Preserve the fast guest path. A user must be able to arrive, choose dice, and roll without creating an account or understanding advanced features.
+- Secondary features remain secondary: Dice Studio, History, account, help, support, Community, and shortcut management must stay discoverable without competing with the core roll task.
+- Mobile changes must preserve the compact fixed play controls and must not introduce horizontal overflow, obscured focus, or difficult touch targets.
+- Accessibility target: WCAG 2.2 AA as the technical baseline, including keyboard-only operation, visible focus, labeled controls, logical headings/landmarks, modal focus containment/return, target sizing/spacing, reduced-motion support, and focus not being obscured by sticky/fixed UI. Final acceptance also requires rendered/manual accessibility checks; code review alone is not treated as legal certification.
+- SEO target: descriptive unique page titles and descriptions, correct canonical/index/noindex behavior, crawlable public content, robots/sitemap consistency, social metadata, truthful structured data only, and good Core Web Vitals. Never add fake ratings/reviews or keyword-stuffed hidden content.
+- The public roller should remain visually clean. SEO support content belongs in genuinely useful visible copy or the indexed How To/help content, not in clutter added above the tray.
+- Compare product flow against current high-quality dice utilities and general web conventions, but do not copy another product or add features merely because a competitor has them.
+- Every visual change must preserve the existing mechanics/security/privacy browser contracts before it can be checked off.
+
 ## Final product-polish items
 
 - [ ] 1. Correct generic natural-1 / natural-20 feedback so a plain d20 never falsely implies universal RAW critical failure/success.
@@ -35,6 +49,9 @@ This checklist is the source of truth for the final product-polish pass. We will
 - [ ] Clean `npm ci` / dependency audit.
 - [ ] Full deterministic mechanics/security/privacy contract suite green.
 - [ ] Desktop and mobile rendered-browser suite green.
+- [ ] WCAG-oriented keyboard/focus/target-size/reduced-motion/focus-obscuring checks green on the rendered site.
+- [ ] SEO metadata/canonical/robots/sitemap/indexability contract green for every public page.
+- [ ] Core Web Vitals / performance review finds no known release-blocking regression.
 - [ ] CodeQL green.
 - [ ] Exact-head Netlify Deploy Preview green.
 - [ ] Hosted acceptance green for roller, Dice Studio, shortcuts, account boundary, custom dN, and protected mechanics.
