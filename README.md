@@ -2,7 +2,11 @@
 
 A fast tabletop RPG dice roller with standard 3D dice, advantage/disadvantage quick rolls, secure custom dN rolls, saved roll shortcuts, account sync, and visual Dice Studio customization.
 
-Production: https://nothingbutattrpgdiceroller.netlify.app/
+**Production:** https://nothingbutattrpgdiceroller.netlify.app/
+
+**Free dice resources:** https://nothingbutattrpgdiceroller.netlify.app/resources.html
+
+**D20 probability calculator:** https://nothingbutattrpgdiceroller.netlify.app/dice-probability.html
 
 ## Core product rules
 
@@ -16,6 +20,15 @@ Production: https://nothingbutattrpgdiceroller.netlify.app/
 ## Main surfaces
 
 - `/` — main dice roller
+- `/resources.html` — public dice resource hub
+- `/d20-roller.html` — d20 guide and direct roller path
+- `/advantage-disadvantage.html` — d20 advantage/disadvantage guide
+- `/dice-probability.html` — exact d20 threshold probability calculator
+- `/custom-dice-roller.html` — arbitrary dN guide
+- `/d100-roller.html` — percentile dice guide
+- `/dice-notation.html` — dice notation guide
+- `/dice-randomness.html` — randomness/trust explanation
+- `/custom-3d-dice.html` — public Dice Studio showcase
 - `/rolls.html` — roll shortcut manager
 - `/customize.html` — Dice Studio
 - `/how-to.html` — user guide
@@ -57,6 +70,12 @@ Netlify configuration lives in `netlify.toml`.
 - Functions directory: `netlify/functions`
 
 Pull requests run the full validation workflow before merge. Changes should be developed on branches and tested through Netlify Deploy Preview before production merge.
+
+## Search and discovery
+
+The public growth surface uses unique titles and canonical URLs, structured data, a crawlable resource hub, and `sitemap.xml`. The interactive Dice Studio and roll shortcut editor remain intentionally `noindex` while public pages explain those features in a search-friendly form.
+
+The release contract validates canonical metadata, sitemap coverage, protected `noindex` surfaces, PWA shortcuts, and the d20 probability calculator math.
 
 ## Security and privacy design
 
