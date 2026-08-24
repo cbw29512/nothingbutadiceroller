@@ -68,6 +68,9 @@ This checklist is the source of truth for the final product-polish pass. We will
   - Accessibility/layout requirements: accessible labels announce the selected count and add-another action, the existing seven-button mobile row and minimum target size remain intact, and badges stay inside each button without widening the row or changing selection mechanics.
   - Validation required before checkoff: rendered mobile test must prove multi-die counts, decrement and Clear synchronization, accessible labels, protected button height, and zero row/page horizontal overflow.
 - [ ] 11. Evaluate offline/installable basic roller support only after items 1–10 are complete; implement only if it can fail safely for cloud/account features.
+  - Decision: enable offline/installable support only for the anonymous root roller shell and pinned immutable Default DiceBox assets. Dice Studio, shortcut management, Community, Identity/account data, `/api/*`, `/.netlify/*`, and generated custom-theme/image resources remain network-only and are never runtime-cached.
+  - Security/failure requirements: service-worker registration waits until page load; offline startup forces immutable Default Dice instead of attempting custom generated themes; account/cloud failures must not abort guest rolling; service worker caches only an explicit same-origin allowlist and never arbitrary GET responses.
+  - Validation required before checkoff: deterministic cache-policy contract plus rendered offline browser test must prove service-worker control, required shell/Default DiceBox files in cache, no API/Netlify entries, root reload with network disabled, physical offline d20 result 1–20, and network-only account API failure offline.
 
 ## Final certification after all approved items
 

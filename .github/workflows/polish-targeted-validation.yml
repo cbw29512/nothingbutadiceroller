@@ -17,7 +17,7 @@ jobs:
   behavior:
     name: Polish product contracts
     runs-on: ubuntu-24.04
-    timeout-minutes: 27
+    timeout-minutes: 32
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -40,6 +40,8 @@ jobs:
         run: node scripts/browser-history-actions.mjs
       - name: Verify mobile selected-dice quantities
         run: node scripts/browser-mobile-dice-quantity.mjs
+      - name: Verify offline Default Roller
+        run: node scripts/browser-offline-basic.mjs
       - name: Verify mobile Dice Studio flow
         run: node scripts/browser-studio-mobile-navigation.mjs
       - name: Verify physical Dice Studio preview

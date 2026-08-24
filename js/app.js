@@ -4,6 +4,7 @@ import { initDicePhysics } from './physics.js';
 import { addDie, clearPool, performRoll } from './roller.js';
 import { performCustomRoll } from './custom-roll.js';
 import { initHistoryActions } from './history-actions.js';
+import { initOfflineSupport } from './offline-support.js';
 import { renderHistory, renderPool, setStatus } from './ui.js';
 import { assertStylesLoaded } from './deployment.js';
 import { initAccount } from './account.js';
@@ -159,6 +160,7 @@ function bindEvents() {
 async function boot() {
   try {
     assertStylesLoaded();
+    initOfflineSupport();
     ensureStylesheet('shortcut-toolbar-styles', '/shortcut-toolbar.css');
     ensureShortcutRuntimeMarkup();
     loadPreferences();
@@ -170,7 +172,8 @@ async function boot() {
     initShortcutRuntime();
 
     setStatus('Loading 3D physics…');
-    const appearanceRuntime = await prepareActiveDiceAppearance();
+    const offlineMode = navigator.onLine === false;
+    const appearanceRuntime = await prepareActiveDiceAppearance({ allowCustom: !offlineMode });
     applyLiveTrayAppearance(appearanceRuntime);
     await initDicePhysics(
       getSkinColor(state.dieSkin, state.customAppearance?.diceColor),
@@ -178,7 +181,12 @@ async function boot() {
     );
     state.physicsReady = true;
     document.dispatchEvent(new Event('rollstatechange'));
-    setStatus('3D physics ready.', 'ready');
+    setStatus(
+      offlineMode
+        ? '3D physics ready. Offline mode uses Default Dice.'
+        : '3D physics ready.',
+      'ready',
+    );
   } catch (error) {
     state.physicsReady = false;
     document.dispatchEvent(new Event('rollstatechange'));

@@ -31,8 +31,13 @@ function defaultRuntime(reason = null) {
   };
 }
 
-export async function prepareActiveDiceAppearance({ storage = localStorage, modelLoader = loadCanonicalDiceBoxModel } = {}) {
+export async function prepareActiveDiceAppearance({
+  storage = localStorage,
+  modelLoader = loadCanonicalDiceBoxModel,
+  allowCustom = true,
+} = {}) {
   try {
+    if (!allowCustom) return defaultRuntime('Offline mode uses immutable Default Dice.');
     const set = resolveStoredActiveDiceSet(storage);
     if (set.systemOwned) return defaultRuntime();
     const modelData = await modelLoader();
