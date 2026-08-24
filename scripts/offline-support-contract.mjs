@@ -1,13 +1,15 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { CONNECTIVITY_PROBE, detectOfflineMode } from '../js/connectivity.js';
 
 async function read(path) { return readFile(new URL(`../${path}`, import.meta.url), 'utf8'); }
 
-const [sw, support, app, appearance, pkgSource, manifestSource] = await Promise.all([
+const [sw, support, app, appearance, connectivity, pkgSource, manifestSource] = await Promise.all([
   read('sw.js'),
   read('js/offline-support.js'),
   read('js/app.js'),
   read('js/appearance/appearance-runtime.mjs'),
+  read('js/connectivity.js'),
   read('package.json'),
   read('site.webmanifest'),
 ]);
@@ -32,6 +34,7 @@ assert.ok(sw.includes('if (isNetworkOnly(url.pathname)) return;'), 'Service work
 assert.ok(sw.includes("if (url.pathname === '/' || url.pathname === '/index.html')"), 'Only the root navigation may use the offline shell fallback.');
 assert.equal(sw.includes("'/customize.html'"), false, 'Dice Studio must not be precached into anonymous offline mode.');
 assert.equal(sw.includes("'/rolls.html'"), false, 'Shortcut manager must not be precached into anonymous offline mode.');
+assert.equal(sw.includes("'/robots.txt'"), false, 'Connectivity probe must remain outside the offline core cache.');
 assert.equal(sw.includes("'/api/" + "dice"), false, 'No API endpoint may appear in the precache allowlist.');
 assert.equal(sw.includes("'/.netlify/" + "identity"), false, 'No Netlify Identity endpoint may appear in the precache allowlist.');
 assert.equal(sw.includes('caches.match(event.request)'), false, 'Service worker must not runtime-cache arbitrary requests.');
@@ -40,8 +43,28 @@ assert.ok(support.includes("serviceWorker.register('/sw.js'"), 'Offline support 
 assert.ok(support.includes("updateViaCache: 'none'"), 'Service worker updates must bypass HTTP cache.');
 assert.ok(support.includes("addEventListener('load'"), 'Service worker registration must wait until page load and not block first paint/roll startup.');
 
+assert.equal(CONNECTIVITY_PROBE.path, '/robots.txt');
+assert.ok(connectivity.includes("cache: 'no-store'"), 'Connectivity probe must bypass browser HTTP cache.');
+assert.equal(await detectOfflineMode({ navigatorRef: { onLine: false }, fetchImpl: async () => { throw new Error('must not fetch'); } }), true);
+let onlineProbePath = '';
+assert.equal(await detectOfflineMode({
+  navigatorRef: { onLine: true },
+  fetchImpl: async (path) => {
+    onlineProbePath = path;
+    return { ok: true, status: 200 };
+  },
+  timeoutMs: 50,
+  now: () => 12345,
+}), false);
+assert.ok(onlineProbePath.startsWith('/robots.txt?ndr-connectivity='));
+assert.equal(await detectOfflineMode({
+  navigatorRef: { onLine: true },
+  fetchImpl: async () => { throw new TypeError('network unavailable'); },
+  timeoutMs: 50,
+}), true);
+
 assert.ok(app.includes('initOfflineSupport();'), 'Main roller must initialize offline support.');
-assert.ok(app.includes('const offlineMode = navigator.onLine === false;'), 'Main roller must explicitly detect browser offline state.');
+assert.ok(app.includes('const offlineMode = await detectOfflineMode();'), 'Main roller must verify real origin connectivity instead of trusting navigator.onLine alone.');
 assert.ok(app.includes('prepareActiveDiceAppearance({ allowCustom: !offlineMode })'), 'Offline startup must disable custom appearance loading.');
 assert.ok(app.includes('Offline mode uses Default Dice.'), 'Offline mode must tell the user Default Dice are in use.');
 assert.ok(appearance.includes("if (!allowCustom) return defaultRuntime('Offline mode uses immutable Default Dice.');"), 'Appearance runtime must fail closed to immutable Default Dice offline.');
@@ -52,4 +75,4 @@ assert.equal(manifest.display, 'standalone');
 assert.equal(manifest.start_url, '/');
 assert.equal(manifest.scope, '/');
 
-console.log('Offline support contract passed: installable shell includes every pinned Default Dice runtime asset, APIs/Identity/custom cloud data are network-only, registration is post-load, and offline appearance fails closed to immutable Default Dice.');
+console.log('Offline support contract passed: installable shell includes every pinned Default Dice runtime asset, verified origin connectivity overrides unreliable browser online hints, APIs/Identity/custom cloud data are network-only, and offline appearance fails closed to immutable Default Dice.');
