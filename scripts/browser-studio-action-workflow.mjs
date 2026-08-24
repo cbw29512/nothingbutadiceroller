@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { access } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { STUDIO_USE_ACTION_LABEL } from '../js/appearance/studio-action-workflow.mjs';
 import { launchBrowser, navigate, waitFor } from './browser/chromium.mjs';
 import { startBuiltSiteServer } from './browser/static-server.mjs';
 
@@ -38,7 +39,7 @@ async function runViewport(client, origin, viewport) {
   assert.equal(initial.moreOpen, false, `${viewport.name}: secondary actions must be collapsed initially.`);
   assert.equal(initial.position, 'sticky', `${viewport.name}: Save/Use bar must remain sticky.`);
   assert.equal(initial.state, 'Saved', `${viewport.name}: initial immutable/default state should be clean.`);
-  assert.equal(initial.useText, 'Use & Back to Roller');
+  assert.equal(initial.useText, STUDIO_USE_ACTION_LABEL);
   assert.ok(initial.overflow <= 1, `${viewport.name}: action workflow introduced ${initial.overflow}px horizontal overflow.`);
   if (viewport.mobile) assert.ok(initial.summaryHeight >= 44, `Mobile More actions target is ${initial.summaryHeight}px.`);
 
@@ -97,7 +98,7 @@ async function run() {
     server = await startBuiltSiteServer(dist);
     browser = await launchBrowser();
     for (const viewport of viewports) await runViewport(browser.client, server.origin, viewport);
-    console.log('Dice Studio Save/Use workflow passed: sticky primary actions, secondary destructive/publishing actions, clean/dirty feedback, save recovery, mobile target sizing, focus visibility, and no horizontal overflow.');
+    console.log('Dice Studio Save/Use workflow passed: sticky primary actions, explicit Use This Set wording, secondary destructive/publishing actions, clean/dirty feedback, save recovery, mobile target sizing, focus visibility, and no horizontal overflow.');
   } finally {
     if (browser) await browser.close().catch((error) => console.warn('Browser cleanup failed:', error.message));
     if (server) await server.close().catch((error) => console.warn('Static server cleanup failed:', error.message));
