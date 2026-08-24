@@ -34,6 +34,9 @@ These guardrails apply to every polish item and final release check.
   - Decision: celebrate the rolled number only — `NATURAL 20!` and red `NATURAL 1!`; the table decides what those numbers mean in context.
   - Validation required before checkoff: focused behavior contract must prove both labels and preserve existing single-d20/ADV/DIS outcome detection.
 - [ ] 2. Redesign mobile Dice Studio navigation so editing is the primary task and Sets/Community do not block the editor.
+  - Decision: mobile Dice Studio opens on `Edit`, with one-tap `Preview`, `Sets`, and `Community` sections. Selecting New Set or an owned set returns to Edit; selecting a preview face returns to Edit; Community remains separate from My Collection.
+  - Accessibility/flow requirements: all section controls at least 44px, visible focus, no horizontal overflow, global status remains visible, and desktop Dice Studio layout remains unchanged.
+  - Validation required before checkoff: dedicated rendered mobile browser test must prove Edit-first visibility, all four section transitions, New Set handoff, preview-face handoff, target sizes, and no horizontal overflow.
 - [ ] 3. Upgrade Dice Studio preview to use the real physical die appearance/geometry where feasible.
 - [ ] 4. Group advanced Dice Studio controls into clear progressive sections without hiding power-user functionality.
 - [ ] 5. Add a persistent/sticky Dice Studio Save / Use workflow and move destructive/publishing actions out of the primary path.
