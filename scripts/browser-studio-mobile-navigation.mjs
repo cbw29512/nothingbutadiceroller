@@ -35,17 +35,29 @@ async function run() {
     await waitFor(browser.client, "document.querySelector('#studio-status')?.textContent.includes('Dice Studio ready.')");
     await waitFor(browser.client, "document.querySelectorAll('.studio-mobile-nav-btn').length === 4");
 
-    const initial = await browser.client.evaluate(`(() => ({
-      view: document.body.dataset.studioMobileView,
-      labels: [...document.querySelectorAll('.studio-mobile-nav-btn')].map((button) => button.textContent.trim()),
-      heights: [...document.querySelectorAll('.studio-mobile-nav-btn')].map((button) => button.getBoundingClientRect().height),
-      selected: [...document.querySelectorAll('.studio-mobile-nav-btn')].filter((button) => button.getAttribute('aria-pressed') === 'true').map((button) => button.dataset.studioMobileTarget),
-      overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
-    }))()`);
+    const initial = await browser.client.evaluate(`(() => {
+      const headerActions = [...document.querySelectorAll('.studio-header > .button-row .btn')].map((element) => {
+        const rect = element.getBoundingClientRect();
+        return { top: rect.top, height: rect.height };
+      });
+      return {
+        view: document.body.dataset.studioMobileView,
+        labels: [...document.querySelectorAll('.studio-mobile-nav-btn')].map((button) => button.textContent.trim()),
+        heights: [...document.querySelectorAll('.studio-mobile-nav-btn')].map((button) => button.getBoundingClientRect().height),
+        selected: [...document.querySelectorAll('.studio-mobile-nav-btn')].filter((button) => button.getAttribute('aria-pressed') === 'true').map((button) => button.dataset.studioMobileTarget),
+        headerActions,
+        navTop: document.querySelector('.studio-mobile-nav')?.getBoundingClientRect().top ?? 999,
+        overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      };
+    })()`);
     assert.equal(initial.view, 'edit', 'Mobile Dice Studio must open directly in Edit.');
     assert.deepEqual(initial.labels, ['Edit', 'Preview', 'Sets', 'Community']);
     assert.deepEqual(initial.selected, ['edit']);
     assert.ok(initial.heights.every((height) => height >= 44), `Every mobile Studio section target must be at least 44px; received ${initial.heights.join(', ')}.`);
+    assert.equal(initial.headerActions.length, 2, 'Mobile Studio header must preserve both How To and Back to Roller actions.');
+    assert.ok(initial.headerActions.every(({ height }) => height >= 44), `Mobile Studio header actions must remain at least 44px; received ${JSON.stringify(initial.headerActions)}.`);
+    assert.ok(Math.abs(initial.headerActions[0].top - initial.headerActions[1].top) <= 1, `Mobile Studio header actions should share one compact row: ${JSON.stringify(initial.headerActions)}.`);
+    assert.ok(initial.navTop < 260, `Mobile Studio chrome is too tall before section navigation: nav starts at ${initial.navTop}px.`);
     assert.ok(initial.overflow <= 1, `Mobile Studio navigation introduced ${initial.overflow}px horizontal overflow.`);
     assert.equal(await visible(browser.client, '.editor-panel'), true, 'Edit panel must be the initial visible mobile view.');
     assert.equal(await visible(browser.client, '.studio-preview-panel'), false, 'Preview must not block the initial Edit view.');
@@ -78,7 +90,7 @@ async function run() {
       assert.equal(await visible(browser.client, '.editor-panel'), true, 'Selecting a preview face must return to Edit so the face editor is visible.');
     }
 
-    console.log('Mobile Dice Studio navigation passed: Edit-first flow, 44px section controls, isolated Preview/Sets/Community views, New Set handoff, preview-face handoff, and no horizontal overflow.');
+    console.log('Mobile Dice Studio navigation passed: compact accessible header actions, Edit-first flow, 44px section controls, isolated Preview/Sets/Community views, New Set handoff, preview-face handoff, and no horizontal overflow.');
   } finally {
     if (browser) await browser.close().catch((error) => console.warn('Browser cleanup failed:', error.message));
     if (server) await server.close().catch((error) => console.warn('Static server cleanup failed:', error.message));

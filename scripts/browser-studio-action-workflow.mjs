@@ -23,6 +23,7 @@ async function runViewport(client, origin, viewport) {
     const bar = document.querySelector('.studio-primary-action-bar');
     const more = document.querySelector('.studio-secondary-actions');
     const summary = more?.querySelector(':scope > summary');
+    const detail = bar.querySelector('.studio-primary-action-state small');
     return {
       primaryIds: [...bar.querySelectorAll('button')].map((button) => button.id),
       secondaryIds: [...more.querySelectorAll('button')].map((button) => button.id),
@@ -30,6 +31,7 @@ async function runViewport(client, origin, viewport) {
       summaryHeight: summary?.getBoundingClientRect().height || 0,
       position: getComputedStyle(bar).position,
       state: bar.querySelector('.studio-primary-action-state strong')?.textContent.trim() || '',
+      savedDetailVisible: Boolean(detail?.getClientRects().length) && getComputedStyle(detail).display !== 'none',
       useText: document.querySelector('#use-set')?.textContent.trim() || '',
       overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
     };
@@ -41,7 +43,10 @@ async function runViewport(client, origin, viewport) {
   assert.equal(initial.state, 'Saved', `${viewport.name}: initial immutable/default state should be clean.`);
   assert.equal(initial.useText, STUDIO_USE_ACTION_LABEL);
   assert.ok(initial.overflow <= 1, `${viewport.name}: action workflow introduced ${initial.overflow}px horizontal overflow.`);
-  if (viewport.mobile) assert.ok(initial.summaryHeight >= 44, `Mobile More actions target is ${initial.summaryHeight}px.`);
+  if (viewport.mobile) {
+    assert.ok(initial.summaryHeight >= 44, `Mobile More actions target is ${initial.summaryHeight}px.`);
+    assert.equal(initial.savedDetailVisible, false, 'Mobile saved state should stay compact instead of repeating the saved-state explanation.');
+  }
 
   if (viewport.mobile) {
     await client.evaluate("document.querySelector('[data-studio-mobile-target=\"sets\"]')?.click()");
@@ -51,6 +56,13 @@ async function runViewport(client, origin, viewport) {
   await waitFor(client, "document.querySelector('#set-name')?.value === 'New Dice Set'");
   await waitFor(client, "document.querySelector('.studio-primary-action-state strong')?.textContent === 'Unsaved changes'");
   assert.equal(await client.evaluate("document.querySelector('#save-set')?.disabled"), false, `${viewport.name}: new set must be saveable from sticky bar.`);
+  if (viewport.mobile) {
+    const dirtyDetailVisible = await client.evaluate(`(() => {
+      const detail = document.querySelector('.studio-primary-action-state small');
+      return Boolean(detail?.getClientRects().length) && getComputedStyle(detail).display !== 'none';
+    })()`);
+    assert.equal(dirtyDetailVisible, true, 'Mobile unsaved state must keep its save-before-use guidance visible.');
+  }
 
   await client.evaluate(`(() => {
     const name = document.querySelector('#set-name');
@@ -62,6 +74,13 @@ async function runViewport(client, origin, viewport) {
   await client.evaluate("document.querySelector('#save-set')?.click()");
   await waitFor(client, "document.querySelector('#studio-status')?.textContent.includes('Dice set saved.')");
   await waitFor(client, "document.querySelector('.studio-primary-action-state strong')?.textContent === 'Saved'");
+  if (viewport.mobile) {
+    const savedDetailVisible = await client.evaluate(`(() => {
+      const detail = document.querySelector('.studio-primary-action-state small');
+      return Boolean(detail?.getClientRects().length) && getComputedStyle(detail).display !== 'none';
+    })()`);
+    assert.equal(savedDetailVisible, false, 'Mobile saved state should collapse its redundant detail again after saving.');
+  }
 
   await client.evaluate("document.querySelector('.studio-secondary-actions > summary')?.click()");
   await waitFor(client, "document.querySelector('.studio-secondary-actions')?.open === true");
@@ -98,7 +117,7 @@ async function run() {
     server = await startBuiltSiteServer(dist);
     browser = await launchBrowser();
     for (const viewport of viewports) await runViewport(browser.client, server.origin, viewport);
-    console.log('Dice Studio Save/Use workflow passed: sticky primary actions, explicit Use This Set wording, secondary destructive/publishing actions, clean/dirty feedback, save recovery, mobile target sizing, focus visibility, and no horizontal overflow.');
+    console.log('Dice Studio Save/Use workflow passed: sticky primary actions, explicit Use This Set wording, compact saved state, visible unsaved guidance, secondary destructive/publishing actions, save recovery, mobile target sizing, focus visibility, and no horizontal overflow.');
   } finally {
     if (browser) await browser.close().catch((error) => console.warn('Browser cleanup failed:', error.message));
     if (server) await server.close().catch((error) => console.warn('Static server cleanup failed:', error.message));
