@@ -1,8 +1,9 @@
 import { spawn, spawnSync } from 'node:child_process';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
 import { CdpClient } from './cdp-client.mjs';
+import { removeTempDirectory, stopChildProcess } from './process-cleanup.mjs';
 
 const sleep = (ms) => new Promise((resolvePromise) => setTimeout(resolvePromise, ms));
 
@@ -31,7 +32,6 @@ async function waitForDebugger(child, stderr) {
     if (child.exitCode != null) {
       throw new Error(`Browser exited before DevTools was ready (${child.exitCode}). ${stderr()}`);
     }
-
     const port = devToolsPort(stderr());
     if (port) {
       try {
@@ -73,16 +73,21 @@ export async function launchBrowser() {
       command,
       client,
       async close() {
-        client.close();
-        if (child.exitCode == null) child.kill('SIGTERM');
-        await sleep(150);
-        if (child.exitCode == null) child.kill('SIGKILL');
-        await rm(profile, { recursive: true, force: true });
+        try {
+          client.close();
+        } finally {
+          await stopChildProcess(child);
+          await removeTempDirectory(profile);
+        }
       },
     };
   } catch (error) {
-    if (child.exitCode == null) child.kill('SIGKILL');
-    await rm(profile, { recursive: true, force: true });
+    try {
+      await stopChildProcess(child);
+      await removeTempDirectory(profile);
+    } catch (cleanupError) {
+      console.warn('Browser launch cleanup failed:', cleanupError.message);
+    }
     throw error;
   }
 }
