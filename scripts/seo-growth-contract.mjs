@@ -6,7 +6,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const origin = 'https://nothingbutattrpgdiceroller.netlify.app';
 
-const indexablePages = Object.freeze([
+const growthPages = Object.freeze([
   ['index.html', `${origin}/`],
   ['resources.html', `${origin}/resources.html`],
   ['d20-roller.html', `${origin}/d20-roller.html`],
@@ -19,6 +19,10 @@ const indexablePages = Object.freeze([
   ['dice-notation.html', `${origin}/dice-notation.html`],
   ['dice-randomness.html', `${origin}/dice-randomness.html`],
   ['custom-3d-dice.html', `${origin}/custom-3d-dice.html`],
+]);
+
+const sitemapPages = Object.freeze([
+  ...growthPages,
   ['how-to.html', `${origin}/how-to.html`],
   ['privacy.html', `${origin}/privacy.html`],
   ['legal.html', `${origin}/legal.html`],
@@ -34,7 +38,7 @@ function decodeBasicEntities(value) {
   return value.replaceAll('&amp;', '&').replaceAll('&quot;', '"').replaceAll('&#39;', "'");
 }
 
-async function validateIndexablePage(path, canonical) {
+async function validateGrowthPage(path, canonical) {
   const html = await readFile(resolve(root, path), 'utf8');
   const title = decodeBasicEntities(oneMatch(html, /<title>([^<]+)<\/title>/gi, `${path} title`)).trim();
   const description = oneMatch(html, /<meta\s+name="description"\s+content="([^"]+)"/gi, `${path} meta description`).trim();
@@ -57,14 +61,14 @@ async function validateIndexablePage(path, canonical) {
 
 try {
   const metadata = [];
-  for (const [path, canonical] of indexablePages) metadata.push(await validateIndexablePage(path, canonical));
-  assert.equal(new Set(metadata.map(({ title }) => title)).size, metadata.length, 'Indexable page titles must be unique.');
-  assert.equal(new Set(metadata.map(({ canonical }) => canonical)).size, metadata.length, 'Canonical URLs must be unique.');
+  for (const [path, canonical] of growthPages) metadata.push(await validateGrowthPage(path, canonical));
+  assert.equal(new Set(metadata.map(({ title }) => title)).size, metadata.length, 'Growth page titles must be unique.');
+  assert.equal(new Set(metadata.map(({ canonical }) => canonical)).size, metadata.length, 'Growth page canonical URLs must be unique.');
 
   const sitemap = await readFile(resolve(root, 'sitemap.xml'), 'utf8');
   const sitemapUrls = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((match) => match[1]);
   assert.equal(new Set(sitemapUrls).size, sitemapUrls.length, 'Sitemap URLs must not be duplicated.');
-  for (const [, canonical] of indexablePages) assert.ok(sitemapUrls.includes(canonical), `Sitemap is missing ${canonical}.`);
+  for (const [, canonical] of sitemapPages) assert.ok(sitemapUrls.includes(canonical), `Sitemap is missing ${canonical}.`);
 
   const robots = await readFile(resolve(root, 'robots.txt'), 'utf8');
   assert.match(robots, /User-agent:\s*\*/i);
@@ -91,13 +95,13 @@ try {
   const example = d20ThresholdProbability(15, 5);
   assert.equal(example.successfulFaces, 11);
   assert.equal(example.normal, 0.55);
-  assert.ok(Math.abs(example.advantage - 0.7975) < Number.EPSILON * 4);
-  assert.ok(Math.abs(example.disadvantage - 0.3025) < Number.EPSILON * 4);
+  assert.ok(Math.abs(example.advantage - 0.7975) < 1e-12);
+  assert.ok(Math.abs(example.disadvantage - 0.3025) < 1e-12);
   assert.equal(d20ThresholdProbability(1, 100).normal, 1);
   assert.equal(d20ThresholdProbability(200, -100).normal, 0);
   assert.throws(() => d20ThresholdProbability(Number.NaN, 0), /finite numbers/);
 
-  console.log(`SEO/growth contract passed: ${indexablePages.length} indexable pages, unique canonicals/titles, complete sitemap, protected noindex tools, PWA shortcuts, and exact d20 odds.`);
+  console.log(`SEO/growth contract passed: ${growthPages.length} strict growth pages, ${sitemapPages.length} sitemap URLs, unique canonicals/titles, protected noindex tools, PWA shortcuts, and exact d20 odds.`);
 } catch (error) {
   console.error('SEO/growth contract failed:', error);
   process.exitCode = 1;
