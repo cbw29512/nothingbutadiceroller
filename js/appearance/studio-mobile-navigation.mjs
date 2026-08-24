@@ -89,7 +89,7 @@ export function bindStudioMobileNavigation({ documentRef = document, windowRef =
         windowRef.queueMicrotask(() => show('preview'));
         return;
       }
-      if (event.target.closest('[data-preview-face]')) windowRef.queueMicrotask(() => show('edit'));
+      if (event.target.closest('[data-preview-face]')) show('edit');
     });
 
     show(body.dataset.studioMobileView || 'edit');
