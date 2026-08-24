@@ -63,6 +63,12 @@ function openDrawer(drawer, opener) {
   focusDrawer(drawer);
 }
 
+function revealReturnFocusTarget(target) {
+  if (!(target instanceof HTMLElement)) return;
+  const closedDetails = target.closest('details:not([open])');
+  if (closedDetails) closedDetails.open = true;
+}
+
 export function closeDrawers() {
   const target = returnFocus;
   getDrawers().forEach(([, drawer]) => setDrawerVisible(drawer, false));
@@ -70,7 +76,10 @@ export function closeDrawers() {
   returnFocus = null;
   setBackgroundInert(null);
   queueMicrotask(() => {
-    if (target instanceof HTMLElement && target.isConnected) target.focus();
+    if (target instanceof HTMLElement && target.isConnected) {
+      revealReturnFocusTarget(target);
+      target.focus();
+    }
   });
 }
 
