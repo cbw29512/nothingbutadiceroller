@@ -56,10 +56,19 @@ export async function assertMobileCustomInteraction(client) {
     total: Number(document.querySelector('#total-result')?.textContent),
     breakdown: document.querySelector('#breakdown-text')?.textContent || '',
     display: document.querySelector('.custom-roll-display')?.getAttribute('aria-label') || '',
+    caption: document.querySelector('.custom-result-caption')?.textContent || '',
+    proofSummary: document.querySelector('.custom-random-proof summary')?.textContent || '',
+    proofText: document.querySelector('.custom-random-proof p')?.textContent || '',
   }))()`);
   assert.ok(result.total >= 1 && result.total <= 37, `Custom d37 result must be 1-37; received ${result.total}.`);
-  assert.match(result.breakdown, /Web Crypto CSPRNG/i);
+  assert.match(result.breakdown, /Secure random/i);
+  assert.doesNotMatch(result.breakdown, /CSPRNG|rejection sampling/i, 'Primary custom-result breakdown should stay table-facing, not implementation-facing.');
   assert.match(result.display, /Custom d37 result/i);
+  assert.match(result.display, /Secure random range 1 through 37/i);
+  assert.equal(result.caption, 'Secure random • range 1–37');
+  assert.equal(result.proofSummary, 'How randomness works');
+  assert.match(result.proofText, /Web Crypto CSPRNG/i);
+  assert.match(result.proofText, /rejection sampling/i);
 }
 
 export async function assertDrawerAccessibility(client) {

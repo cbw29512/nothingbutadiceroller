@@ -56,6 +56,9 @@ This checklist is the source of truth for the final product-polish pass. We will
   - Mechanics/accessibility requirements: 24-slot limit, RAW/Homebrew compilation, toolbar rows, persistence, press behavior, and prepared-roll execution remain unchanged; gear remains available in guest mode and keyboard focus continues to reveal shortcut details.
   - Validation required before checkoff: deterministic integration contract plus rendered mobile test must prove first-use copy, gear availability, configured-hint retirement, My shortcuts state, keyboard detail reveal, and unchanged storage/toolbar mechanics.
 - [ ] 8. Simplify technical custom-die result copy while retaining an accessible secure-random explanation.
+  - Decision: primary custom-die presentation shows the rolled `dN` value plus `Secure random • range 1–N`. The implementation terminology is removed from the primary breakdown and placed under a collapsed `How randomness works` disclosure.
+  - Security/accessibility requirements: Web Crypto `getRandomValues` and rejection sampling remain unchanged; the disclosure explains `Web Crypto CSPRNG + rejection sampling`, is keyboard-operable with a 44px mobile target, and no custom result may imply physical 3D resolution.
+  - Validation required before checkoff: deterministic build contract plus rendered mobile test must prove result range, concise primary copy, collapsed technical proof, Web Crypto/rejection-sampling explanation, target size, and no horizontal overflow.
 - [ ] 9. Add useful roll-history actions such as exact reroll and copy, without changing logged roll semantics.
 - [ ] 10. Improve mobile selected-dice visibility with compact quantity feedback while preserving the compact dice row.
 - [ ] 11. Evaluate offline/installable basic roller support only after items 1–10 are complete; implement only if it can fail safely for cloud/account features.
