@@ -2,6 +2,8 @@ import { state, loadPreferences, savePreferences } from './state.js';
 import { getSkinColor } from './utils.js';
 import { initDicePhysics } from './physics.js';
 import { addDie, clearPool, performRoll } from './roller.js';
+import { performCustomRoll } from './custom-roll.js';
+import { initHistoryActions } from './history-actions.js';
 import { renderHistory, renderPool, setStatus } from './ui.js';
 import { assertStylesLoaded } from './deployment.js';
 import { initAccount } from './account.js';
@@ -44,6 +46,26 @@ async function clearActiveRoll() {
   closeCustomDieControls();
   if (isShortcutPrepared()) await clearPreparedShortcut();
   return clearPool();
+}
+
+async function rerollHistoryDescriptor(descriptor) {
+  if (state.rolling) return false;
+  closeDrawers();
+  closeCustomDieControls();
+  if (isShortcutPrepared()) await clearPreparedShortcut();
+
+  if (descriptor.kind === 'standard') {
+    const poolOverride = descriptor.dice.map((type) => ({ type }));
+    return performRoll(descriptor.mode, {
+      quickD20: descriptor.quickD20,
+      poolOverride,
+      preserveSelection: true,
+    });
+  }
+  if (descriptor.kind === 'custom') {
+    return performCustomRoll(String(descriptor.sides));
+  }
+  throw new Error('This history entry cannot be rerolled safely.');
 }
 
 function canRollActiveFromTray() {
@@ -101,6 +123,7 @@ function bindEvents() {
     initCustomDieControls();
     initMobileHeaderMenu();
     initDrawerControls();
+    initHistoryActions({ reroll: rerollHistoryDescriptor, setStatus });
     initTrayControls(performActiveRoll, canRollActiveFromTray);
     document.addEventListener('rollstatechange', syncControls);
     document.addEventListener('shortcutstatechange', syncControls);

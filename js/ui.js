@@ -1,4 +1,5 @@
 import { state } from './state.js';
+import { canRerollHistoryItem } from './history-records.mjs';
 import { countDice } from './utils.js';
 
 export function formatRollButtonLabel(selectedDice = state.selectedDice) {
@@ -89,7 +90,7 @@ export function renderHistory() {
       return;
     }
 
-    state.history.forEach(item => {
+    state.history.forEach((item, index) => {
       const row = document.createElement('div');
       row.className = 'history-item';
       ['formula', 'time', 'breakdown', 'total'].forEach(key => {
@@ -98,6 +99,31 @@ export function renderHistory() {
         cell.textContent = item[key];
         row.appendChild(cell);
       });
+
+      const actions = document.createElement('div');
+      actions.className = 'history-actions';
+
+      const reroll = document.createElement('button');
+      reroll.type = 'button';
+      reroll.className = 'btn ghost history-action-btn history-reroll-btn';
+      reroll.dataset.historyAction = 'reroll';
+      reroll.dataset.historyIndex = String(index);
+      reroll.textContent = 'Reroll';
+      reroll.disabled = !canRerollHistoryItem(item);
+      reroll.title = reroll.disabled
+        ? 'Exact reroll is unavailable for this older or non-replayable history entry.'
+        : `Reroll ${item.formula}`;
+
+      const copy = document.createElement('button');
+      copy.type = 'button';
+      copy.className = 'btn ghost history-action-btn history-copy-btn';
+      copy.dataset.historyAction = 'copy';
+      copy.dataset.historyIndex = String(index);
+      copy.textContent = 'Copy';
+      copy.title = `Copy ${item.formula}`;
+
+      actions.append(reroll, copy);
+      row.appendChild(actions);
       list.appendChild(row);
     });
   } catch (err) {

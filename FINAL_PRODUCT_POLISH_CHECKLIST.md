@@ -60,6 +60,9 @@ This checklist is the source of truth for the final product-polish pass. We will
   - Security/accessibility requirements: Web Crypto `getRandomValues` and rejection sampling remain unchanged; the disclosure explains `Web Crypto CSPRNG + rejection sampling`, is keyboard-operable with a 44px mobile target, and no custom result may imply physical 3D resolution.
   - Validation required before checkoff: deterministic build contract plus rendered mobile test must prove result range, concise primary copy, collapsed technical proof, Web Crypto/rejection-sampling explanation, target size, and no horizontal overflow.
 - [ ] 9. Add useful roll-history actions such as exact reroll and copy, without changing logged roll semantics.
+  - Decision: every history entry gets `Copy`. New standard and custom rolls also get `Reroll` through a validated replay descriptor; legacy, shortcut, malformed, or otherwise non-replayable entries fail closed with Reroll disabled instead of reconstructing a request from display text.
+  - Mechanics/accessibility requirements: standard reroll reuses the original canonical dice pool and ADV/DIS mode while preserving the user's currently selected dice; custom reroll reuses the original dN size; Copy emits stable plain text and never mutates history; mobile history actions are at least 44px.
+  - Validation required before checkoff: deterministic replay-descriptor contract plus rendered browser test must prove exact standard replay, preservation of current selection, stable Copy output, fail-closed legacy/unsupported behavior, and unchanged history totals/breakdowns.
 - [ ] 10. Improve mobile selected-dice visibility with compact quantity feedback while preserving the compact dice row.
 - [ ] 11. Evaluate offline/installable basic roller support only after items 1–10 are complete; implement only if it can fail safely for cloud/account features.
 

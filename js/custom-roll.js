@@ -1,5 +1,6 @@
 import { state, savePreferences } from './state.js';
 import { clearPhysics } from './physics.js';
+import { createCustomHistoryReroll } from './history-records.mjs';
 import { renderHistory, renderResults } from './ui.js';
 
 const MAX_CUSTOM_SIDES = 1_000_000;
@@ -140,6 +141,7 @@ export async function performCustomRoll(rawSides) {
       formula: `1d${sides} custom`,
       breakdown,
       total: String(result),
+      reroll: createCustomHistoryReroll(sides),
     });
 
     if (state.history.length > 30) state.history.length = 30;
