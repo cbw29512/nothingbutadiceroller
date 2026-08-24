@@ -1,3 +1,5 @@
+export const STUDIO_USE_ACTION_LABEL = 'Use This Set & Back to Roller';
+
 export function bindStudioActionWorkflow({ documentRef = document, windowRef = window, draftGuard } = {}) {
   try {
     const original = documentRef.querySelector('.editor-panel > .studio-actions');
@@ -27,7 +29,7 @@ export function bindStudioActionWorkflow({ documentRef = document, windowRef = w
     state.className = 'studio-primary-action-state';
     state.innerHTML = '<strong></strong><small></small>';
     save.textContent = 'Save Set';
-    use.textContent = 'Use & Back to Roller';
+    use.textContent = STUDIO_USE_ACTION_LABEL;
     primary.append(state, save, use);
     original.replaceWith(secondary, primary);
 
