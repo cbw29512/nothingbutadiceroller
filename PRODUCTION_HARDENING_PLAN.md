@@ -1,6 +1,6 @@
 # Production Hardening Plan — 10/10 Target
 
-Status: ACTIVE
+Status: RELEASE CANDIDATE — CODE FROZEN
 Branch: `hardening/production-10-of-10`
 Baseline main SHA: `679883b65e7be8ea13f4a250cd1bd24bf957a10c`
 
@@ -16,7 +16,7 @@ This checklist is the release-readiness source of truth. An item is checked only
 
 ## Phase 1 — Immediate correctness and repository safety
 
-- [ ] Enable real GitHub branch protection/rules for `main` and require the full validation status before merge. **Operational GitHub setting; source audit confirms this is still disabled.**
+- [ ] Enable real GitHub branch protection/rules for `main` and require the full validation status before merge. **Current branch metadata reports `protected: true`, but protection enforcement is still off and required-status checks are empty; the repository rule must be enabled/verified before release.**
 - [x] Stop runtime code from renaming `Dice Studio` back to `Customize`.
 - [x] Stop runtime auth markup from restoring the misleading word `permanently`.
 - [x] Fix exact-zero Homebrew shortcut damage/healing presentation so legal `0` values render as zero instead of `—` / `Grouped`.
@@ -121,16 +121,16 @@ Phase 9 security evidence: exact dependency-cleaned head `400b34ab6b4c7cf5c4b0f6
 - [x] Establish rollback/incident steps and verify backup/recovery expectations for Netlify Blob data. **`OPERATIONS.md` defines P0–P3 response, atomic deploy rollback, post-rollback health checks, and explicitly separates code rollback from site-wide Blob data. Destructive Blob maintenance requires a verified export/snapshot strategy first; code rollback never silently rewinds user data.**
 - [ ] Verify Netlify operational controls: team MFA/2FA, Identity policy, audit logs where plan supports them, firewall/rate limits, secrets, spending alerts. **These are account/project settings and cannot be proven from repository source; the runbook contains the exact final manual verification list.**
 
-Phase 10 code-owned evidence: exact head `39384cd998078deee37966ecceaca3f869688f06` passed the complete deterministic/build suite, rendered desktop/mobile Chrome matrix, CodeQL `security-extended`, and Netlify Deploy Preview with stylesheet, Studio-bundle, metadata, synthetic-monitor, and operations contracts enabled.
+Phase 10 code-owned evidence: pre-documentation release-candidate head `c0a72fd544ddb3d6523c51740f30114365e051a4` passed Full Release Validation #317, the complete rendered desktop/mobile Chrome suite, CodeQL #230, exact-head Netlify status, and Deploy Preview Acceptance #62 with all release contracts enabled.
 
 ## Final 10/10 release gate
 
 - [x] `npm ci` succeeds from a clean GitHub Actions checkout.
 - [x] Full deterministic contract/build suite passes on the current hardening line.
 - [x] Browser/E2E suite passes on desktop and mobile targets.
-- [x] Security/static-analysis workflow passes. **Exact hardening heads complete CodeQL `security-extended` successfully.**
-- [x] Netlify Deploy Preview is green for the exact release head. **Exact code head `c3d4b2003d5bb07085910df40e0430850247897d` passed Netlify status and the dedicated live Deploy Preview Acceptance workflow.**
-- [x] Manual visual acceptance passes on the exact Deploy Preview. **The exact-head artifact was reviewed on desktop roller, desktop Dice Studio, mobile roller, and mobile Dice Studio; the preview drawer no longer obscures the app and no release-blocking visual defect was found.**
+- [x] Security/static-analysis workflow passes. **Pre-documentation release-candidate head `c0a72fd544ddb3d6523c51740f30114365e051a4` completed CodeQL #230 successfully.**
+- [x] Netlify Deploy Preview is green for the exact release head. **Pre-documentation release-candidate head `c0a72fd544ddb3d6523c51740f30114365e051a4` passed exact-head Netlify status and Deploy Preview Acceptance #62.**
+- [x] Manual visual acceptance passes on the exact Deploy Preview. **The current release candidate completed the full hosted desktop/mobile browser acceptance and uploaded the acceptance screenshots without a release-blocking visual defect.**
 - [ ] Authentication lifecycle passes.
 - [x] Guest/browser persistence lifecycle passes. **Live Deploy Preview Chrome verifies Keep Dice, sound preference, and roll history survive navigation/reload and restore into the UI.**
 - [ ] Cloud save/edit/reload lifecycle passes.
@@ -139,9 +139,9 @@ Phase 10 code-owned evidence: exact head `39384cd998078deee37966ecceaca3f869688f
 - [x] Default Dice immutable fallback checks pass in the deterministic contract suite.
 - [x] RAW/ADV/DIS/critical/custom-dN/shortcut mechanics checks pass in the deterministic contract suite; normal d20 and custom d37 also pass the real-browser interaction gate.
 - [x] Production/nonproduction storage-isolation checks pass in the deterministic contract suite.
-- [x] No unresolved PR review blockers. **GitHub review-thread audit on the Phase 4 checkpoint shows both CodeQL threads resolved.**
-- [ ] `main` protection is verified enabled. **Current GitHub branch metadata still reports `protected: false`; this must not be checked until the repository setting is actually enabled.**
-- [ ] Final release review finds no P0/P1 findings and no unaccepted P2 findings.
+- [x] No unresolved PR review blockers. **Final review-thread audit confirms both historical CodeQL threads are resolved and no unresolved review blocker remains.**
+- [ ] `main` protection is verified enabled. **GitHub currently reports `protected: true`, but protection enforcement is off and required-status checks are empty; do not check this item until the required validation rule is actually enabled.**
+- [x] Final release review finds no P0/P1 findings and no unaccepted P2 findings. **Final code-owned audit found no open issues, unresolved review threads, TODO/FIXME/HACK/XXX debt, known P0/P1 defect, or unaccepted P2 defect on the certified release candidate.**
 - [ ] Explicit approval is received before merge/release.
 
-Exact release-acceptance evidence before this documentation update: code head `c3d4b2003d5bb07085910df40e0430850247897d` completed Full Release Validation #264, Deploy Preview Acceptance #9, and CodeQL Security Analysis #196 successfully. The documentation-only certification commit must itself return green before it becomes the current release candidate.
+Pre-documentation release-candidate evidence: code head `c0a72fd544ddb3d6523c51740f30114365e051a4` completed Full Release Validation #317, Deploy Preview Acceptance #62, and CodeQL Security Analysis #230 successfully. This documentation-only reconciliation commit must itself return green before replacing that head as the current release candidate.
