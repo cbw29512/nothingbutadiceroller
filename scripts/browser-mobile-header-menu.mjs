@@ -73,10 +73,9 @@ async function run() {
     assert.equal(await client.evaluate("document.querySelector('.mobile-header-more')?.open"), false, 'More menu must close when opening account.');
     await client.evaluate("document.querySelector('#close-account-btn')?.click()");
     await waitFor(client, "document.querySelector('#account-drawer')?.getAttribute('aria-hidden') === 'true'");
+    await waitFor(client, "document.querySelector('.mobile-header-more')?.open === true");
     await waitFor(client, "document.activeElement?.classList.contains('mobile-account-proxy') === true");
 
-    await client.evaluate("document.querySelector('.mobile-header-more > summary')?.click()");
-    await waitFor(client, "document.querySelector('.mobile-header-more')?.open === true");
     await client.evaluate("document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))");
     await waitFor(client, "document.querySelector('.mobile-header-more')?.open === false");
     await waitFor(client, "document.activeElement === document.querySelector('.mobile-header-more > summary')");
