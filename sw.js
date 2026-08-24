@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'ndr-offline-core-';
-const CACHE_NAME = `${CACHE_PREFIX}v20260824-polish3`;
+const CACHE_NAME = `${CACHE_PREFIX}v20260824-growth1`;
 
 const CORE_PATHS = Object.freeze([
   '/',
