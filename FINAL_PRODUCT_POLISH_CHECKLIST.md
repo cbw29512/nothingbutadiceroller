@@ -17,6 +17,8 @@ This checklist is the source of truth for the final product-polish pass. We will
 ## Final product-polish items
 
 - [ ] 1. Correct generic natural-1 / natural-20 feedback so a plain d20 never falsely implies universal RAW critical failure/success.
+  - Decision: celebrate the rolled number only — `NATURAL 20!` and red `NATURAL 1!`; the table decides what those numbers mean in context.
+  - Validation required before checkoff: focused behavior contract must prove both labels and preserve existing single-d20/ADV/DIS outcome detection.
 - [ ] 2. Redesign mobile Dice Studio navigation so editing is the primary task and Sets/Community do not block the editor.
 - [ ] 3. Upgrade Dice Studio preview to use the real physical die appearance/geometry where feasible.
 - [ ] 4. Group advanced Dice Studio controls into clear progressive sections without hiding power-user functionality.

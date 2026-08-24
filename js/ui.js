@@ -17,6 +17,12 @@ export function formatRollButtonLabel(selectedDice = state.selectedDice) {
   }
 }
 
+export function formatNaturalRollFeedback(kind) {
+  if (kind === 'nat20') return '🎉 NATURAL 20! 🎉';
+  if (kind === 'nat1') return '💀 NATURAL 1! 💀';
+  return '';
+}
+
 function syncRollButtonLabels() {
   const label = formatRollButtonLabel(state.selectedDice);
   ['roll-btn', 'mobile-roll-btn'].forEach(id => {
@@ -127,12 +133,15 @@ export function showCrit(kind) {
     if (!host) return;
     host.replaceChildren();
 
+    const message = formatNaturalRollFeedback(kind);
+    if (!message) return;
+
     const banner = document.createElement('div');
     banner.className = `crit-banner ${kind}`;
-    banner.textContent = kind === 'nat20' ? '🎉 NATURAL 20! 🎉' : '💀 CRITICAL FAIL! 💀';
+    banner.textContent = message;
     host.appendChild(banner);
     setTimeout(() => host.replaceChildren(), 1700);
   } catch (err) {
-    console.error('Failed to render critical-roll effect:', err);
+    console.error('Failed to render natural-roll effect:', err);
   }
 }

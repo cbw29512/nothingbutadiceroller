@@ -1,0 +1,32 @@
+name: Polish Targeted Validation
+
+on:
+  push:
+    branches:
+      - polish/final-product-pass-20260823
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: polish-targeted-validation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  behavior:
+    name: Polish behavior contracts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+      - name: Use Node 22
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22.16.0
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Run focused behavior contract
+        run: node scripts/behavior-check.mjs
