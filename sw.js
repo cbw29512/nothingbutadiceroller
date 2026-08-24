@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'ndr-offline-core-';
-const CACHE_NAME = `${CACHE_PREFIX}v20260824-polish2`;
+const CACHE_NAME = `${CACHE_PREFIX}v20260824-polish3`;
 
 const CORE_PATHS = Object.freeze([
   '/',
@@ -12,6 +12,8 @@ const CORE_PATHS = Object.freeze([
   '/custom.css',
   '/shortcut-toolbar.css',
   '/favicon.svg',
+  '/pwa-icon-192.png',
+  '/pwa-icon-512.png',
   '/site.webmanifest',
   '/js/app.js',
   '/vendor/dice-box-1.1.4/dice-box.es.min.js',
