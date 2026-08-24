@@ -45,14 +45,28 @@ async function run() {
       const separate = document.querySelector('#die-style-enabled');
       separate.checked = true;
       separate.dispatchEvent(new Event('change', { bubbles: true }));
-      const color = document.querySelector('#die-glow-color');
-      color.value = '#00ffcc';
-      color.dispatchEvent(new Event('input', { bubbles: true }));
       const glow = document.querySelector('#die-glow-enabled');
       glow.checked = true;
       glow.dispatchEvent(new Event('change', { bubbles: true }));
     })()`);
     await waitFor(client, "document.querySelector('#studio-status')?.textContent.includes('D4 number glow enabled')");
+
+    const initialGlow = await client.evaluate(`(() => ({
+      shadow: document.querySelector('.studio-preview-die[data-die="d4"] span')?.style.textShadow || '',
+      mapShadow: document.querySelector('#face-map [data-face="4"] [data-face-glyph]')?.style.textShadow || '',
+      glowChecked: Boolean(document.querySelector('#die-glow-enabled')?.checked),
+      glowColor: document.querySelector('#die-glow-color')?.value || '',
+    }))()`);
+    assert.equal(initialGlow.glowChecked, true, 'D4 glow toggle must remain enabled.');
+    assert.ok(initialGlow.shadow && initialGlow.shadow !== 'none', 'Turning D4 glow on from zero intensity must immediately produce visible model glow.');
+    assert.ok(initialGlow.mapShadow && initialGlow.mapShadow !== 'none', 'Turning D4 glow on from zero intensity must immediately produce visible face-map glow.');
+
+    await client.evaluate(`(() => {
+      const color = document.querySelector('#die-glow-color');
+      color.value = '#00ffcc';
+      color.dispatchEvent(new Event('input', { bubbles: true }));
+    })()`);
+    await waitFor(client, "document.querySelector('#die-glow-color')?.value.toLowerCase() === '#00ffcc'");
 
     const preview = await client.evaluate(`(() => ({
       face: document.querySelector('#logical-face-label')?.textContent || '',
@@ -72,6 +86,17 @@ async function run() {
     assert.ok(preview.shadow && preview.shadow !== 'none', 'Live d4 face 4 must visibly glow in the Studio model preview.');
     assert.equal(preview.mapGlow, 'active', 'Live d4 face map must identify enabled number glow.');
     assert.ok(preview.mapShadow && preview.mapShadow !== 'none', 'Live d4 face map must visibly render number glow too.');
+
+    await client.evaluate(`(() => {
+      const glow = document.querySelector('#die-glow-enabled');
+      glow.checked = false;
+      glow.dispatchEvent(new Event('change', { bubbles: true }));
+      glow.checked = true;
+      glow.dispatchEvent(new Event('change', { bubbles: true }));
+    })()`);
+    await waitFor(client, "document.querySelector('#studio-status')?.textContent.includes('D4 number glow enabled')");
+    const reenabledShadow = await client.evaluate("document.querySelector('.studio-preview-die[data-die=\"d4\"] span')?.style.textShadow || ''");
+    assert.ok(reenabledShadow && reenabledShadow !== 'none', 'D4 glow must remain visible after disable/re-enable.');
 
     await client.evaluate("document.querySelector('#save-set')?.click()");
     await waitFor(client, "document.querySelector('#studio-status')?.textContent.includes('Dice set saved.')");
@@ -127,7 +152,7 @@ async function run() {
     assert.equal(raster.width, 1024); assert.equal(raster.height, 1024);
     assert.ok(raster.cyanPixels > 100, `Rendered glow texture must contain a visible cyan halo; received ${raster.cyanPixels} cyan pixels.`);
 
-    console.log(`Live d4 number-glow acceptance passed: model + face-map glow are visible, generated texture rasterized ${raster.cyanPixels} cyan halo pixels, Save/Use works, and physical d4 remains 1-4.`);
+    console.log(`Live d4 number-glow acceptance passed: zero-intensity enable is immediately visible, disable/re-enable stays visible, model + face-map glow render, texture rasterized ${raster.cyanPixels} cyan halo pixels, and physical d4 remains 1-4.`);
   } finally {
     if (browser) await browser.close().catch((error) => console.warn('D4 glow browser cleanup failed:', error.message));
   }
