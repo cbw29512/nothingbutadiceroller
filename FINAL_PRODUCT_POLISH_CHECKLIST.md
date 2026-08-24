@@ -46,6 +46,9 @@ These guardrails apply to every polish item and final release check.
   - Flow/accessibility requirements: native keyboard-operable disclosure controls, at least 44px targets on mobile, visible focus, no horizontal overflow, New Set/owned-set selection opens Dice, and selecting a preview face opens Faces and focuses the face editor.
   - Validation required before checkoff: rendered desktop/mobile test must prove all five sections, correct fieldset grouping, no lost controls, target size, New Set handoff, face-edit handoff, and no horizontal overflow.
 - [ ] 5. Add a persistent/sticky Dice Studio Save / Use workflow and move destructive/publishing actions out of the primary path.
+  - Decision: keep `Save Set` and `Use & Back to Roller` in a sticky primary action bar with clear `Saved` / `Unsaved changes` feedback. Move Lock/Unlock, Publish/Make Private, and Delete under a collapsed `More set actions` disclosure.
+  - Accessibility/flow requirements: sticky bar must not obscure focused controls, mobile action targets remain at least 44px, destructive actions remain explicitly labeled, and all existing save/use/lock/publish/delete authorization rules remain unchanged.
+  - Validation required before checkoff: desktop/mobile rendered test must prove action placement, sticky positioning, dirty/clean feedback, save recovery, secondary disclosure, mobile target size/focus visibility, and no horizontal overflow.
 - [ ] 6. Declutter the mobile roller header while keeping Dice Studio, History, account/help/support accessible.
 - [ ] 7. Polish shortcut-manager onboarding/gear affordance without changing the protected shortcut mechanics.
 - [ ] 8. Simplify technical custom-die result copy while retaining an accessible secure-random explanation.

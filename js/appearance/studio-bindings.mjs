@@ -1,4 +1,5 @@
 import { bindFaceSymbolPicker } from './face-symbol-picker.mjs';
+import { bindStudioActionWorkflow } from './studio-action-workflow.mjs';
 import { ensureStudioFaceFontControl } from './studio-face-font-controls.mjs';
 import { ensureStudioFacePositionControl } from './studio-face-position-controls.mjs';
 import { ensureStudioFaceScaleControl } from './studio-face-scale-controls.mjs';
@@ -43,6 +44,7 @@ export function bindStudioControls(context) {
     q('refresh-community').addEventListener('click', actions.reloadCommunity);
     q('load-more-community').addEventListener('click', actions.loadMoreCommunity);
     q('reset-default').addEventListener('click', actions.resetDefault);
+    bindStudioActionWorkflow({ documentRef, windowRef, draftGuard });
     q('set-name').addEventListener('input', () => { if (draft.canEdit()) draft.markDirty(); });
     q('set-name').addEventListener('change', () => draft.update((set) => { set.name = q('set-name').value.trim() || 'Untitled Dice Set'; }));
     documentRef.addEventListener('click', (event) => {
