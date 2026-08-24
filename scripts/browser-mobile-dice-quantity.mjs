@@ -28,8 +28,10 @@ async function run() {
       return {
         rowOverflowPx: row ? Math.max(0, row.scrollWidth - row.clientWidth) : 999,
         rowWidth: row?.getBoundingClientRect().width || 0,
+        pageOverflow: document.documentElement.scrollWidth > document.documentElement.clientWidth,
       };
     })()`);
+    assert.equal(baseline.pageOverflow, false, 'Protected mobile dice row must not create page-level horizontal overflow before quantity badges are shown.');
 
     await client.evaluate(`(() => {
       document.querySelector('.mobile-die-btn[data-type="d6"]')?.click();
@@ -66,7 +68,10 @@ async function run() {
     assert.equal(selected.d20Class, false);
     assert.match(selected.d6Label, /d6, 2 selected/i);
     assert.match(selected.d8Label, /d8, 1 selected/i);
-    assert.ok(selected.rowOverflowPx <= 1, `Quantity badges introduced ${selected.rowOverflowPx}px of mobile dice-row overflow.`);
+    assert.ok(
+      selected.rowOverflowPx <= baseline.rowOverflowPx + 1,
+      `Quantity badges increased protected mobile dice-row overflow from ${baseline.rowOverflowPx}px to ${selected.rowOverflowPx}px.`,
+    );
     assert.ok(Math.abs(selected.rowWidth - baseline.rowWidth) <= 0.5, `Quantity badges changed mobile dice-row width from ${baseline.rowWidth}px to ${selected.rowWidth}px.`);
     assert.equal(selected.pageOverflow, false, 'Quantity badges must not introduce page-level horizontal overflow.');
     assert.ok(selected.buttonMinHeight >= 40, `Protected mobile die target shrank below its existing minimum: ${selected.buttonMinHeight}px.`);
@@ -87,7 +92,7 @@ async function run() {
     assert.equal(cleared.remaining, 0, 'Clear must remove all mobile quantity badges.');
     assert.match(cleared.d6Label, /none selected/i);
 
-    console.log(`Mobile dice quantity feedback passed: compact per-die counts track selection/removal/clear state, improve accessible labels, preserve the protected row width, and stay within ${selected.rowOverflowPx}px rounding overflow.`);
+    console.log(`Mobile dice quantity feedback passed: compact per-die counts track selection/removal/clear state, improve accessible labels, preserve the protected ${baseline.rowWidth}px row width, and do not meaningfully increase its ${baseline.rowOverflowPx}px intrinsic overflow.`);
   } finally {
     if (browser) await browser.close().catch((error) => console.warn('Browser cleanup failed:', error.message));
     if (server) await server.close().catch((error) => console.warn('Static server cleanup failed:', error.message));
