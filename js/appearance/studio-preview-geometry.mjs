@@ -41,23 +41,6 @@ const SHAPES = {
   },
 };
 
-const STYLE_TEXT = `
-.studio-preview-die{position:relative;isolation:isolate;overflow:hidden;clip-path:none}
-.studio-preview-die>[data-preview-geometry-art]{position:absolute;inset:0;z-index:1;width:100%;height:100%;pointer-events:none;color:rgba(255,255,255,.42);filter:drop-shadow(0 1px 1px rgba(0,0,0,.55))}
-.studio-preview-die>[data-preview-geometry-art] *{vector-effect:non-scaling-stroke;fill:none;stroke:currentColor;stroke-width:1.35;stroke-linejoin:round;stroke-linecap:round}
-.studio-preview-die>span,.studio-preview-die>small{position:relative;z-index:2}
-.studio-preview-die[data-preview-geometry="d100"]{border-radius:50%}
-.studio-preview-die.active{box-shadow:0 0 0 3px #fff,0 0 0 6px rgba(56,189,248,.42),var(--studio-preview-shadow,none)}
-`;
-
-function ensureStyles(documentRef) {
-  if (documentRef.getElementById('studio-preview-geometry-styles')) return;
-  const style = documentRef.createElement('style');
-  style.id = 'studio-preview-geometry-styles';
-  style.textContent = STYLE_TEXT;
-  documentRef.head.appendChild(style);
-}
-
 function createSvgElement(documentRef, name, attrs = {}) {
   const element = documentRef.createElementNS(SVG_NS, name);
   Object.entries(attrs).forEach(([key, value]) => element.setAttribute(key, value));
@@ -97,7 +80,6 @@ export function bindStudioPreviewGeometry({ documentRef = document, windowRef = 
   try {
     const host = documentRef.getElementById('studio-preview-dice');
     if (!host) return null;
-    ensureStyles(documentRef);
     const label = documentRef.querySelector('.studio-preview-panel .section-label');
     if (label) label.textContent = 'Physical Shape Preview';
     const note = documentRef.querySelector('.studio-preview-panel .studio-note');

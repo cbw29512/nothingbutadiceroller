@@ -31,37 +31,6 @@ const SECTION_DEFINITIONS = [
   },
 ];
 
-const STYLE_TEXT = `
-.studio-editor-sections{display:grid;gap:.65rem;margin-top:.2rem}
-.studio-editor-section{border:1px solid #334155;border-radius:13px;background:#0b1018;overflow:clip}
-.studio-editor-section>summary{min-height:48px;display:flex;align-items:center;justify-content:space-between;gap:.8rem;padding:.7rem .8rem;cursor:pointer;list-style:none;background:#121a25;color:#f8fafc;touch-action:manipulation}
-.studio-editor-section>summary::-webkit-details-marker{display:none}
-.studio-editor-section>summary::after{content:'+';flex:0 0 auto;width:1.6rem;height:1.6rem;display:grid;place-items:center;border:1px solid #475569;border-radius:8px;color:#bae6fd;font-weight:950;line-height:1}
-.studio-editor-section[open]>summary::after{content:'−';border-color:#4ade80;color:#bbf7d0}
-.studio-editor-section>summary:focus-visible{outline:3px solid #38bdf8;outline-offset:-3px}
-.studio-editor-section-title{display:grid;gap:.08rem;min-width:0}
-.studio-editor-section-title strong{font-size:.9rem}
-.studio-editor-section-title small{color:#94a3b8;font-size:.7rem;font-weight:700;line-height:1.3}
-.studio-editor-section-content{padding:.75rem}
-.studio-editor-section-content>.studio-group:last-child{margin-bottom:0}
-.studio-editor-section .studio-group{background:#0f141d}
-@media(max-width:720px){
-  .studio-editor-sections{gap:.5rem}
-  .studio-editor-section>summary{min-height:52px;padding:.7rem}
-  .studio-editor-section-content{padding:.65rem}
-  .studio-editor-section{scroll-margin-top:5rem}
-}
-@media(prefers-reduced-motion:reduce){.studio-editor-section>summary{scroll-behavior:auto}}
-`;
-
-function ensureStyles(documentRef) {
-  if (documentRef.getElementById('studio-progressive-section-styles')) return;
-  const style = documentRef.createElement('style');
-  style.id = 'studio-progressive-section-styles';
-  style.textContent = STYLE_TEXT;
-  documentRef.head.appendChild(style);
-}
-
 function legendText(fieldset) {
   return fieldset.querySelector(':scope > legend')?.textContent?.trim() || '';
 }
@@ -87,7 +56,6 @@ export function bindStudioProgressiveSections({ documentRef = document } = {}) {
   try {
     const editor = documentRef.querySelector('.editor-panel');
     if (!editor) return null;
-    ensureStyles(documentRef);
 
     let host = editor.querySelector(':scope > .studio-editor-sections');
     if (!host) {
