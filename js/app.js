@@ -5,6 +5,7 @@ import { addDie, clearPool, performRoll } from './roller.js';
 import { performCustomRoll } from './custom-roll.js';
 import { initHistoryActions } from './history-actions.js';
 import { initOfflineSupport } from './offline-support.js';
+import { detectOfflineMode } from './connectivity.js';
 import { renderHistory, renderPool, setStatus } from './ui.js';
 import { assertStylesLoaded } from './deployment.js';
 import { initAccount } from './account.js';
@@ -172,7 +173,7 @@ async function boot() {
     initShortcutRuntime();
 
     setStatus('Loading 3D physics…');
-    const offlineMode = navigator.onLine === false;
+    const offlineMode = await detectOfflineMode();
     const appearanceRuntime = await prepareActiveDiceAppearance({ allowCustom: !offlineMode });
     applyLiveTrayAppearance(appearanceRuntime);
     await initDicePhysics(
