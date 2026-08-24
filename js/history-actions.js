@@ -1,21 +1,6 @@
 import { state } from './state.js';
 import { formatHistoryItemForCopy, normalizeHistoryReroll } from './history-records.mjs';
 
-const STYLE_TEXT = `
-.history-actions{grid-column:1/-1;display:flex;justify-content:flex-end;gap:.45rem;margin-top:.28rem;padding-top:.48rem;border-top:1px solid rgba(148,163,184,.18)}
-.history-action-btn{min-height:36px;padding:.38rem .62rem;font-size:.72rem}
-.history-action-btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
-@media(max-width:700px){.history-actions{justify-content:stretch}.history-action-btn{flex:1 1 0;min-height:44px}}
-`;
-
-function ensureStyles(documentRef) {
-  if (documentRef.getElementById('history-action-styles')) return;
-  const style = documentRef.createElement('style');
-  style.id = 'history-action-styles';
-  style.textContent = STYLE_TEXT;
-  documentRef.head.appendChild(style);
-}
-
 async function defaultWriteText(text, { documentRef = document, navigatorRef = navigator } = {}) {
   if (navigatorRef?.clipboard?.writeText) {
     await navigatorRef.clipboard.writeText(text);
@@ -43,7 +28,6 @@ export function initHistoryActions({
   writeText = (text) => defaultWriteText(text, { documentRef, navigatorRef }),
 } = {}) {
   try {
-    ensureStyles(documentRef);
     const list = documentRef.getElementById('history-list');
     if (!list || list.dataset.historyActionsBound === 'true') return null;
     list.dataset.historyActionsBound = 'true';

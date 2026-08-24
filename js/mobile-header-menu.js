@@ -1,33 +1,9 @@
-const STYLE_TEXT = `
-.mobile-header-more{display:none}
-@media(max-width:700px){
-  .header-controls{grid-template-columns:repeat(4,minmax(0,1fr))!important;align-items:stretch}
-  .header-controls>#support-project-link,.header-controls>#open-account-btn{display:none!important}
-  .header-controls>.btn,.mobile-header-more>summary{min-height:44px}
-  .mobile-header-more{display:block;position:relative;min-width:0}
-  .mobile-header-more>summary{display:flex;align-items:center;justify-content:center;width:100%;padding:.5rem .25rem;border:1px solid #475569;border-radius:10px;background:#243247;color:#fff;cursor:pointer;list-style:none;font-size:.78rem;font-weight:900;touch-action:manipulation}
-  .mobile-header-more>summary::-webkit-details-marker{display:none}
-  .mobile-header-more>summary:focus-visible,.mobile-header-menu .btn:focus-visible{outline:3px solid #38bdf8;outline-offset:2px}
-  .mobile-header-menu{position:absolute;right:0;top:calc(100% + .45rem);z-index:95;display:grid;gap:.4rem;width:min(250px,calc(100vw - 1.5rem));padding:.55rem;border:1px solid #64748b;border-radius:12px;background:rgba(15,23,42,.99);box-shadow:0 18px 45px rgba(0,0,0,.55);backdrop-filter:blur(14px)}
-  .mobile-header-menu .btn{min-height:44px;width:100%;display:flex;align-items:center;justify-content:flex-start;text-decoration:none;text-align:left}
-}
-`;
-
-function ensureStyles(documentRef) {
-  if (documentRef.getElementById('mobile-header-menu-styles')) return;
-  const style = documentRef.createElement('style');
-  style.id = 'mobile-header-menu-styles';
-  style.textContent = STYLE_TEXT;
-  documentRef.head.appendChild(style);
-}
-
 export function initMobileHeaderMenu({ documentRef = document, windowRef = window } = {}) {
   try {
     const controls = documentRef.querySelector('.header-controls');
     const account = documentRef.getElementById('open-account-btn');
     const support = documentRef.getElementById('support-project-link');
     if (!controls || !account || !support) return null;
-    ensureStyles(documentRef);
 
     let details = controls.querySelector('.mobile-header-more');
     if (!details) {

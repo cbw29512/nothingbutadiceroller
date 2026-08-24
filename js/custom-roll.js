@@ -5,16 +5,6 @@ import { renderHistory, renderResults } from './ui.js';
 
 const MAX_CUSTOM_SIDES = 1_000_000;
 const UINT32_RANGE = 0x1_0000_0000;
-const CUSTOM_RESULT_STYLE_TEXT = `
-.custom-random-proof{width:min(100%,360px);border:1px solid rgba(148,163,184,.35);border-radius:12px;background:rgba(2,6,23,.68);color:#cbd5e1;text-align:left;overflow:clip}
-.custom-random-proof>summary{min-height:44px;display:flex;align-items:center;justify-content:space-between;gap:.5rem;padding:.58rem .72rem;cursor:pointer;list-style:none;color:#dbeafe;font-size:.76rem;font-weight:900;touch-action:manipulation}
-.custom-random-proof>summary::-webkit-details-marker{display:none}
-.custom-random-proof>summary::after{content:'+';flex:0 0 auto;color:#7dd3fc;font-size:1rem}
-.custom-random-proof[open]>summary::after{content:'−'}
-.custom-random-proof>summary:focus-visible{outline:3px solid #38bdf8;outline-offset:-3px}
-.custom-random-proof p{margin:0;padding:.05rem .72rem .72rem;border-top:1px solid rgba(148,163,184,.2);color:#94a3b8;font-size:.7rem;font-weight:700;line-height:1.45}
-@media(max-width:700px){.custom-random-proof{width:min(94%,360px)}.custom-random-proof>summary{font-size:.74rem}}
-`;
 
 export function secureCustomRoll(sides) {
   try {
@@ -59,18 +49,9 @@ function setPhysicsBadgeVisible(visible) {
   if (badge) badge.hidden = !visible;
 }
 
-function ensureCustomResultStyles() {
-  if (document.getElementById('custom-random-proof-styles')) return;
-  const style = document.createElement('style');
-  style.id = 'custom-random-proof-styles';
-  style.textContent = CUSTOM_RESULT_STYLE_TEXT;
-  document.head.appendChild(style);
-}
-
 function showCustomTrayResult(sides, result) {
   const trayMessage = document.getElementById('tray-empty-state');
   if (!trayMessage) return;
-  ensureCustomResultStyles();
 
   const display = document.createElement('div');
   display.className = 'custom-roll-display';
