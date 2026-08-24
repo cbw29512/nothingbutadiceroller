@@ -23,7 +23,7 @@ try {
     'node scripts/deploy-preview-surface-finish.mjs',
     'node scripts/deploy-preview-surface-pattern.mjs',
     'node scripts/deploy-preview-edge-inlay.mjs',
-    'actions/upload-artifact@v4',
+    'actions/upload-artifact@v7',
     'statuses: read',
     'cancel-in-progress: true',
   ]) assert.ok(workflow.includes(marker), `Deploy Preview workflow is missing: ${marker}`);
