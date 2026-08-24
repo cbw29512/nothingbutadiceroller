@@ -49,6 +49,21 @@ async function run() {
     await client.evaluate("document.querySelector('#new-set')?.click()");
     await waitFor(client, "document.querySelector('#studio-status')?.textContent.includes('New set ready.')");
 
+    await client.evaluate(`(() => {
+      const glow = document.querySelector('#dice-glow-enabled');
+      glow.checked = true;
+      glow.dispatchEvent(new Event('change', { bubbles: true }));
+    })()`);
+    await waitFor(client, "document.querySelector('#studio-status')?.textContent.includes('Number glow enabled for every die.')");
+    const setWideShadow = await client.evaluate("document.querySelector('.studio-preview-die[data-die=\"d20\"] span')?.style.textShadow || ''");
+    assert.ok(setWideShadow && setWideShadow !== 'none', 'Set-wide Glow On must be immediately visible even when the new set started at zero intensity.');
+    await client.evaluate(`(() => {
+      const glow = document.querySelector('#dice-glow-enabled');
+      glow.checked = false;
+      glow.dispatchEvent(new Event('change', { bubbles: true }));
+    })()`);
+    await waitFor(client, "document.querySelector('#studio-status')?.textContent.includes('Set-wide number glow disabled.')");
+
     await client.evaluate("document.querySelector('.studio-preview-die[data-die=\"d4\"]')?.click()");
     await waitFor(client, "document.querySelector('#selected-die-label')?.textContent === 'D4' && document.querySelector('#logical-face')?.value === '4'");
     const d4Selected = await client.evaluate(`(() => ({
@@ -64,17 +79,23 @@ async function run() {
       const separate = document.querySelector('#die-style-enabled');
       separate.checked = true;
       separate.dispatchEvent(new Event('change', { bubbles: true }));
-    })()`);
-    await waitFor(client, "document.querySelector('#die-style-enabled')?.checked && !document.querySelector('#die-glow-enabled')?.disabled");
-    await client.evaluate(`(() => {
-      const color = document.querySelector('#die-glow-color');
-      color.value = '#00ffcc';
-      color.dispatchEvent(new Event('input', { bubbles: true }));
       const glow = document.querySelector('#die-glow-enabled');
       glow.checked = true;
       glow.dispatchEvent(new Event('change', { bubbles: true }));
     })()`);
     await waitFor(client, "document.querySelector('#studio-status')?.textContent.includes('D4 number glow enabled')");
+    const zeroIntensityToggle = await client.evaluate(`(() => ({
+      shadow: document.querySelector('.studio-preview-die[data-die="d4"] span')?.style.textShadow || '',
+      mapShadow: document.querySelector('#face-map [data-face="4"] [data-face-glyph]')?.style.textShadow || '',
+    }))()`);
+    assert.ok(zeroIntensityToggle.shadow && zeroIntensityToggle.shadow !== 'none', 'Per-die Glow On must be immediately visible from a zero-intensity inherited style.');
+    assert.ok(zeroIntensityToggle.mapShadow && zeroIntensityToggle.mapShadow !== 'none', 'Face-map glow must be immediately visible from a zero-intensity inherited style.');
+
+    await client.evaluate(`(() => {
+      const color = document.querySelector('#die-glow-color');
+      color.value = '#00ffcc';
+      color.dispatchEvent(new Event('input', { bubbles: true }));
+    })()`);
     const glowPreview = await client.evaluate(`(() => ({
       text: document.querySelector('.studio-preview-die[data-die="d4"] span')?.textContent || '',
       shadow: document.querySelector('.studio-preview-die[data-die="d4"] span')?.style.textShadow || '',
@@ -86,6 +107,17 @@ async function run() {
     assert.equal(glowPreview.color.toLowerCase(), '#00ffcc');
     assert.notEqual(glowPreview.shadow, 'none', 'D4 number 4 must visibly glow in the Studio preview.');
     assert.ok(glowPreview.shadow.length > 0, 'D4 number glow must produce a preview text shadow.');
+
+    await client.evaluate(`(() => {
+      const glow = document.querySelector('#die-glow-enabled');
+      glow.checked = false;
+      glow.dispatchEvent(new Event('change', { bubbles: true }));
+      glow.checked = true;
+      glow.dispatchEvent(new Event('change', { bubbles: true }));
+    })()`);
+    await waitFor(client, "document.querySelector('#studio-status')?.textContent.includes('D4 number glow enabled')");
+    const reenabledShadow = await client.evaluate("document.querySelector('.studio-preview-die[data-die=\"d4\"] span')?.style.textShadow || ''");
+    assert.ok(reenabledShadow && reenabledShadow !== 'none', 'Per-die glow must stay visible after disable/re-enable.');
 
     await client.evaluate(`(() => {
       const input = document.querySelector('#tray-image');
@@ -190,7 +222,7 @@ async function run() {
     assert.equal(await client.evaluate("document.querySelector('#community-report-submit')?.disabled"), false, 'Report submit button must recover after a handled failure.');
     await client.evaluate("document.querySelector('#community-report-cancel')?.click()");
 
-    console.log('Dice Studio control audit passed: all explicit guest buttons/paths are present; Refresh, New, d4 selection, real number glow, tray add/remove, Apply/Restore Face, Save, Lock/Unlock, Use, Back to Roller, physical d4, Delete unsaved, Reset Default, and report Cancel/Submit all execute.');
+    console.log('Dice Studio control audit passed: all explicit guest buttons/paths are present; set-wide and per-die Glow On are visible from zero intensity, disable/re-enable preserves glow, and all existing Studio controls still execute.');
   } finally {
     if (browser) await browser.close().catch((error) => console.warn('Browser cleanup failed:', error.message));
     if (server) await server.close().catch((error) => console.warn('Static server cleanup failed:', error.message));
