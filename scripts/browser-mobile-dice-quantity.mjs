@@ -23,6 +23,14 @@ async function run() {
     await navigate(client, `${server.origin}/`, mobile);
     await waitFor(client, "document.querySelector('.mobile-die-btn[data-type=\"d6\"]') && document.querySelector('#mobile-clear-btn')");
 
+    const baseline = await client.evaluate(`(() => {
+      const row = document.querySelector('.mobile-dice-row');
+      return {
+        rowOverflowPx: row ? Math.max(0, row.scrollWidth - row.clientWidth) : 999,
+        rowWidth: row?.getBoundingClientRect().width || 0,
+      };
+    })()`);
+
     await client.evaluate(`(() => {
       document.querySelector('.mobile-die-btn[data-type="d6"]')?.click();
       document.querySelector('.mobile-die-btn[data-type="d6"]')?.click();
@@ -44,7 +52,8 @@ async function run() {
         d20Class: Boolean(d20?.classList.contains('has-quantity')),
         d6Label: d6?.getAttribute('aria-label') || '',
         d8Label: d8?.getAttribute('aria-label') || '',
-        rowOverflow: row ? row.scrollWidth > row.clientWidth : true,
+        rowOverflowPx: row ? Math.max(0, row.scrollWidth - row.clientWidth) : 999,
+        rowWidth: row?.getBoundingClientRect().width || 0,
         pageOverflow: document.documentElement.scrollWidth > document.documentElement.clientWidth,
         buttonMinHeight: d6 ? d6.getBoundingClientRect().height : 0,
       };
@@ -57,7 +66,8 @@ async function run() {
     assert.equal(selected.d20Class, false);
     assert.match(selected.d6Label, /d6, 2 selected/i);
     assert.match(selected.d8Label, /d8, 1 selected/i);
-    assert.equal(selected.rowOverflow, false, 'Quantity badges must not expand the seven-button mobile dice row.');
+    assert.ok(selected.rowOverflowPx <= 1, `Quantity badges introduced ${selected.rowOverflowPx}px of mobile dice-row overflow.`);
+    assert.ok(Math.abs(selected.rowWidth - baseline.rowWidth) <= 0.5, `Quantity badges changed mobile dice-row width from ${baseline.rowWidth}px to ${selected.rowWidth}px.`);
     assert.equal(selected.pageOverflow, false, 'Quantity badges must not introduce page-level horizontal overflow.');
     assert.ok(selected.buttonMinHeight >= 40, `Protected mobile die target shrank below its existing minimum: ${selected.buttonMinHeight}px.`);
 
@@ -77,7 +87,7 @@ async function run() {
     assert.equal(cleared.remaining, 0, 'Clear must remove all mobile quantity badges.');
     assert.match(cleared.d6Label, /none selected/i);
 
-    console.log('Mobile dice quantity feedback passed: compact per-die counts track selection/removal/clear state, improve accessible labels, and preserve the protected seven-button row without overflow.');
+    console.log(`Mobile dice quantity feedback passed: compact per-die counts track selection/removal/clear state, improve accessible labels, preserve the protected row width, and stay within ${selected.rowOverflowPx}px rounding overflow.`);
   } finally {
     if (browser) await browser.close().catch((error) => console.warn('Browser cleanup failed:', error.message));
     if (server) await server.close().catch((error) => console.warn('Static server cleanup failed:', error.message));
