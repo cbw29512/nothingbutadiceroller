@@ -9,6 +9,81 @@ const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, '..');
 const dist = resolve(root, 'dist');
 const desktop = { name: 'desktop', width: 1280, height: 860, mobile: false };
+const REQUIRED_OFFLINE_RUNTIME_PATHS = Object.freeze([
+  '/',
+  '/js/app.js',
+  '/vendor/dice-box-1.1.4/dice-box.es.min.js',
+  '/vendor/dice-box-1.1.4/Dice.min.js',
+  '/vendor/dice-box-1.1.4/world.offscreen.min.js',
+  '/vendor/dice-box-1.1.4/assets/ammo/ammo.wasm.wasm',
+  '/vendor/dice-box-1.1.4/assets/themes/default/default.json',
+]);
+
+async function installBootDiagnostics(client) {
+  try {
+    await client.send('Page.addScriptToEvaluateOnNewDocument', {
+      source: `(() => {
+        const diagnostics = { errors: [], rejections: [], workers: [] };
+        Object.defineProperty(globalThis, '__ndrOfflineBootDiagnostics', {
+          value: diagnostics,
+          configurable: false,
+          enumerable: false,
+          writable: false,
+        });
+        addEventListener('error', (event) => diagnostics.errors.push({
+          message: String(event.message || ''),
+          filename: String(event.filename || ''),
+          line: Number(event.lineno || 0),
+          column: Number(event.colno || 0),
+        }));
+        addEventListener('unhandledrejection', (event) => diagnostics.rejections.push(String(event.reason?.stack || event.reason || 'unknown rejection')));
+        const NativeWorker = globalThis.Worker;
+        globalThis.Worker = new Proxy(NativeWorker, {
+          construct(target, args) {
+            const worker = Reflect.construct(target, args, target);
+            const entry = { url: String(args[0] || ''), errors: [], messageErrors: 0 };
+            diagnostics.workers.push(entry);
+            worker.addEventListener('error', (event) => entry.errors.push({
+              message: String(event.message || ''),
+              filename: String(event.filename || ''),
+              line: Number(event.lineno || 0),
+              column: Number(event.colno || 0),
+            }));
+            worker.addEventListener('messageerror', () => { entry.messageErrors += 1; });
+            return worker;
+          },
+        });
+      })();`,
+    });
+  } catch (error) {
+    console.error('Failed to install offline boot diagnostics:', error);
+    throw error;
+  }
+}
+
+async function collectBootDiagnostics(client) {
+  try {
+    return await client.evaluate(`(async () => ({
+      online: navigator.onLine,
+      status: document.querySelector('#physics-status')?.textContent || '',
+      statusClass: document.querySelector('#physics-status')?.className || '',
+      canvasCount: document.querySelectorAll('#dice-tray canvas').length,
+      controller: navigator.serviceWorker.controller?.scriptURL || null,
+      diagnostics: globalThis.__ndrOfflineBootDiagnostics || null,
+      vendorResources: performance.getEntriesByType('resource')
+        .filter((entry) => entry.name.includes('/vendor/dice-box-1.1.4/'))
+        .map((entry) => ({
+          name: entry.name,
+          initiatorType: entry.initiatorType,
+          duration: Math.round(entry.duration),
+          transferSize: entry.transferSize,
+        })),
+    }))()`);
+  } catch (error) {
+    console.error('Failed to collect offline boot diagnostics:', error);
+    return { diagnosticCollectionError: error.message };
+  }
+}
 
 async function run() {
   await access(resolve(dist, 'index.html'));
@@ -20,6 +95,7 @@ async function run() {
     browser = await launchBrowser();
     const client = browser.client;
     await client.send('Network.enable');
+    await installBootDiagnostics(client);
 
     await navigate(client, `${server.origin}/`, desktop);
     await waitFor(client, "document.querySelector('#physics-status')?.textContent.includes('3D physics ready.')", 30000);
@@ -41,15 +117,9 @@ async function run() {
       return { keys, entries };
     })()`);
     assert.ok(cacheAudit.keys.some((key) => key.startsWith('ndr-offline-core-')), 'Offline core cache was not installed.');
-    for (const required of [
-      '/',
-      '/js/app.js',
-      '/vendor/dice-box-1.1.4/dice-box.es.min.js',
-      '/vendor/dice-box-1.1.4/Dice.min.js',
-      '/vendor/dice-box-1.1.4/world.offscreen.min.js',
-      '/vendor/dice-box-1.1.4/assets/ammo/ammo.wasm.wasm',
-      '/vendor/dice-box-1.1.4/assets/themes/default/default.json',
-    ]) assert.ok(cacheAudit.entries.includes(required), `Offline cache is missing ${required}.`);
+    for (const required of REQUIRED_OFFLINE_RUNTIME_PATHS) {
+      assert.ok(cacheAudit.entries.includes(required), `Offline cache is missing ${required}.`);
+    }
     assert.equal(cacheAudit.entries.some((path) => path.startsWith('/api/')), false, 'Offline cache must contain no API responses.');
     assert.equal(cacheAudit.entries.some((path) => path.startsWith('/.netlify/')), false, 'Offline cache must contain no Netlify/Identity responses.');
 
@@ -61,10 +131,29 @@ async function run() {
       connectionType: 'none',
     });
 
+    const offlineFetchProbe = await client.evaluate(`Promise.all(${JSON.stringify(REQUIRED_OFFLINE_RUNTIME_PATHS)}.map(async (path) => {
+      try {
+        const response = await fetch(path, { cache: 'no-store' });
+        return { path, ok: response.ok, status: response.status, type: response.type };
+      } catch (error) {
+        return { path, ok: false, error: String(error?.message || error) };
+      }
+    }))`);
+    assert.deepEqual(
+      offlineFetchProbe.filter((entry) => !entry.ok),
+      [],
+      `Controlled-page offline fetch probe failed: ${JSON.stringify(offlineFetchProbe)}`,
+    );
+
     const navigation = await client.send('Page.navigate', { url: `${server.origin}/` });
     if (navigation.errorText) throw new Error(`Offline service-worker navigation failed: ${navigation.errorText}`);
     await waitFor(client, `location.href === ${JSON.stringify(`${server.origin}/`)} && document.readyState === 'complete'`, 15000);
-    await waitFor(client, "document.querySelector('#physics-status')?.textContent.includes('Offline mode uses Default Dice.')", 30000);
+    try {
+      await waitFor(client, "document.querySelector('#physics-status')?.textContent.includes('Offline mode uses Default Dice.')", 30000);
+    } catch (error) {
+      const diagnostics = await collectBootDiagnostics(client);
+      throw new Error(`${error.message}\nOffline boot diagnostics: ${JSON.stringify(diagnostics)}`, { cause: error });
+    }
     assert.equal(await client.evaluate('navigator.onLine'), false, 'Browser should be in explicit offline mode for the acceptance roll.');
     assert.ok(await client.evaluate("document.querySelectorAll('#dice-tray canvas').length"), 'Offline Default Dice physics must still create a DiceBox canvas.');
 
