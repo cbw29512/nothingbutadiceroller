@@ -52,6 +52,9 @@ This checklist is the source of truth for the final product-polish pass. We will
   - Accessibility/flow requirements: primary and menu targets at least 44px, Escape/outside-click closure, account drawer returns focus to the mobile account opener, no horizontal overflow, and protected tray/dice controls remain untouched.
   - Validation required before checkoff: rendered mobile/desktop test must prove visibility rules, menu links, account drawer focus return, Escape behavior, target sizes, desktop preservation, tray/dice structural preservation, and no horizontal overflow.
 - [ ] 7. Polish shortcut-manager onboarding/gear affordance without changing the protected shortcut mechanics.
+  - Decision: keep the small gear attached to Roll. Before shortcuts exist, show `Customize roll shortcuts → ⚙`; after at least one shortcut exists, remove the first-use hint and label the toolbar `My shortcuts`. Detail help reads `Hold or focus for details` so touch and keyboard behavior are both understandable.
+  - Mechanics/accessibility requirements: 24-slot limit, RAW/Homebrew compilation, toolbar rows, persistence, press behavior, and prepared-roll execution remain unchanged; gear remains available in guest mode and keyboard focus continues to reveal shortcut details.
+  - Validation required before checkoff: deterministic integration contract plus rendered mobile test must prove first-use copy, gear availability, configured-hint retirement, My shortcuts state, keyboard detail reveal, and unchanged storage/toolbar mechanics.
 - [ ] 8. Simplify technical custom-die result copy while retaining an accessible secure-random explanation.
 - [ ] 9. Add useful roll-history actions such as exact reroll and copy, without changing logged roll semantics.
 - [ ] 10. Improve mobile selected-dice visibility with compact quantity feedback while preserving the compact dice row.

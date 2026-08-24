@@ -30,10 +30,10 @@ function ensureToolbarSection() {
   title.style.fontSize = '.86rem';
   title.style.letterSpacing = '.04em';
   title.style.lineHeight = '1.25';
-  title.textContent = 'My shortcuts';
+  title.textContent = 'Roll shortcuts';
   const note = document.createElement('span');
   note.className = 'shortcut-toolbar-note';
-  note.textContent = 'Hold for details';
+  note.textContent = 'Hold or focus for details';
   heading.append(title, note);
 
   const toolbar = document.createElement('div');
@@ -71,14 +71,37 @@ function ensureMobileShortcutHint() {
   const hint = document.createElement('p');
   hint.id = 'mobile-shortcut-hint';
   hint.hidden = true;
-  hint.textContent = 'Press ⚙ to configure';
+  hint.textContent = 'Customize roll shortcuts → ⚙';
   hint.style.color = '#dbeafe';
-  hint.style.fontSize = '.86rem';
+  hint.style.fontSize = '.78rem';
   hint.style.fontWeight = '900';
-  hint.style.letterSpacing = '.04em';
+  hint.style.letterSpacing = '.02em';
   hint.style.lineHeight = '1.25';
   hint.style.textAlign = 'center';
   actionRow.before(hint);
+}
+
+function syncShortcutOnboarding() {
+  const toolbar = document.getElementById('shortcut-toolbar');
+  const title = document.getElementById('shortcut-toolbar-title');
+  const note = document.querySelector('#shortcut-toolbar-section .shortcut-toolbar-note');
+  const mobileHint = document.getElementById('mobile-shortcut-hint');
+  if (!toolbar || !title || !note || !mobileHint) return;
+  const configured = toolbar.querySelectorAll('.shortcut-icon-btn').length > 0;
+  title.textContent = configured ? 'My shortcuts' : 'Customize roll shortcuts → ⚙';
+  note.textContent = 'Hold or focus for details';
+  note.hidden = !configured;
+  mobileHint.hidden = configured;
+}
+
+function observeShortcutOnboarding() {
+  const toolbar = document.getElementById('shortcut-toolbar');
+  if (!toolbar || toolbar.dataset.onboardingObserved === 'true') return;
+  toolbar.dataset.onboardingObserved = 'true';
+  const observer = new MutationObserver(() => queueMicrotask(syncShortcutOnboarding));
+  observer.observe(toolbar, { childList: true, subtree: true });
+  document.addEventListener('shortcutstatechange', () => queueMicrotask(syncShortcutOnboarding));
+  queueMicrotask(syncShortcutOnboarding);
 }
 
 export function ensureShortcutRuntimeMarkup() {
@@ -86,4 +109,5 @@ export function ensureShortcutRuntimeMarkup() {
   wrapRollButton('roll-btn', 'shortcut-settings-btn', 'Manage roll shortcuts');
   wrapRollButton('mobile-roll-btn', 'mobile-shortcut-settings-btn', 'Manage roll shortcuts');
   ensureMobileShortcutHint();
+  observeShortcutOnboarding();
 }

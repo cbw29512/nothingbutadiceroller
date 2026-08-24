@@ -41,7 +41,6 @@ for (const required of [
   'shortcutHistoryTotal(execution)',
   "showCrit('nat20')",
   'section.hidden = false',
-  "title.textContent = 'Press ⚙ to configure'",
   'note.hidden = !hasShortcuts',
   'return Boolean(active);',
 ]) {
@@ -62,7 +61,7 @@ for (const required of [
 assert.ok(runtime.includes('state.selectedDice = [];'), 'Preparing a shortcut must replace the ordinary selected pool.');
 assert.ok(!runtime.includes('state.selectedDice.push'), 'Shortcut runtime must never encode shortcut dice into ordinary selectedDice.');
 assert.ok(runtime.includes('const available = true;'), 'Customization gear must remain available for local guest shortcuts.');
-assert.ok(runtime.includes('if (mobileHint) mobileHint.hidden = !available;'), 'Mobile setup hint must match shortcut gear availability.');
+assert.ok(runtime.includes('if (mobileHint) mobileHint.hidden = !available;'), 'Runtime must keep the shortcut gear/hint mount available before onboarding polish runs.');
 assert.ok(runtime.includes('slots = loadLocalShortcutWorkspace().workspace.shortcuts;'), 'Signed-out sessions must load local guest shortcuts.');
 
 for (const required of [
@@ -73,13 +72,17 @@ for (const required of [
   "wrapRollButton('mobile-roll-btn', 'mobile-shortcut-settings-btn'",
   "title.style.fontSize = '.86rem'",
   "title.style.letterSpacing = '.04em'",
+  "note.textContent = 'Hold or focus for details'",
   "hint.id = 'mobile-shortcut-hint'",
-  "hint.textContent = 'Press ⚙ to configure'",
-  "hint.style.fontSize = '.86rem'",
+  "hint.textContent = 'Customize roll shortcuts → ⚙'",
+  "function syncShortcutOnboarding()",
+  "title.textContent = configured ? 'My shortcuts' : 'Customize roll shortcuts → ⚙'",
+  'mobileHint.hidden = configured',
+  'observeShortcutOnboarding()',
   'actionRow.before(hint)',
   'ensureMobileShortcutHint()',
 ]) {
-  assert.ok(markup.includes(required), `Phase 6 runtime markup missing: ${required}`);
+  assert.ok(markup.includes(required), `Phase 6 runtime markup/onboarding missing: ${required}`);
 }
 
 assert.ok(tray.includes('export function initTrayControls(onRoll, canRoll = defaultCanRoll)'), 'Tray control must accept injected readiness without changing its default behavior.');
@@ -92,4 +95,4 @@ assert.ok(!roller.includes('shortcuts/runtime'), 'Ordinary roller module must re
 assert.ok(!physics.includes('shortcuts/runtime'), 'Physics module must remain unaware of shortcut runtime.');
 assert.ok(physics.includes('export async function rollPhysics(notation, themeColor)'), 'Existing DiceBox physics boundary must remain intact.');
 
-console.log('Shortcut live integration checks passed.');
+console.log('Shortcut live integration and onboarding checks passed.');
