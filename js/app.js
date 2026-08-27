@@ -97,8 +97,10 @@ function syncControls() {
 
     const soundBtn = document.getElementById('sound-toggle-btn');
     if (soundBtn) {
-      soundBtn.textContent = `🔊 ${state.soundEnabled ? 'ON' : 'OFF'}`;
-      soundBtn.setAttribute('aria-pressed', String(state.soundEnabled));
+      const soundOn = Boolean(state.soundEnabled);
+      soundBtn.textContent = soundOn ? '🔊 ON' : '🔇 OFF';
+      soundBtn.setAttribute('aria-pressed', String(soundOn));
+      soundBtn.setAttribute('aria-label', soundOn ? 'Sound on. Turn sound off.' : 'Sound off. Turn sound on.');
     }
     syncShortcutRuntimeUI();
   } catch (error) {
