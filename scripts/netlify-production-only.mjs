@@ -3,15 +3,28 @@
 try {
   const context = String(process.env.CONTEXT || "").trim();
   const branch = String(process.env.BRANCH || "").trim();
-  const isProductionRelease = context === "production" && branch === "main";
+  const head = String(process.env.HEAD || "").trim();
+  const isPullRequest = String(process.env.PULL_REQUEST || "").trim().toLowerCase() === "true";
+  const previewHead = head || branch;
 
-  if (!isProductionRelease) {
-    console.log(`Skipping Netlify build: context=${context || "unset"}, branch=${branch || "unset"}.`);
+  const isProductionRelease = context === "production" && branch === "main";
+  const isExplicitCertificationPreview = (
+    context === "deploy-preview"
+    && isPullRequest
+    && previewHead.startsWith("preview/")
+    && previewHead.length > "preview/".length
+  );
+  const shouldBuild = isProductionRelease || isExplicitCertificationPreview;
+
+  if (shouldBuild) {
+    console.log(`Allowing Netlify build: context=${context || "unset"}, branch=${branch || "unset"}, head=${previewHead || "unset"}.`);
+  } else {
+    console.log(`Skipping Netlify build: context=${context || "unset"}, branch=${branch || "unset"}, head=${previewHead || "unset"}.`);
   }
 
   // Netlify ignore command: exit 1 = build, exit 0 = skip.
-  process.exit(isProductionRelease ? 1 : 0);
+  process.exit(shouldBuild ? 1 : 0);
 } catch (error) {
-  console.error("Netlify production-only guard failed closed", error);
+  console.error("Netlify build policy failed closed", error);
   process.exit(0);
 }
