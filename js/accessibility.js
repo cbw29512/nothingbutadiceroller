@@ -17,7 +17,7 @@ export function ensureSkipLink(doc = document) {
     link.addEventListener('click', () => {
       queueMicrotask(() => main.focus({ preventScroll: false }));
     });
-    app.parentNode?.insertBefore(link, app);
+    app.insertBefore(link, app.firstChild);
     return link;
   } catch (error) {
     console.error('Failed to initialize skip navigation:', error);
