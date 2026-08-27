@@ -71,6 +71,36 @@ export async function assertMobileCustomInteraction(client) {
   assert.match(result.proofText, /rejection sampling/i);
 }
 
+export async function assertSkipNavigation(client) {
+  await waitFor(client, "document.querySelector('#skip-to-roller') && document.querySelector('#main-content')");
+  const initial = await client.evaluate(`(() => {
+    const link = document.querySelector('#skip-to-roller');
+    return {
+      text: link?.textContent || '',
+      href: link?.getAttribute('href') || '',
+      parentId: link?.parentElement?.id || '',
+      mainTabIndex: document.querySelector('#main-content')?.getAttribute('tabindex'),
+    };
+  })()`);
+  assert.equal(initial.text, 'Skip to dice roller');
+  assert.equal(initial.href, '#main-content');
+  assert.equal(initial.parentId, 'app', 'Skip link must stay inside the app inert boundary.');
+  assert.equal(initial.mainTabIndex, '-1');
+
+  await client.evaluate("document.querySelector('#skip-to-roller')?.focus()");
+  await waitFor(client, "document.activeElement?.id === 'skip-to-roller'");
+  const focused = await client.evaluate(`(() => {
+    const link = document.querySelector('#skip-to-roller');
+    const rect = link?.getBoundingClientRect();
+    return { top: rect?.top ?? -999, bottom: rect?.bottom ?? -999, viewportHeight: innerHeight };
+  })()`);
+  assert.ok(focused.top >= 0 && focused.bottom <= focused.viewportHeight,
+    `Focused skip link must be visible in the viewport; got top=${focused.top}, bottom=${focused.bottom}.`);
+
+  await client.evaluate("document.querySelector('#skip-to-roller')?.click()");
+  await waitFor(client, "document.activeElement?.id === 'main-content'");
+}
+
 export async function assertDrawerAccessibility(client) {
   await client.evaluate("document.querySelector('#open-history-btn')?.click()");
   await waitFor(client, "document.querySelector('#history-drawer')?.getAttribute('aria-hidden') === 'false'");
@@ -79,10 +109,12 @@ export async function assertDrawerAccessibility(client) {
   const openState = await client.evaluate(`(() => ({
     mainInert: document.querySelector('main')?.inert === true,
     headerInert: document.querySelector('.app-header')?.inert === true,
+    skipInert: document.querySelector('#skip-to-roller')?.inert === true,
     drawerInert: document.querySelector('#history-drawer')?.inert === true,
   }))()`);
   assert.equal(openState.mainInert, true, 'Main roller must be inert while a modal drawer is open.');
   assert.equal(openState.headerInert, true, 'Header must be inert while a modal drawer is open.');
+  assert.equal(openState.skipInert, true, 'Skip navigation must be inert while a modal drawer is open.');
   assert.equal(openState.drawerInert, false, 'Active drawer itself must remain interactive.');
 
   const trapped = await client.evaluate(`(() => {
