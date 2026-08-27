@@ -69,7 +69,7 @@ Netlify configuration lives in `netlify.toml`.
 - Publish directory: `dist`
 - Functions directory: `netlify/functions`
 
-Pull requests run the full validation workflow before merge. Changes should be developed on branches and tested through Netlify Deploy Preview before production merge.
+`main` is the protected production branch. Active work is integrated into `develop` only after deterministic validation and security checks pass. Hosted Netlify certification is intentionally deferred while deployment credits are unavailable; changes on `develop` are not production-certified until that hosted gate is completed and an explicit production release is approved.
 
 ## Search and discovery
 
