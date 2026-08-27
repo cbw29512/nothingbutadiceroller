@@ -66,6 +66,9 @@ jobs:
       - name: Run live Deploy Preview browser acceptance
         run: node scripts/deploy-preview-acceptance.mjs
 
+      - name: Verify live public growth surface
+        run: node scripts/deploy-preview-growth-smoke.mjs
+
       - name: Verify live d4 number glow
         run: node scripts/deploy-preview-d4-glow.mjs
 

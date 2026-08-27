@@ -1,7 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://nothingbutattrpgdiceroller.netlify.app/</loc><priority>1.0</priority></url>
-  <url><loc>https://nothingbutattrpgdiceroller.netlify.app/how-to.html</loc><priority>0.7</priority></url>
+  <url><loc>https://nothingbutattrpgdiceroller.netlify.app/</loc><lastmod>2026-08-24</lastmod><priority>1.0</priority></url>
+  <url><loc>https://nothingbutattrpgdiceroller.netlify.app/resources.html</loc><lastmod>2026-08-24</lastmod><priority>0.9</priority></url>
+  <url><loc>https://nothingbutattrpgdiceroller.netlify.app/d20-roller.html</loc><lastmod>2026-08-24</lastmod><priority>0.9</priority></url>
+  <url><loc>https://nothingbutattrpgdiceroller.netlify.app/advantage-disadvantage.html</loc><lastmod>2026-08-24</lastmod><priority>0.9</priority></url>
+  <url><loc>https://nothingbutattrpgdiceroller.netlify.app/dice-probability.html</loc><lastmod>2026-08-24</lastmod><priority>0.9</priority></url>
+  <url><loc>https://nothingbutattrpgdiceroller.netlify.app/3d-dice-roller.html</loc><lastmod>2026-08-24</lastmod><priority>0.8</priority></url>
+  <url><loc>https://nothingbutattrpgdiceroller.netlify.app/ttrpg-dice-roller.html</loc><lastmod>2026-08-24</lastmod><priority>0.8</priority></url>
+  <url><loc>https://nothingbutattrpgdiceroller.netlify.app/custom-dice-roller.html</loc><lastmod>2026-08-24</lastmod><priority>0.8</priority></url>
+  <url><loc>https://nothingbutattrpgdiceroller.netlify.app/d100-roller.html</loc><lastmod>2026-08-24</lastmod><priority>0.8</priority></url>
+  <url><loc>https://nothingbutattrpgdiceroller.netlify.app/dice-notation.html</loc><lastmod>2026-08-24</lastmod><priority>0.8</priority></url>
+  <url><loc>https://nothingbutattrpgdiceroller.netlify.app/dice-randomness.html</loc><lastmod>2026-08-24</lastmod><priority>0.8</priority></url>
+  <url><loc>https://nothingbutattrpgdiceroller.netlify.app/custom-3d-dice.html</loc><lastmod>2026-08-24</lastmod><priority>0.8</priority></url>
+  <url><loc>https://nothingbutattrpgdiceroller.netlify.app/how-to.html</loc><lastmod>2026-08-24</lastmod><priority>0.7</priority></url>
   <url><loc>https://nothingbutattrpgdiceroller.netlify.app/privacy.html</loc><priority>0.4</priority></url>
   <url><loc>https://nothingbutattrpgdiceroller.netlify.app/legal.html</loc><priority>0.4</priority></url>
 </urlset>

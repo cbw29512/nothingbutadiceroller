@@ -1,0 +1,123 @@
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+
+const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
+const origin = 'https://nothingbutattrpgdiceroller.netlify.app';
+
+const growthPages = Object.freeze([
+  ['index.html', `${origin}/`],
+  ['resources.html', `${origin}/resources.html`],
+  ['d20-roller.html', `${origin}/d20-roller.html`],
+  ['advantage-disadvantage.html', `${origin}/advantage-disadvantage.html`],
+  ['dice-probability.html', `${origin}/dice-probability.html`],
+  ['3d-dice-roller.html', `${origin}/3d-dice-roller.html`],
+  ['ttrpg-dice-roller.html', `${origin}/ttrpg-dice-roller.html`],
+  ['custom-dice-roller.html', `${origin}/custom-dice-roller.html`],
+  ['d100-roller.html', `${origin}/d100-roller.html`],
+  ['dice-notation.html', `${origin}/dice-notation.html`],
+  ['dice-randomness.html', `${origin}/dice-randomness.html`],
+  ['custom-3d-dice.html', `${origin}/custom-3d-dice.html`],
+]);
+
+const sitemapPages = Object.freeze([
+  ...growthPages,
+  ['how-to.html', `${origin}/how-to.html`],
+  ['privacy.html', `${origin}/privacy.html`],
+  ['legal.html', `${origin}/legal.html`],
+]);
+
+function oneMatch(source, regex, label) {
+  const matches = [...source.matchAll(regex)];
+  assert.equal(matches.length, 1, `${label} must appear exactly once.`);
+  return matches[0][1];
+}
+
+async function validateGrowthPage(path, canonical) {
+  const html = await readFile(resolve(root, path), 'utf8');
+  const title = oneMatch(html, /<title>([^<]+)<\/title>/gi, `${path} title`).trim();
+  const description = oneMatch(html, /<meta\s+name="description"\s+content="([^"]+)"/gi, `${path} meta description`).trim();
+  const robots = oneMatch(html, /<meta\s+name="robots"\s+content="([^"]+)"/gi, `${path} robots`).toLowerCase();
+  const actualCanonical = oneMatch(html, /<link\s+rel="canonical"\s+href="([^"]+)"/gi, `${path} canonical`);
+  assert.ok(title.length >= 20 && title.length <= 70, `${path} title should be useful and concise; got ${title.length} chars.`);
+  assert.ok(description.length >= 70 && description.length <= 180, `${path} description should be useful and concise; got ${description.length} chars.`);
+  assert.match(robots, /index/);
+  assert.match(robots, /follow/);
+  assert.equal(actualCanonical, canonical, `${path} canonical mismatch.`);
+  assert.match(html, /<h1>[^<]+<\/h1>/i, `${path} needs one visible primary heading.`);
+  if (path !== 'index.html') assert.match(html, /href="\/"/, `${path} must link back to the roller.`);
+
+  const ldJsonBlocks = [...html.matchAll(/<script\s+type="application\/ld\+json">([\s\S]*?)<\/script>/gi)];
+  assert.ok(ldJsonBlocks.length >= 1, `${path} must include structured data.`);
+  for (const block of ldJsonBlocks) assert.doesNotThrow(() => JSON.parse(block[1]), `${path} structured data must be valid JSON.`);
+
+  return { title, canonical };
+}
+
+try {
+  const metadata = [];
+  for (const [path, canonical] of growthPages) metadata.push(await validateGrowthPage(path, canonical));
+  assert.equal(new Set(metadata.map(({ title }) => title)).size, metadata.length, 'Growth page titles must be unique.');
+  assert.equal(new Set(metadata.map(({ canonical }) => canonical)).size, metadata.length, 'Growth page canonical URLs must be unique.');
+
+  const sitemap = await readFile(resolve(root, 'sitemap.xml'), 'utf8');
+  const sitemapUrls = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((match) => match[1]);
+  assert.equal(new Set(sitemapUrls).size, sitemapUrls.length, 'Sitemap URLs must not be duplicated.');
+  for (const [, canonical] of sitemapPages) assert.ok(sitemapUrls.includes(canonical), `Sitemap is missing ${canonical}.`);
+
+  const robots = await readFile(resolve(root, 'robots.txt'), 'utf8');
+  assert.match(robots, /User-agent:\s*\*/i);
+  assert.match(robots, /Allow:\s*\//i);
+  assert.ok(robots.includes(`${origin}/sitemap.xml`), 'robots.txt must advertise the canonical sitemap.');
+
+  for (const privatePath of ['customize.html', 'rolls.html', 'moderation.html', 'appearance-harness.html', 'shortcut-harness.html']) {
+    const html = await readFile(resolve(root, privatePath), 'utf8');
+    assert.match(html, /name="robots" content="noindex,nofollow"/i, `${privatePath} must remain excluded from search indexing.`);
+  }
+
+  const resources = await readFile(resolve(root, 'resources.html'), 'utf8');
+  for (const href of ['/d20-roller.html', '/advantage-disadvantage.html', '/dice-probability.html', '/3d-dice-roller.html', '/ttrpg-dice-roller.html', '/custom-dice-roller.html', '/d100-roller.html', '/dice-notation.html', '/dice-randomness.html', '/custom-3d-dice.html']) {
+    assert.ok(resources.includes(`href="${href}"`), `Resource hub must link to ${href}.`);
+  }
+
+  const docsCss = await readFile(resolve(root, 'docs.css'), 'utf8');
+  assert.match(docsCss, /\.docs-page a:focus-visible/, 'Resource pages must preserve a visible keyboard focus outline.');
+  assert.match(docsCss, /prefers-reduced-motion:reduce/, 'Resource pages must respect reduced-motion preferences.');
+
+  const probabilityPage = await readFile(resolve(root, 'dice-probability.html'), 'utf8');
+  assert.match(probabilityPage, /id="probability-dc"[^>]*\brequired\b/, 'Probability DC input must remain required.');
+  assert.match(probabilityPage, /id="probability-modifier"[^>]*\brequired\b/, 'Probability modifier input must remain required.');
+  assert.match(probabilityPage, /id="probability-explanation"[^>]*role="status"[^>]*aria-live="polite"/, 'Probability feedback must remain screen-reader announced.');
+
+  const home = await readFile(resolve(root, 'index.html'), 'utf8');
+  assert.ok(home.includes('id="discover-title"'), 'Homepage must keep the crawlable discovery section below the roller.');
+  for (const href of ['/resources.html', '/dice-probability.html', '/d20-roller.html', '/custom-dice-roller.html', '/custom-3d-dice.html', '/dice-randomness.html']) {
+    assert.ok(home.includes(`href="${href}"`), `Homepage discovery layer must link to ${href}.`);
+  }
+  assert.ok(home.indexOf('id="discover-title"') > home.indexOf('id="account-drawer"'), 'SEO discovery content must remain below the core application surface.');
+
+  const manifest = JSON.parse(await readFile(resolve(root, 'site.webmanifest'), 'utf8'));
+  assert.equal(manifest.start_url, '/');
+  assert.equal(manifest.display, 'standalone');
+  assert.ok(manifest.shortcuts?.some(({ url }) => url === '/dice-probability.html'), 'PWA must expose the d20 odds shortcut.');
+  assert.ok(manifest.shortcuts?.some(({ url }) => url === '/resources.html'), 'PWA must expose the resource hub shortcut.');
+
+  const { d20ThresholdProbability, parseBoundedNumber } = await import(pathToFileURL(resolve(root, 'js/dice-probability.js')).href);
+  const example = d20ThresholdProbability(15, 5);
+  assert.equal(example.successfulFaces, 11);
+  assert.equal(example.normal, 0.55);
+  assert.ok(Math.abs(example.advantage - 0.7975) < 1e-12);
+  assert.ok(Math.abs(example.disadvantage - 0.3025) < 1e-12);
+  assert.equal(d20ThresholdProbability(1, 100).normal, 1);
+  assert.equal(d20ThresholdProbability(200, -100).normal, 0);
+  assert.throws(() => d20ThresholdProbability(Number.NaN, 0), /finite numbers/);
+  assert.equal(parseBoundedNumber('', -100, 200), null, 'Blank probability inputs must never coerce to zero.');
+  assert.equal(parseBoundedNumber('15', -100, 200), 15);
+  assert.equal(parseBoundedNumber('201', -100, 200), null, 'Out-of-range probability inputs must be rejected.');
+
+  console.log(`SEO/growth contract passed: ${growthPages.length} strict growth pages, ${sitemapPages.length} sitemap URLs, homepage discovery links, unique canonicals/titles, protected noindex tools, accessibility guards, PWA shortcuts, and exact d20 odds.`);
+} catch (error) {
+  console.error('SEO/growth contract failed:', error);
+  process.exitCode = 1;
+}
