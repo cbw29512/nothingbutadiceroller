@@ -1,6 +1,7 @@
 [build]
   command = "npm run build"
   publish = "dist"
+  ignore = "node ./scripts/netlify-production-only.mjs"
 
 [functions]
   directory = "netlify/functions"
