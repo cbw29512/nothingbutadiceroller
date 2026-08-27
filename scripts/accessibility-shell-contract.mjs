@@ -11,6 +11,7 @@ function makeDocument({ includeMain = true, includeApp = true } = {}) {
   let clickHandler = null;
   let focusOptions = null;
   const attributes = new Map();
+  const firstChild = { id: 'existing-first-child' };
 
   const main = includeMain ? {
     hasAttribute: (name) => attributes.has(name),
@@ -18,13 +19,13 @@ function makeDocument({ includeMain = true, includeApp = true } = {}) {
     focus: (options) => { focusOptions = options; },
   } : null;
 
-  const parentNode = {
-    insertBefore: (node, reference) => {
-      assert.equal(reference, app);
+  const app = includeApp ? {
+    firstChild,
+    insertBefore(node, reference) {
+      assert.equal(reference, firstChild);
       inserted = node;
     },
-  };
-  const app = includeApp ? { parentNode } : null;
+  } : null;
 
   const doc = {
     getElementById(id) {
@@ -60,7 +61,7 @@ function makeDocument({ includeMain = true, includeApp = true } = {}) {
 try {
   const fixture = makeDocument();
   const link = ensureSkipLink(fixture.doc);
-  assert.equal(link, fixture.inserted, 'Skip link must be inserted immediately before the app shell.');
+  assert.equal(link, fixture.inserted, 'Skip link must be the first child inside the app shell so modal inert handling includes it.');
   assert.equal(link.id, 'skip-to-roller');
   assert.equal(link.className, 'skip-link');
   assert.equal(link.href, '#main-content');
@@ -80,10 +81,10 @@ try {
   assert.match(css, /\.skip-link:focus-visible/);
   assert.match(css, /prefers-reduced-motion:reduce[\s\S]*\.skip-link/);
 
-  const app = await readFile(resolve(root, 'js/app.js'), 'utf8');
-  assert.match(app, /ensureSkipLink\(\)/, 'App boot must initialize bypass navigation.');
+  const appSource = await readFile(resolve(root, 'js/app.js'), 'utf8');
+  assert.match(appSource, /ensureSkipLink\(\)/, 'App boot must initialize bypass navigation.');
 
-  console.log('Accessibility shell contract passed: keyboard bypass navigation is idempotent, focus-moving, visibly focusable, reduced-motion safe, and fails closed when shell landmarks are unavailable.');
+  console.log('Accessibility shell contract passed: keyboard bypass navigation stays inside the modal inert boundary, is idempotent, focus-moving, visibly focusable, reduced-motion safe, and fails closed when shell landmarks are unavailable.');
 } catch (error) {
   console.error('Accessibility shell contract failed:', error);
   process.exitCode = 1;
