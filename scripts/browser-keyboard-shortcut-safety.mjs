@@ -34,6 +34,20 @@ async function run() {
 
     await browser.client.evaluate("document.querySelector('.die-btn[data-type=\"d20\"]')?.click()");
     await waitFor(browser.client, "document.querySelector('#pool-summary')?.textContent.includes('d20')");
+
+    await browser.client.evaluate("document.querySelector('#sound-toggle-btn')?.focus()");
+    await dispatchCtrlEnter(browser.client, '#sound-toggle-btn');
+    const focusedControlState = await browser.client.evaluate(`(() => ({
+      activeId: document.activeElement?.id || '',
+      rollDisabled: Boolean(document.querySelector('#roll-btn')?.disabled),
+      historyCount: document.querySelectorAll('.history-item').length,
+      total: document.querySelector('#total-result')?.textContent || '',
+    }))()`);
+    assert.equal(focusedControlState.activeId, 'sound-toggle-btn');
+    assert.equal(focusedControlState.rollDisabled, false, 'Ctrl+Enter on a focused control must not start a background roll.');
+    assert.equal(focusedControlState.historyCount, 0, 'Ctrl+Enter on a focused control must leave history untouched.');
+    assert.equal(focusedControlState.total, '0', 'Ctrl+Enter on a focused control must leave the result untouched.');
+
     await browser.client.evaluate("document.querySelector('#desktop-custom-die-btn')?.click()");
     await waitFor(browser.client, "document.querySelector('#desktop-custom-die-btn')?.getAttribute('aria-expanded') === 'true'");
 
@@ -75,7 +89,7 @@ async function run() {
     assert.match(validState.formula, /1d37 custom/i);
     assert.match(validState.pool, /d20/i, 'Custom Ctrl+Enter must not consume or roll the selected normal dice pool.');
 
-    console.log('Keyboard shortcut browser safety passed: custom-die Ctrl+Enter cannot leak into a background normal roll, including the invalid-input edge case.');
+    console.log('Keyboard shortcut browser safety passed: Ctrl+Enter never hijacks focused controls and custom-die Ctrl+Enter cannot leak into a background normal roll, including the invalid-input edge case.');
   } finally {
     if (browser) await browser.close().catch((error) => console.warn('Browser cleanup failed:', error.message));
     if (server) await server.close().catch((error) => console.warn('Static server cleanup failed:', error.message));
