@@ -81,6 +81,15 @@ try {
     assert.ok(resources.includes(`href="${href}"`), `Resource hub must link to ${href}.`);
   }
 
+  const docsCss = await readFile(resolve(root, 'docs.css'), 'utf8');
+  assert.match(docsCss, /\.docs-page a:focus-visible/, 'Resource pages must preserve a visible keyboard focus outline.');
+  assert.match(docsCss, /prefers-reduced-motion:reduce/, 'Resource pages must respect reduced-motion preferences.');
+
+  const probabilityPage = await readFile(resolve(root, 'dice-probability.html'), 'utf8');
+  assert.match(probabilityPage, /id="probability-dc"[^>]*\brequired\b/, 'Probability DC input must remain required.');
+  assert.match(probabilityPage, /id="probability-modifier"[^>]*\brequired\b/, 'Probability modifier input must remain required.');
+  assert.match(probabilityPage, /id="probability-explanation"[^>]*role="status"[^>]*aria-live="polite"/, 'Probability feedback must remain screen-reader announced.');
+
   const home = await readFile(resolve(root, 'index.html'), 'utf8');
   assert.ok(home.includes('id="discover-title"'), 'Homepage must keep the crawlable discovery section below the roller.');
   for (const href of ['/resources.html', '/dice-probability.html', '/d20-roller.html', '/custom-dice-roller.html', '/custom-3d-dice.html', '/dice-randomness.html']) {
@@ -94,7 +103,7 @@ try {
   assert.ok(manifest.shortcuts?.some(({ url }) => url === '/dice-probability.html'), 'PWA must expose the d20 odds shortcut.');
   assert.ok(manifest.shortcuts?.some(({ url }) => url === '/resources.html'), 'PWA must expose the resource hub shortcut.');
 
-  const { d20ThresholdProbability } = await import(pathToFileURL(resolve(root, 'js/dice-probability.js')).href);
+  const { d20ThresholdProbability, parseBoundedNumber } = await import(pathToFileURL(resolve(root, 'js/dice-probability.js')).href);
   const example = d20ThresholdProbability(15, 5);
   assert.equal(example.successfulFaces, 11);
   assert.equal(example.normal, 0.55);
@@ -103,8 +112,11 @@ try {
   assert.equal(d20ThresholdProbability(1, 100).normal, 1);
   assert.equal(d20ThresholdProbability(200, -100).normal, 0);
   assert.throws(() => d20ThresholdProbability(Number.NaN, 0), /finite numbers/);
+  assert.equal(parseBoundedNumber('', -100, 200), null, 'Blank probability inputs must never coerce to zero.');
+  assert.equal(parseBoundedNumber('15', -100, 200), 15);
+  assert.equal(parseBoundedNumber('201', -100, 200), null, 'Out-of-range probability inputs must be rejected.');
 
-  console.log(`SEO/growth contract passed: ${growthPages.length} strict growth pages, ${sitemapPages.length} sitemap URLs, homepage discovery links, unique canonicals/titles, protected noindex tools, PWA shortcuts, and exact d20 odds.`);
+  console.log(`SEO/growth contract passed: ${growthPages.length} strict growth pages, ${sitemapPages.length} sitemap URLs, homepage discovery links, unique canonicals/titles, protected noindex tools, accessibility guards, PWA shortcuts, and exact d20 odds.`);
 } catch (error) {
   console.error('SEO/growth contract failed:', error);
   process.exitCode = 1;
