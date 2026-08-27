@@ -12,6 +12,7 @@ import { initAccount } from './account.js';
 import { closeCustomDieControls, initCustomDieControls } from './custom-controls.js';
 import { closeDrawers, initDrawerControls } from './drawer-controls.js';
 import { initMobileHeaderMenu } from './mobile-header-menu.js';
+import { shouldHandleGlobalRollShortcut } from './keyboard-shortcuts.js';
 import { canRollFromTray, initTrayControls } from './tray-controls.js';
 import { prepareActiveDiceAppearance } from './appearance/appearance-runtime.mjs';
 import { applyLiveTrayAppearance } from './appearance/live-integration.mjs';
@@ -151,7 +152,10 @@ function bindEvents() {
         closeDrawers();
         closeCustomDieControls();
       }
-      if (event.key === 'Enter' && event.ctrlKey) performActiveRoll('normal');
+      if (shouldHandleGlobalRollShortcut(event)) {
+        event.preventDefault();
+        performActiveRoll('normal');
+      }
     });
   } catch (error) {
     console.error('Failed to bind application events:', error);
