@@ -14,6 +14,7 @@ concurrency:
 
 jobs:
   live-preview:
+    if: startsWith(github.event.pull_request.head.ref, 'preview/')
     name: Live Deploy Preview Acceptance
     runs-on: ubuntu-24.04
     timeout-minutes: 15
