@@ -2,6 +2,14 @@ function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
 }
 
+export function parseBoundedNumber(value, min, max) {
+  const text = String(value ?? '').trim();
+  if (!text) return null;
+  const parsed = Number(text);
+  if (!Number.isFinite(parsed) || parsed < min || parsed > max) return null;
+  return parsed;
+}
+
 export function d20ThresholdProbability(dc, modifier) {
   const target = Number(dc) - Number(modifier);
   if (!Number.isFinite(target)) throw new TypeError('DC and modifier must be finite numbers.');
@@ -30,10 +38,21 @@ function bindCalculator(doc) {
   const explanation = doc.querySelector('#probability-explanation');
   if (!form || !dcInput || !modifierInput || !normalOutput || !advantageOutput || !disadvantageOutput || !explanation) return;
 
+  const reset = (message) => {
+    normalOutput.textContent = '—';
+    advantageOutput.textContent = '—';
+    disadvantageOutput.textContent = '—';
+    explanation.textContent = message;
+  };
+
   const render = () => {
-    const dc = Number(dcInput.value);
-    const modifier = Number(modifierInput.value);
-    if (!Number.isFinite(dc) || !Number.isFinite(modifier)) return;
+    const dc = parseBoundedNumber(dcInput.value, -100, 200);
+    const modifier = parseBoundedNumber(modifierInput.value, -100, 200);
+    if (dc === null || modifier === null) {
+      reset('Enter both a target DC and modifier between -100 and 200.');
+      return;
+    }
+
     const result = d20ThresholdProbability(dc, modifier);
     normalOutput.textContent = percent(result.normal);
     advantageOutput.textContent = percent(result.advantage);
