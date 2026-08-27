@@ -32,6 +32,7 @@ try {
 
   for (const marker of [
     'DEPLOY_PREVIEW_ORIGIN', 'assertDesktopRollInteraction', 'assertMobileCustomInteraction',
+    'retryableStatuses', 'fetchWithRetry', 'navigateWithRetry',
     "localStorage.clear()", "localStorage.getItem('keepDice')", "localStorage.getItem('soundEnabled')", "localStorage.getItem('rollHistory')",
     '/api/dice-sets?scope=community&page=1&pageSize=1', '/api/account-data',
     '/vendor/dice-box-1.1.4/dice-box.es.min.js', '/js/appearance/studio.js', 'Page.captureScreenshot',
@@ -63,7 +64,7 @@ try {
   assert.ok(pkg.scripts?.check?.includes('node scripts/edge-inlay-check.mjs'));
   assert.ok(pkg.scripts?.['test:browser']?.includes('node scripts/browser-edge-inlay.mjs'));
 
-  console.log('Deploy Preview acceptance contract passed: exact-head Netlify synchronization, live public growth pages, hosted browser checks including surface finishes/patterns/UV edge inlays, guest persistence, and screenshot evidence are release-enforced.');
+  console.log('Deploy Preview acceptance contract passed: exact-head Netlify synchronization, transient request/navigation retry protection, live public growth pages, hosted browser checks including surface finishes/patterns/UV edge inlays, guest persistence, and screenshot evidence are release-enforced.');
 } catch (error) {
   console.error('Deploy Preview acceptance contract failed:', error);
   process.exitCode = 1;
