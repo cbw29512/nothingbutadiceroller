@@ -12,6 +12,8 @@ import { initAccount } from './account.js';
 import { closeCustomDieControls, initCustomDieControls } from './custom-controls.js';
 import { closeDrawers, initDrawerControls } from './drawer-controls.js';
 import { initMobileHeaderMenu } from './mobile-header-menu.js';
+import { ensureSkipLink } from './accessibility.js';
+import { shouldHandleGlobalRollShortcut } from './keyboard-shortcuts.js';
 import { canRollFromTray, initTrayControls } from './tray-controls.js';
 import { prepareActiveDiceAppearance } from './appearance/appearance-runtime.mjs';
 import { applyLiveTrayAppearance } from './appearance/live-integration.mjs';
@@ -96,8 +98,10 @@ function syncControls() {
 
     const soundBtn = document.getElementById('sound-toggle-btn');
     if (soundBtn) {
-      soundBtn.textContent = `🔊 ${state.soundEnabled ? 'ON' : 'OFF'}`;
-      soundBtn.setAttribute('aria-pressed', String(state.soundEnabled));
+      const soundOn = Boolean(state.soundEnabled);
+      soundBtn.textContent = soundOn ? '🔊 ON' : '🔇 OFF';
+      soundBtn.setAttribute('aria-pressed', String(soundOn));
+      soundBtn.setAttribute('aria-label', soundOn ? 'Sound on. Turn sound off.' : 'Sound off. Turn sound on.');
     }
     syncShortcutRuntimeUI();
   } catch (error) {
@@ -151,7 +155,10 @@ function bindEvents() {
         closeDrawers();
         closeCustomDieControls();
       }
-      if (event.key === 'Enter' && event.ctrlKey) performActiveRoll('normal');
+      if (shouldHandleGlobalRollShortcut(event)) {
+        event.preventDefault();
+        performActiveRoll('normal');
+      }
     });
   } catch (error) {
     console.error('Failed to bind application events:', error);
@@ -162,6 +169,7 @@ async function boot() {
   try {
     assertStylesLoaded();
     initOfflineSupport();
+    ensureSkipLink();
     ensureStylesheet('shortcut-toolbar-styles', '/shortcut-toolbar.css');
     ensureShortcutRuntimeMarkup();
     loadPreferences();
