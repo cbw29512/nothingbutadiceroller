@@ -12,6 +12,7 @@ import { initAccount } from './account.js';
 import { closeCustomDieControls, initCustomDieControls } from './custom-controls.js';
 import { closeDrawers, initDrawerControls } from './drawer-controls.js';
 import { initMobileHeaderMenu } from './mobile-header-menu.js';
+import { ensureSkipLink } from './accessibility.js';
 import { shouldHandleGlobalRollShortcut } from './keyboard-shortcuts.js';
 import { canRollFromTray, initTrayControls } from './tray-controls.js';
 import { prepareActiveDiceAppearance } from './appearance/appearance-runtime.mjs';
@@ -168,6 +169,7 @@ async function boot() {
   try {
     assertStylesLoaded();
     initOfflineSupport();
+    ensureSkipLink();
     ensureStylesheet('shortcut-toolbar-styles', '/shortcut-toolbar.css');
     ensureShortcutRuntimeMarkup();
     loadPreferences();
