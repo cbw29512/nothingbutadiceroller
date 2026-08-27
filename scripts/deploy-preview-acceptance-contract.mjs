@@ -15,6 +15,7 @@ try {
   const pkg = JSON.parse(pkgSource);
 
   for (const marker of [
+    "startsWith(github.event.pull_request.head.ref, 'preview/')",
     'github.event.pull_request.head.sha',
     'netlify/nothingbutattrpgdiceroller/deploy-preview',
     'Wait for Netlify success on this exact head',
@@ -52,10 +53,11 @@ try {
 
   assert.equal(pkg.scripts?.['test:preview'], 'node scripts/deploy-preview-acceptance.mjs');
   assert.ok(pkg.scripts?.check?.includes('node scripts/deploy-preview-acceptance-contract.mjs'));
+  assert.ok(pkg.scripts?.check?.includes('node scripts/netlify-build-policy-check.mjs'));
   assert.ok(pkg.scripts?.check?.includes('node scripts/edge-inlay-check.mjs'));
   assert.ok(pkg.scripts?.['test:browser']?.includes('node scripts/browser-edge-inlay.mjs'));
 
-  console.log('Deploy Preview acceptance contract passed: exact-head Netlify synchronization, live hosted browser checks including surface finishes/patterns/UV edge inlays, guest persistence, and screenshot evidence are release-enforced.');
+  console.log('Deploy Preview acceptance contract passed: hosted acceptance is restricted to explicit preview/* PRs, with exact-head Netlify synchronization, live browser checks, guest persistence, and screenshot evidence release-enforced.');
 } catch (error) {
   console.error('Deploy Preview acceptance contract failed:', error);
   process.exitCode = 1;
