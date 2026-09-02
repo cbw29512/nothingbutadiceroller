@@ -3,7 +3,8 @@ export function initMobileHeaderMenu({ documentRef = document, windowRef = windo
     const controls = documentRef.querySelector('.header-controls');
     const account = documentRef.getElementById('open-account-btn');
     const support = documentRef.getElementById('support-project-link');
-    if (!controls || !account || !support) return null;
+    const guild = controls?.querySelector('a[href="https://lighttowertabletopguild.netlify.app/tools.html"]');
+    if (!controls || !account || !support || !guild) return null;
 
     let details = controls.querySelector('.mobile-header-more');
     if (!details) {
@@ -21,6 +22,11 @@ export function initMobileHeaderMenu({ documentRef = document, windowRef = windo
       accountProxy.className = 'btn secondary mobile-account-proxy';
       accountProxy.dataset.drawerOpen = 'account';
 
+      const guildProxy = documentRef.createElement('a');
+      guildProxy.className = 'btn secondary mobile-guild-proxy';
+      guildProxy.href = guild.href;
+      guildProxy.textContent = 'Light Tower Guild Tools';
+
       const howTo = documentRef.createElement('a');
       howTo.className = 'btn secondary';
       howTo.href = '/how-to.html';
@@ -33,7 +39,7 @@ export function initMobileHeaderMenu({ documentRef = document, windowRef = windo
       supportProxy.rel = 'noopener noreferrer';
       supportProxy.textContent = 'Support Project';
 
-      menu.append(accountProxy, howTo, supportProxy);
+      menu.append(accountProxy, guildProxy, howTo, supportProxy);
       details.append(summary, menu);
       controls.appendChild(details);
 
