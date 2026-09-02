@@ -208,6 +208,10 @@
     width: 100%;
   }
 
+  .header-controls > a[href="https://lighttowertabletopguild.netlify.app/tools.html"] {
+    display: none !important;
+  }
+
   .header-controls .btn {
     min-width: 0;
     padding: .5rem .25rem;
