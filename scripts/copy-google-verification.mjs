@@ -1,19 +1,32 @@
-import { copyFile, readdir } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
-const root = resolve('.');
-const dist = resolve('dist');
+const token = (process.env.GOOGLE_SITE_VERIFICATION || '').trim();
+const indexPath = resolve('dist', 'index.html');
 
 try {
-  const files = await readdir(root);
-  const verificationFiles = files.filter(name => /^google[a-z0-9_-]+\.html$/i.test(name));
-
-  for (const name of verificationFiles) {
-    await copyFile(resolve(root, name), resolve(dist, name));
+  if (!token) {
+    console.log('Google site verification token not configured; skipping meta injection.');
+    process.exit(0);
   }
 
-  console.log(`Google verification files copied: ${verificationFiles.length}`);
+  if (!/^[A-Za-z0-9_-]+$/.test(token)) {
+    throw new Error('GOOGLE_SITE_VERIFICATION contains unsupported characters.');
+  }
+
+  let html = await readFile(indexPath, 'utf8');
+  const meta = `<meta name="google-site-verification" content="${token}">`;
+  const existing = /<meta\s+name=["']google-site-verification["'][^>]*>/i;
+
+  if (existing.test(html)) {
+    html = html.replace(existing, meta);
+  } else {
+    html = html.replace('</head>', `  ${meta}\n</head>`);
+  }
+
+  await writeFile(indexPath, html, 'utf8');
+  console.log('Google site verification meta tag injected into dist/index.html.');
 } catch (error) {
-  console.error('Google verification file copy failed:', error);
+  console.error('Google verification meta injection failed:', error);
   process.exitCode = 1;
 }
