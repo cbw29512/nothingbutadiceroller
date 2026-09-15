@@ -1,60 +1,21 @@
 import { state, savePreferences } from './state.js';
-import { playDiceSound, playNat20Fanfare, playNat1DoomSound } from './audio.js';
-import { buildPhysicsNotation, countDice, getSkinColor } from './utils.js';
+import { playDiceSound } from './audio.js';
+import { buildPhysicsNotation, getSkinColor } from './utils.js';
 import { clearPhysics, rollPhysics } from './physics.js';
 import { getCriticalOutcome, parseRollResults } from './roll-results.js';
 import { createStandardHistoryReroll } from './history-records.mjs';
 import {
   applyRollModifier,
   appendModifierBreakdown,
-  formatRollModifier,
   normalizeRollModifier,
 } from './roll-modifier.mjs';
-import { renderHistory, renderPool, renderResults, setStatus, showCrit } from './ui.js';
-
-function emitRollState() {
-  try {
-    document.dispatchEvent(new Event('rollstatechange'));
-  } catch (error) {
-    console.error('Failed to emit roll state:', error);
-  }
-}
-
-function setPhysicsBadgeVisible(visible) {
-  try {
-    const badge = document.querySelector('.roll-trust-badge');
-    if (badge) badge.hidden = !visible;
-  } catch (error) {
-    console.error('Failed to update physics trust badge:', error);
-  }
-}
-
-function formulaFor(pool, rollMode, modifier) {
-  try {
-    const formula = Object.entries(countDice(pool))
-      .map(([type, count]) => `${count}${type}`)
-      .join(' + ');
-    const withModifier = `${formula}${formatRollModifier(modifier)}`;
-    return rollMode === 'normal' ? withModifier : `${withModifier} (${rollMode})`;
-  } catch (error) {
-    console.error('Failed to format roll formula:', error);
-    return 'Roll';
-  }
-}
-
-function playCriticalFeedback(kind) {
-  try {
-    if (kind === 'nat20') {
-      showCrit('nat20');
-      playNat20Fanfare();
-    } else if (kind === 'nat1') {
-      showCrit('nat1');
-      playNat1DoomSound();
-    }
-  } catch (error) {
-    console.error('Failed to play critical feedback:', error);
-  }
-}
+import { renderHistory, renderPool, renderResults, setStatus } from './ui.js';
+import {
+  emitRollState,
+  formulaFor,
+  playCriticalFeedback,
+  setPhysicsBadgeVisible,
+} from './standard-roll-feedback.js';
 
 export function addDie(type) {
   try {
