@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'ndr-offline-core-';
-const CACHE_NAME = `${CACHE_PREFIX}v20260824-polish3`;
+const CACHE_NAME = `${CACHE_PREFIX}v20260915-table-speed1`;
 
 const CORE_PATHS = Object.freeze([
   '/',
@@ -11,6 +11,7 @@ const CORE_PATHS = Object.freeze([
   '/community.css',
   '/custom.css',
   '/shortcut-toolbar.css',
+  '/js/table-speed.css',
   '/favicon.svg',
   '/pwa-icon-192.png',
   '/pwa-icon-512.png',
