@@ -1,8 +1,7 @@
 import { state, loadPreferences, savePreferences } from './state.js';
 import { getSkinColor } from './utils.js';
 import { initDicePhysics } from './physics.js';
-import { addDie, clearPool, performRoll } from './roller.js';
-import { performCustomRoll } from './custom-roll.js';
+import { addDie } from './roller.js';
 import { initHistoryActions } from './history-actions.js';
 import { initOfflineSupport } from './offline-support.js';
 import { detectOfflineMode } from './connectivity.js';
@@ -12,18 +11,22 @@ import { initAccount } from './account.js';
 import { closeCustomDieControls, initCustomDieControls } from './custom-controls.js';
 import { closeDrawers, initDrawerControls } from './drawer-controls.js';
 import { initMobileHeaderMenu } from './mobile-header-menu.js';
-import { canRollFromTray, initTrayControls } from './tray-controls.js';
+import { initTrayControls } from './tray-controls.js';
 import { prepareActiveDiceAppearance } from './appearance/appearance-runtime.mjs';
 import { applyLiveTrayAppearance } from './appearance/live-integration.mjs';
 import { ensureShortcutRuntimeMarkup } from './shortcuts/runtime-markup.js';
 import {
-  canRollPreparedShortcutFromTray,
-  clearPreparedShortcut,
   initShortcutRuntime,
   isShortcutPrepared,
-  performPreparedShortcutRoll,
   syncShortcutRuntimeUI,
 } from './shortcuts/runtime.js';
+import {
+  canRollActiveFromTray,
+  clearActiveRoll,
+  performActiveRoll,
+  rerollHistoryDescriptor,
+} from './roll-orchestrator.js';
+import { initTableSpeedControls } from './table-speed-controls.js';
 
 function ensureStylesheet(id, href) {
   try {
@@ -38,51 +41,19 @@ function ensureStylesheet(id, href) {
   }
 }
 
-async function performActiveRoll(requestedMode = 'normal', options = {}) {
-  const shortcutEligible = requestedMode === 'normal' && !options.quickD20 && isShortcutPrepared();
-  if (shortcutEligible) return performPreparedShortcutRoll();
-  return performRoll(requestedMode, options);
-}
-
-async function clearActiveRoll() {
-  closeCustomDieControls();
-  if (isShortcutPrepared()) await clearPreparedShortcut();
-  return clearPool();
-}
-
-async function rerollHistoryDescriptor(descriptor) {
-  if (state.rolling) return false;
-  closeDrawers();
-  closeCustomDieControls();
-  if (isShortcutPrepared()) await clearPreparedShortcut();
-
-  if (descriptor.kind === 'standard') {
-    const poolOverride = descriptor.dice.map((type) => ({ type }));
-    return performRoll(descriptor.mode, {
-      quickD20: descriptor.quickD20,
-      poolOverride,
-      preserveSelection: true,
-    });
-  }
-  if (descriptor.kind === 'custom') {
-    return performCustomRoll(String(descriptor.sides));
-  }
-  throw new Error('This history entry cannot be rerolled safely.');
-}
-
-function canRollActiveFromTray() {
-  return isShortcutPrepared() ? canRollPreparedShortcutFromTray() : canRollFromTray();
-}
-
 function syncControls() {
   try {
     const shortcutPrepared = isShortcutPrepared();
     document.querySelectorAll('[data-quick-roll]').forEach(button => {
-      const active = state.rolling && button.dataset.quickRoll === state.d20Mode;
+      const active = state.rolling
+        && button.dataset.quickRoll !== 'normal'
+        && button.dataset.quickRoll === state.d20Mode;
       button.classList.toggle('active', active);
       button.disabled = state.rolling || shortcutPrepared;
     });
-    document.querySelectorAll('.die-btn, .mobile-die-btn, .pool-chip, #desktop-custom-die-roll-btn, #custom-die-roll-btn').forEach(button => {
+    document.querySelectorAll(
+      '.die-btn, .mobile-die-btn, .pool-chip, #desktop-custom-die-roll-btn, #custom-die-roll-btn, [data-roll-modifier], [data-modifier-step]',
+    ).forEach(button => {
       button.disabled = state.rolling || shortcutPrepared;
     });
     ['roll-btn', 'mobile-roll-btn', 'clear-btn', 'mobile-clear-btn', 'keep-btn'].forEach(id => {
@@ -106,15 +77,23 @@ function syncControls() {
 }
 
 function bindDiceButtons(selector) {
-  document.querySelectorAll(selector).forEach(button => {
-    if (button.dataset.type) button.addEventListener('click', () => addDie(button.dataset.type));
-  });
+  try {
+    document.querySelectorAll(selector).forEach(button => {
+      if (button.dataset.type) button.addEventListener('click', () => addDie(button.dataset.type));
+    });
+  } catch (error) {
+    console.error(`Failed to bind dice buttons for ${selector}:`, error);
+  }
 }
 
 function bindQuickRollButtons() {
-  document.querySelectorAll('[data-quick-roll]').forEach(button => {
-    button.addEventListener('click', () => performActiveRoll(button.dataset.quickRoll, { quickD20: true }));
-  });
+  try {
+    document.querySelectorAll('[data-quick-roll]').forEach(button => {
+      button.addEventListener('click', () => performActiveRoll(button.dataset.quickRoll, { quickD20: true }));
+    });
+  } catch (error) {
+    console.error('Failed to bind quick-roll buttons:', error);
+  }
 }
 
 function bindEvents() {
@@ -163,8 +142,10 @@ async function boot() {
     assertStylesLoaded();
     initOfflineSupport();
     ensureStylesheet('shortcut-toolbar-styles', '/shortcut-toolbar.css');
+    ensureStylesheet('table-speed-styles', '/js/table-speed.css');
     ensureShortcutRuntimeMarkup();
     loadPreferences();
+    initTableSpeedControls();
     syncControls();
     renderPool();
     renderHistory();
@@ -183,9 +164,7 @@ async function boot() {
     state.physicsReady = true;
     document.dispatchEvent(new Event('rollstatechange'));
     setStatus(
-      offlineMode
-        ? '3D physics ready. Offline mode uses Default Dice.'
-        : '3D physics ready.',
+      offlineMode ? '3D physics ready. Offline mode uses Default Dice.' : '3D physics ready.',
       'ready',
     );
   } catch (error) {
