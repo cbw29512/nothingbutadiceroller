@@ -11,13 +11,21 @@ const standard = createStandardHistoryReroll(
   [{ type: 'd6' }, { type: 'd6' }, { type: 'd8' }],
   'normal',
   false,
+  4,
 );
-assert.deepEqual(standard, { kind: 'standard', dice: ['d6', 'd6', 'd8'], mode: 'normal', quickD20: false });
+assert.deepEqual(standard, {
+  kind: 'standard',
+  dice: ['d6', 'd6', 'd8'],
+  mode: 'normal',
+  quickD20: false,
+  modifier: 4,
+});
 assert.deepEqual(normalizeHistoryReroll(standard), standard);
 
-const quick = createStandardHistoryReroll([{ type: 'd20' }], 'advantage', true);
-assert.deepEqual(normalizeHistoryReroll(quick), quick);
-assert.equal(normalizeHistoryReroll({ kind: 'standard', dice: ['d20'], mode: 'normal', quickD20: true }), null);
+const quickAdv = createStandardHistoryReroll([{ type: 'd20' }], 'advantage', true, 7);
+assert.deepEqual(normalizeHistoryReroll(quickAdv), quickAdv);
+const quickNormal = createStandardHistoryReroll([{ type: 'd20' }], 'normal', true, 7);
+assert.deepEqual(normalizeHistoryReroll(quickNormal), quickNormal);
 assert.equal(normalizeHistoryReroll({ kind: 'standard', dice: ['d7'], mode: 'normal', quickD20: false }), null);
 assert.equal(normalizeHistoryReroll({ kind: 'standard', dice: ['d20'], mode: 'super', quickD20: false }), null);
 
@@ -26,7 +34,7 @@ assert.deepEqual(custom, { kind: 'custom', sides: 37 });
 assert.deepEqual(normalizeHistoryReroll(custom), custom);
 assert.equal(normalizeHistoryReroll({ kind: 'custom', sides: 1 }), null);
 assert.equal(normalizeHistoryReroll({ kind: 'custom', sides: 1_000_001 }), null);
-assert.equal(normalizeHistoryReroll({ kind: 'shortcut', slot: {} }), null, 'Shortcut history must fail closed rather than reconstructing a roll from display text.');
+assert.equal(normalizeHistoryReroll({ kind: 'shortcut', slot: {} }), null, 'Unsupported shortcut history shapes must fail closed.');
 
 assert.equal(canRerollHistoryItem({ reroll: standard }), true);
 assert.equal(canRerollHistoryItem({ formula: 'legacy' }), false);
@@ -40,4 +48,4 @@ assert.equal(
   'Copied history lines must normalize embedded whitespace without interpreting markup.',
 );
 
-console.log('History record contracts passed: standard/custom rerolls use validated replay descriptors, unsupported/legacy entries fail closed, and copied history is stable plain text.');
+console.log('History record contracts passed: standard/custom rerolls preserve modifiers, normal/ADV quick D20 replay is valid, unsupported shapes fail closed, and copied history is stable plain text.');

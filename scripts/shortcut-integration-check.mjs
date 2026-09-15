@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
 const app = await readFile(new URL('../js/app.js', import.meta.url), 'utf8');
+const interactions = await readFile(new URL('../js/app-interactions.js', import.meta.url), 'utf8');
+const orchestrator = await readFile(new URL('../js/roll-orchestrator.js', import.meta.url), 'utf8');
 const runtime = await readFile(new URL('../js/shortcuts/runtime.js', import.meta.url), 'utf8');
 const presentation = await readFile(new URL('../js/shortcuts/result-presentation.mjs', import.meta.url), 'utf8');
 const markup = await readFile(new URL('../js/shortcuts/runtime-markup.js', import.meta.url), 'utf8');
@@ -15,14 +17,29 @@ for (const required of [
   "from './shortcuts/runtime-markup.js'",
   "ensureStylesheet('shortcut-toolbar-styles', '/shortcut-toolbar.css')",
   'ensureShortcutRuntimeMarkup()',
+  'initShortcutRuntime()',
+  'initAppInteractions()',
+]) {
+  assert.ok(app.includes(required), `Phase 6 app bootstrap integration missing: ${required}`);
+}
+
+for (const required of [
   'isShortcutPrepared()',
-  'performPreparedShortcutRoll()',
-  'canRollPreparedShortcutFromTray()',
   'button.disabled = state.rolling || shortcutPrepared',
   '#desktop-custom-die-roll-btn',
   '#custom-die-roll-btn',
+  'initTrayControls(performActiveRoll, canRollActiveFromTray)',
 ]) {
-  assert.ok(app.includes(required), `Phase 6 app integration missing: ${required}`);
+  assert.ok(interactions.includes(required), `Phase 6 interaction integration missing: ${required}`);
+}
+
+for (const required of [
+  'isShortcutPrepared()',
+  'performPreparedShortcutRoll()',
+  'canRollPreparedShortcutFromTray()',
+  'return performPreparedShortcutRoll()',
+]) {
+  assert.ok(orchestrator.includes(required), `Phase 6 roll orchestration missing: ${required}`);
 }
 
 for (const required of [
@@ -107,4 +124,4 @@ assert.ok(!roller.includes('shortcuts/runtime'), 'Ordinary roller module must re
 assert.ok(!physics.includes('shortcuts/runtime'), 'Physics module must remain unaware of shortcut runtime.');
 assert.ok(physics.includes('export async function rollPhysics(notation, themeColor)'), 'Existing DiceBox physics boundary must remain intact.');
 
-console.log('Shortcut live integration and onboarding checks passed.');
+console.log('Shortcut live integration and onboarding checks passed through delegated app/interactions/orchestrator/runtime boundaries.');

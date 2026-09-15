@@ -1,9 +1,11 @@
 import { getIdentity } from '../account-api.js';
 import { playDiceSound, playNat20Fanfare } from '../audio.js';
+import { createShortcutHistoryReroll } from '../history-records.mjs';
 import { clearPhysics, rollPhysics } from '../physics.js';
 import { state, savePreferences } from '../state.js';
 import { renderHistory, renderPool, renderResults, setStatus, showCrit } from '../ui.js';
 import { getSkinColor } from '../utils.js';
+import { assertValidCompiledShortcutPlan } from './compiled-plan-validation.mjs';
 import { compileShortcut, getNextRollChangingVariantId } from './compiler.mjs';
 import { executeShortcutRoll } from './roller-adapter.mjs';
 import { loadShortcutWorkspace } from './persistence-client.mjs';
@@ -208,18 +210,17 @@ function activeCompiled() {
   return compileSlot(active.slot, active.variantId);
 }
 
-function historyFormula() {
-  if (!active) return 'Shortcut';
-  const compiled = activeCompiled();
-  return `${compiled.plan.name} • ${compiled.plan.variant.label}`;
+function compiledHistoryFormula(plan) {
+  return `${plan.name} • ${plan.variant?.label || 'Roll'}`;
 }
 
-function saveShortcutHistory(execution, breakdown) {
+function saveShortcutHistory(execution, breakdown, plan) {
   state.history.unshift({
     time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-    formula: historyFormula(),
+    formula: compiledHistoryFormula(plan),
     breakdown,
     total: shortcutHistoryTotal(execution),
+    reroll: createShortcutHistoryReroll(plan),
   });
   if (state.history.length > 30) state.history.length = 30;
   savePreferences();
@@ -303,7 +304,7 @@ export async function performPreparedShortcutRoll() {
     const breakdown = formatShortcutResult(execution);
     state.hasRolled = true;
     renderResults(shortcutDisplayTotal(execution), breakdown);
-    saveShortcutHistory(execution, breakdown);
+    saveShortcutHistory(execution, breakdown, compiled.plan);
 
     if (execution.criticalTriggerInstanceIds.length) {
       showCrit('nat20');
@@ -318,6 +319,45 @@ export async function performPreparedShortcutRoll() {
   } catch (error) {
     console.error('Shortcut roll failed:', error);
     setStatus(error.message || 'Shortcut roll failed.', 'error');
+    return false;
+  } finally {
+    state.rolling = false;
+    state.d20Mode = 'normal';
+    emitState();
+  }
+}
+
+export async function performShortcutHistoryReroll(plan) {
+  if (state.rolling) return false;
+  state.rolling = true;
+  state.d20Mode = 'normal';
+  emitState();
+
+  try {
+    if (!state.physicsReady) throw new Error('3D physics is not ready yet.');
+    assertValidCompiledShortcutPlan(plan);
+    setStatus(`Rerolling ${plan.name}…`);
+    document.getElementById('tray-empty-state')?.classList.add('hidden');
+    playDiceSound();
+
+    const color = getSkinColor(state.dieSkin, state.customAppearance?.diceColor);
+    const execution = await executeShortcutRoll(plan, (notation) => rollPhysics(notation, color));
+    const breakdown = formatShortcutResult(execution);
+    state.hasRolled = true;
+    renderResults(shortcutDisplayTotal(execution), breakdown);
+    saveShortcutHistory(execution, breakdown, plan);
+
+    if (execution.criticalTriggerInstanceIds.length) {
+      showCrit('nat20');
+      playNat20Fanfare();
+    }
+
+    restoreNormalRollLabel();
+    setStatus(`Saved to history • ${state.history.length} roll${state.history.length === 1 ? '' : 's'}`, 'ready');
+    return true;
+  } catch (error) {
+    console.error('Shortcut history reroll failed:', error);
+    setStatus(error.message || 'Shortcut reroll failed.', 'error');
     return false;
   } finally {
     state.rolling = false;
