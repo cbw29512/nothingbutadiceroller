@@ -4,31 +4,55 @@ import { buildPhysicsNotation, countDice, getSkinColor } from './utils.js';
 import { clearPhysics, rollPhysics } from './physics.js';
 import { getCriticalOutcome, parseRollResults } from './roll-results.js';
 import { createStandardHistoryReroll } from './history-records.mjs';
+import {
+  applyRollModifier,
+  appendModifierBreakdown,
+  formatRollModifier,
+  normalizeRollModifier,
+} from './roll-modifier.mjs';
 import { renderHistory, renderPool, renderResults, setStatus, showCrit } from './ui.js';
 
 function emitRollState() {
-  document.dispatchEvent(new Event('rollstatechange'));
+  try {
+    document.dispatchEvent(new Event('rollstatechange'));
+  } catch (error) {
+    console.error('Failed to emit roll state:', error);
+  }
 }
 
 function setPhysicsBadgeVisible(visible) {
-  const badge = document.querySelector('.roll-trust-badge');
-  if (badge) badge.hidden = !visible;
+  try {
+    const badge = document.querySelector('.roll-trust-badge');
+    if (badge) badge.hidden = !visible;
+  } catch (error) {
+    console.error('Failed to update physics trust badge:', error);
+  }
 }
 
-function formulaFor(pool, rollMode) {
-  const formula = Object.entries(countDice(pool))
-    .map(([type, count]) => `${count}${type}`)
-    .join(' + ');
-  return rollMode === 'normal' ? formula : `${formula} (${rollMode})`;
+function formulaFor(pool, rollMode, modifier) {
+  try {
+    const formula = Object.entries(countDice(pool))
+      .map(([type, count]) => `${count}${type}`)
+      .join(' + ');
+    const withModifier = `${formula}${formatRollModifier(modifier)}`;
+    return rollMode === 'normal' ? withModifier : `${withModifier} (${rollMode})`;
+  } catch (error) {
+    console.error('Failed to format roll formula:', error);
+    return 'Roll';
+  }
 }
 
 function playCriticalFeedback(kind) {
-  if (kind === 'nat20') {
-    showCrit('nat20');
-    playNat20Fanfare();
-  } else if (kind === 'nat1') {
-    showCrit('nat1');
-    playNat1DoomSound();
+  try {
+    if (kind === 'nat20') {
+      showCrit('nat20');
+      playNat20Fanfare();
+    } else if (kind === 'nat1') {
+      showCrit('nat1');
+      playNat1DoomSound();
+    }
+  } catch (error) {
+    console.error('Failed to play critical feedback:', error);
   }
 }
 
@@ -51,6 +75,7 @@ export async function clearPool() {
     state.selectedDice = [];
     state.hasRolled = false;
     state.d20Mode = 'normal';
+    state.modifier = 0;
     setPhysicsBadgeVisible(true);
     renderPool();
     renderResults();
@@ -67,11 +92,15 @@ export async function performRoll(requestedMode = 'normal', options = {}) {
   const rollMode = ['advantage', 'disadvantage'].includes(requestedMode)
     ? requestedMode
     : 'normal';
-  const quickD20 = Boolean(options.quickD20) && rollMode !== 'normal';
+  const quickD20 = Boolean(options.quickD20);
   const poolOverride = Array.isArray(options.poolOverride)
     ? options.poolOverride.map((die) => ({ type: die?.type }))
     : null;
   const preserveSelection = Boolean(options.preserveSelection);
+  const modifier = normalizeRollModifier(
+    options.modifierOverride ?? state.modifier,
+    state.modifier,
+  );
   const previousHasRolled = state.hasRolled;
 
   state.rolling = true;
@@ -89,7 +118,7 @@ export async function performRoll(requestedMode = 'normal', options = {}) {
     }
 
     const status = quickD20
-      ? `Rolling d20 with ${rollMode}…`
+      ? rollMode === 'normal' ? 'Rolling d20…' : `Rolling d20 with ${rollMode}…`
       : rollMode === 'normal' ? 'Rolling…' : `Rolling ${rollMode}…`;
     setStatus(status);
     setPhysicsBadgeVisible(true);
@@ -102,9 +131,11 @@ export async function performRoll(requestedMode = 'normal', options = {}) {
     );
     const results = await rollPhysics(notation, activeDiceColor);
     const parsed = parseRollResults(results, rollMode);
+    const adjustedTotal = applyRollModifier(parsed.total, modifier);
+    const adjustedBreakdown = appendModifierBreakdown(parsed.breakdown, modifier);
 
     state.hasRolled = preserveSelection || quickD20 ? previousHasRolled : true;
-    renderResults(parsed.total, parsed.breakdown);
+    renderResults(adjustedTotal, adjustedBreakdown);
 
     state.history.unshift({
       time: new Date().toLocaleTimeString([], {
@@ -112,10 +143,10 @@ export async function performRoll(requestedMode = 'normal', options = {}) {
         minute: '2-digit',
         second: '2-digit',
       }),
-      formula: formulaFor(pool, rollMode),
-      breakdown: parsed.breakdown,
-      total: String(parsed.total),
-      reroll: createStandardHistoryReroll(pool, rollMode, quickD20),
+      formula: formulaFor(pool, rollMode, modifier),
+      breakdown: adjustedBreakdown,
+      total: String(adjustedTotal),
+      reroll: createStandardHistoryReroll(pool, rollMode, quickD20, modifier),
     });
     if (state.history.length > 30) state.history.length = 30;
     savePreferences();
