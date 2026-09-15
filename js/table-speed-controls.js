@@ -1,4 +1,5 @@
 import { state } from './state.js';
+import { renderPool } from './ui.js';
 import {
   MAX_ROLL_MODIFIER,
   MIN_ROLL_MODIFIER,
@@ -120,6 +121,7 @@ function setModifier(value) {
   try {
     state.modifier = normalizeRollModifier(value, state.modifier || 0);
     syncTableSpeedControls();
+    renderPool();
     document.dispatchEvent(new Event('rollstatechange'));
   } catch (error) {
     console.error('Failed to update roll modifier:', error);
