@@ -10,13 +10,14 @@ async function text(path) {
   return readFile(resolve(root, path), 'utf8');
 }
 
-const [html, customCss, roller, customRoll, trayControls, ui, state] = await Promise.all([
+const [html, customCss, roller, customRoll, trayControls, ui, rollLabels, state] = await Promise.all([
   text('index.html'),
   text('custom.css'),
   text('js/roller.js'),
   text('js/custom-roll.js'),
   text('js/tray-controls.js'),
   text('js/ui.js'),
+  text('js/roll-labels.js'),
   text('js/state.js'),
 ]);
 
@@ -63,8 +64,12 @@ assert.ok(customRoll.includes('UINT32_RANGE'), 'CUSTOM rejection-sampling range 
 assert.ok(customRoll.includes('value >= limit'), 'CUSTOM modulo-bias rejection must remain present.');
 assert.ok(customRoll.includes('MAX_CUSTOM_SIDES = 1_000_000'), 'CUSTOM d1,000,000 maximum must remain present.');
 
-assert.ok(ui.includes("['roll-btn', 'mobile-roll-btn']"), 'Desktop/mobile dynamic Roll labels must stay synchronized.');
-assert.ok(ui.includes('formatRollButtonLabel'), 'Dynamic Roll formula labeling must remain available.');
+assert.ok(
+  rollLabels.includes("['roll-btn', 'mobile-roll-btn']"),
+  'Desktop/mobile dynamic Roll labels must stay synchronized.',
+);
+assert.ok(rollLabels.includes('formatRollButtonLabel'), 'Dynamic Roll formula labeling must remain available.');
+assert.ok(ui.includes("from './roll-labels.js'"), 'UI must continue consuming the shared roll-label module.');
 assert.ok(state.includes("keepDice: false"), 'Keep Dice state must remain part of base state.');
 assert.ok(state.includes("history: []"), 'Roll history state must remain part of base state.');
 
