@@ -1,6 +1,7 @@
 import { state } from './state.js';
 import { canRerollHistoryItem } from './history-records.mjs';
 import { syncMobileDiceQuantities } from './mobile-dice-quantity.js';
+import { formatRollModifier } from './roll-modifier.mjs';
 import { countDice } from './utils.js';
 
 export function formatRollButtonLabel(selectedDice = state.selectedDice) {
@@ -12,7 +13,7 @@ export function formatRollButtonLabel(selectedDice = state.selectedDice) {
     const formula = entries
       .map(([type, count]) => `${count === 1 ? '' : count}${type}`)
       .join(' + ');
-    return `Roll ${formula}`;
+    return `Roll ${formula}${formatRollModifier(state.modifier)}`;
   } catch (err) {
     console.error('Failed to format roll button label:', err);
     return 'Roll Dice';
@@ -20,20 +21,29 @@ export function formatRollButtonLabel(selectedDice = state.selectedDice) {
 }
 
 export function formatNaturalRollFeedback(kind) {
-  if (kind === 'nat20') return '🎉 NATURAL 20! 🎉';
-  if (kind === 'nat1') return '💀 NATURAL 1! 💀';
-  return '';
+  try {
+    if (kind === 'nat20') return '🎉 NATURAL 20! 🎉';
+    if (kind === 'nat1') return '💀 NATURAL 1! 💀';
+    return '';
+  } catch (err) {
+    console.error('Failed to format natural-roll feedback:', err);
+    return '';
+  }
 }
 
 function syncRollButtonLabels() {
-  const label = formatRollButtonLabel(state.selectedDice);
-  ['roll-btn', 'mobile-roll-btn'].forEach(id => {
-    const button = document.getElementById(id);
-    if (!button) return;
-    button.textContent = label;
-    button.setAttribute('aria-label', label);
-    button.title = label;
-  });
+  try {
+    const label = formatRollButtonLabel(state.selectedDice);
+    ['roll-btn', 'mobile-roll-btn'].forEach(id => {
+      const button = document.getElementById(id);
+      if (!button) return;
+      button.textContent = label;
+      button.setAttribute('aria-label', label);
+      button.title = label;
+    });
+  } catch (err) {
+    console.error('Failed to synchronize roll button labels:', err);
+  }
 }
 
 export function renderPool() {
@@ -47,7 +57,7 @@ export function renderPool() {
     const counts = countDice(state.selectedDice);
     const entries = Object.entries(counts);
     summary.textContent = entries.length
-      ? entries.map(([type, count]) => `${count}${type}`).join(' + ')
+      ? `${entries.map(([type, count]) => `${count}${type}`).join(' + ')}${formatRollModifier(state.modifier)}`
       : 'No dice selected';
     syncRollButtonLabels();
     syncMobileDiceQuantities(counts);
@@ -59,10 +69,14 @@ export function renderPool() {
       chip.textContent = `${count}${type} ×`;
       chip.title = `Remove one ${type}`;
       chip.onclick = () => {
-        const index = state.selectedDice.findLastIndex(die => die.type === type);
-        if (index >= 0) state.selectedDice.splice(index, 1);
-        renderPool();
-        document.dispatchEvent(new Event('rollstatechange'));
+        try {
+          const index = state.selectedDice.findLastIndex(die => die.type === type);
+          if (index >= 0) state.selectedDice.splice(index, 1);
+          renderPool();
+          document.dispatchEvent(new Event('rollstatechange'));
+        } catch (error) {
+          console.error(`Failed to remove ${type} from the dice pool:`, error);
+        }
       };
       chips.appendChild(chip);
     });
