@@ -89,12 +89,13 @@ const unsafePlan = structuredClone(plan);
 unsafePlan.groups[1].instances[0].terms[0].count = 40;
 assert.throws(() => assertValidCompiledShortcutPlan(unsafePlan), /limit is 40/);
 
-const [controls, styles, app] = await Promise.all([
+const [controls, quickD20, styles, app] = await Promise.all([
   readFile(new URL('../js/table-speed-controls.js', import.meta.url), 'utf8'),
+  readFile(new URL('../js/quick-d20-controls.js', import.meta.url), 'utf8'),
   readFile(new URL('../js/table-speed.css', import.meta.url), 'utf8'),
   readFile(new URL('../js/app.js', import.meta.url), 'utf8'),
 ]);
-assert.ok(controls.includes("button.dataset.quickRoll = 'normal'"));
+assert.ok(quickD20.includes("button.dataset.quickRoll = 'normal'"));
 assert.ok(controls.includes("input.dataset.rollModifier = 'true'"));
 assert.ok(styles.includes('grid-template-columns:repeat(4,minmax(0,1fr))'));
 assert.ok(app.includes("ensureStylesheet('table-speed-styles', '/js/table-speed.css')"));
