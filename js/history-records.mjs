@@ -1,11 +1,15 @@
 import { normalizeRollModifier } from './roll-modifier.mjs';
+import {
+  createShortcutHistoryReroll,
+  normalizeShortcutHistoryReroll,
+} from './shortcut-history-descriptor.mjs';
 
+export { createShortcutHistoryReroll };
 export const HISTORY_SCHEMA_VERSION = 1;
 
 const STANDARD_DICE = new Set(['d4', 'd6', 'd8', 'd10', 'd12', 'd20', 'd100']);
 const ROLL_MODES = new Set(['normal', 'advantage', 'disadvantage']);
 const MAX_CUSTOM_SIDES = 1_000_000;
-const MAX_SHORTCUT_PLAN_BYTES = 100_000;
 
 function normalizeStandardDice(value) {
   try {
@@ -15,21 +19,6 @@ function normalizeStandardDice(value) {
     return dice;
   } catch (error) {
     console.error('Failed to normalize standard history dice:', error);
-    return null;
-  }
-}
-
-function normalizeShortcutPlan(value) {
-  try {
-    if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
-    if (!Array.isArray(value.groups) || value.groups.length < 1) return null;
-    const encoded = JSON.stringify(value);
-    if (!encoded || encoded.length > MAX_SHORTCUT_PLAN_BYTES) return null;
-    const cloned = JSON.parse(encoded);
-    if (!cloned || !Array.isArray(cloned.groups)) return null;
-    return Object.freeze(cloned);
-  } catch (error) {
-    console.error('Failed to normalize shortcut history plan:', error);
     return null;
   }
 }
@@ -68,17 +57,6 @@ export function createCustomHistoryReroll(sides) {
   }
 }
 
-export function createShortcutHistoryReroll(plan) {
-  try {
-    const normalizedPlan = normalizeShortcutPlan(plan);
-    if (!normalizedPlan) throw new Error('Shortcut history reroll requires a valid compiled plan.');
-    return Object.freeze({ kind: 'shortcut', plan: normalizedPlan });
-  } catch (error) {
-    console.error('Failed to create shortcut history reroll:', error);
-    throw error;
-  }
-}
-
 export function normalizeHistoryReroll(value) {
   try {
     if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
@@ -100,10 +78,7 @@ export function normalizeHistoryReroll(value) {
       if (!Number.isSafeInteger(sides) || sides < 2 || sides > MAX_CUSTOM_SIDES) return null;
       return Object.freeze({ kind: 'custom', sides });
     }
-    if (value.kind === 'shortcut') {
-      const plan = normalizeShortcutPlan(value.plan);
-      return plan ? Object.freeze({ kind: 'shortcut', plan }) : null;
-    }
+    if (value.kind === 'shortcut') return normalizeShortcutHistoryReroll(value);
     return null;
   } catch (error) {
     console.error('Failed to normalize history reroll descriptor:', error);
