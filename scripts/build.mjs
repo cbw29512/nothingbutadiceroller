@@ -33,6 +33,7 @@ const files = [
   'community.css',
   'mobile.css',
   'custom.css',
+  'site-polish.css',
   'rolls.css',
   'shortcut-harness.html',
   'shortcut-toolbar.css',

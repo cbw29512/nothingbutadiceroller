@@ -1,0 +1,51 @@
+/* Design pass (2026-09-27): header polish, compact mobile header, support card, affiliate slots.
+   Loaded after the existing stylesheets. Static file only: no inline styles (production CSP is style-src 'self'). */
+
+/* Header links are buttons: no underlines, consistent alignment. */
+a.btn{text-decoration:none}
+.header-controls>a.btn,.docs-nav a.btn,.nbdr-support-card a.btn{display:inline-flex;align-items:center;justify-content:center;gap:.35rem}
+.support-link,.nbdr-bmc-pill,.nbdr-bmc-mini{border-color:#b45309;color:#fde68a}
+.support-link:hover,.nbdr-bmc-pill:hover,.nbdr-bmc-mini:hover{border-color:#f59e0b}
+.app-header a.nbdr-bmc-mini{display:none}
+
+/* Below-the-roller extras: support card + (hidden) gear slots. Kept below the tray so the roller stays first. */
+.nbdr-extras{width:min(1440px,100%);margin:0 auto;padding:0 1.25rem 1.5rem;display:grid;gap:.9rem}
+.nbdr-support-card{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.85rem 1.1rem;border:1px solid #2a3445;border-radius:14px;background:rgba(15,20,30,.9)}
+.nbdr-support-card p{color:#cbd5e1;font-size:.9rem;line-height:1.45;max-width:62ch}
+.nbdr-support-card strong{color:#f8fafc}
+.nbdr-support-card .btn{flex:0 0 auto;min-height:44px}
+.nbdr-gear[hidden]{display:none!important}
+.nbdr-gear{padding:1rem 1.1rem;border:1px solid #2a3445;border-radius:14px;background:rgba(15,20,30,.9)}
+.nbdr-gear h2{font-size:1rem;margin-bottom:.35rem}
+.nbdr-gear-disclosure{color:#cbd5e1;font-size:.8rem;line-height:1.45;margin-bottom:.75rem}
+.nbdr-gear-groups{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:.75rem}
+.nbdr-gear-group h3{font-size:.76rem;font-weight:900;letter-spacing:.1em;text-transform:uppercase;color:#dbeafe;margin-bottom:.4rem}
+.nbdr-gear-group ul{list-style:none;display:grid;gap:.35rem}
+.nbdr-gear-group a{color:#7dd3fc;font-weight:750}
+.nbdr-gear-note{display:block;color:#94a3b8;font-size:.78rem}
+
+/* Docs pages: support pill sits with the other nav buttons. */
+.docs-nav .nbdr-bmc-pill{white-space:nowrap}
+
+@media(max-width:700px){
+  /* One row of header controls: Sound, Dice Studio, History, coffee, More.
+     One-Shot Forge, Guild Tools, Sign In and the full Support link live in the More menu. */
+  .header-controls{grid-template-columns:repeat(3,minmax(0,1fr)) 44px minmax(0,1fr)!important}
+  .header-controls>a[href^="https://cbw29512.github.io/oneshot-forge/"]{display:none!important}
+  .app-header .header-controls>a.nbdr-bmc-mini{display:inline-flex;order:1;min-height:44px;padding:0;font-size:1rem}
+  .header-controls>.mobile-header-more{order:2}
+  .app-header{gap:.4rem;padding:.55rem .75rem}
+  /* The fixed dice dock covers the bottom ~320px: start the extras below it and leave room to scroll them clear. */
+  body:has(.nbdr-extras){padding-bottom:calc(360px + env(safe-area-inset-bottom))}
+  body:has(.nbdr-extras):has(.mobile-shortcut-toolbar-mount:not([hidden])){padding-bottom:calc(440px + env(safe-area-inset-bottom))}
+  .nbdr-extras{padding:2.5rem .55rem 1rem}
+  .nbdr-support-card{flex-direction:column;align-items:stretch;text-align:left}
+}
+@media(max-width:560px){
+  .docs-nav{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));width:100%}
+  .docs-nav .btn{min-height:44px;padding:.5rem .4rem;text-align:center}
+}
+@media(max-width:360px){
+  .header-controls{grid-template-columns:repeat(3,minmax(0,1fr)) 40px minmax(0,1fr)!important}
+  .header-controls .btn,.mobile-header-more>summary{font-size:.66rem}
+}
