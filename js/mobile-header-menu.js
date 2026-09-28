@@ -4,6 +4,7 @@ export function initMobileHeaderMenu({ documentRef = document, windowRef = windo
     const account = documentRef.getElementById('open-account-btn');
     const support = documentRef.getElementById('support-project-link');
     const guild = controls?.querySelector('a[href="https://lighttowertabletopguild.netlify.app/tools.html"]');
+    const forge = controls?.querySelector('a[href^="https://cbw29512.github.io/oneshot-forge/"]');
     if (!controls || !account || !support || !guild) return null;
 
     let details = controls.querySelector('.mobile-header-more');
@@ -27,6 +28,17 @@ export function initMobileHeaderMenu({ documentRef = document, windowRef = windo
       guildProxy.href = guild.href;
       guildProxy.textContent = 'Light Tower Guild Tools';
 
+      const menuItems = [accountProxy, guildProxy];
+      if (forge) {
+        const forgeProxy = documentRef.createElement('a');
+        forgeProxy.className = 'btn secondary mobile-forge-proxy';
+        forgeProxy.href = forge.href;
+        forgeProxy.target = '_blank';
+        forgeProxy.rel = 'noopener noreferrer';
+        forgeProxy.textContent = '⚒ One-Shot Forge ↗';
+        menuItems.push(forgeProxy);
+      }
+
       const howTo = documentRef.createElement('a');
       howTo.className = 'btn secondary';
       howTo.href = '/how-to.html';
@@ -39,7 +51,7 @@ export function initMobileHeaderMenu({ documentRef = document, windowRef = windo
       supportProxy.rel = 'noopener noreferrer';
       supportProxy.textContent = 'Support Project';
 
-      menu.append(accountProxy, guildProxy, howTo, supportProxy);
+      menu.append(...menuItems, howTo, supportProxy);
       details.append(summary, menu);
       controls.appendChild(details);
 

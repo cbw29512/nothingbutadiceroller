@@ -60,6 +60,7 @@
   <link rel="stylesheet" href="/mobile.css">
   <link id="community-styles" rel="stylesheet" href="/community.css">
   <link id="custom-controls-styles" rel="stylesheet" href="/custom.css">
+  <link id="site-polish-styles" rel="stylesheet" href="/site-polish.css">
 </head>
 <body class="tray-green_felt skin-ruby_red">
   <div id="app">
@@ -74,6 +75,7 @@
         <button id="sound-toggle-btn" class="btn ghost" type="button" aria-pressed="true">🔊 ON</button>
         <button id="open-styles-btn" class="btn secondary" type="button" aria-label="Open Dice Studio">Dice Studio</button>
         <button id="open-history-btn" class="btn secondary" type="button">History</button>
+        <a class="btn secondary nbdr-bmc-mini" href="https://buymeacoffee.com/divclass016" target="_blank" rel="noopener noreferrer" aria-label="Support this project on Buy Me a Coffee (opens in a new tab)"><span aria-hidden="true">☕</span></a>
         <a id="support-project-link" class="btn secondary support-link" href="https://buymeacoffee.com/divclass016" target="_blank" rel="noopener noreferrer" aria-label="Support this project on Buy Me a Coffee">☕ <span class="support-label">Support</span></a>
         <button id="open-account-btn" class="btn secondary" type="button">Sign In</button>
       </div>
@@ -147,6 +149,14 @@
         </div>
       </section>
     </main>
+
+    <section class="nbdr-extras" aria-label="Support the roller">
+      <aside id="nbdr-gear" class="nbdr-gear" hidden aria-labelledby="nbdr-gear-title"></aside>
+      <div class="nbdr-support-card">
+        <p><strong>Enjoying the roller?</strong> It's free to use, and rolling never needs an account. If it helps your table, you can chip in for the next update.</p>
+        <a class="btn secondary nbdr-bmc-pill" href="https://buymeacoffee.com/divclass016" target="_blank" rel="noopener noreferrer" aria-label="Buy me a coffee (opens in a new tab)"><span aria-hidden="true">☕</span> Buy me a coffee</a>
+      </div>
+    </section>
 
     <section class="mobile-play-dock" aria-label="Mobile dice controls">
       <div id="custom-die-popover" class="custom-die-popover" popover="auto">
@@ -247,5 +257,6 @@
   </div>
 
   <script type="module" src="/js/app.js"></script>
+  <script type="module" src="/js/affiliate-slots.js"></script>
 </body>
 </html>
