@@ -31,7 +31,7 @@ try {
   const home = await get('/', { accept: 'text/html' });
   requireStatus(home, 200, 'roller homepage');
   const homeText = await home.response.text();
-  if (!homeText.includes('Nothing But A Dice Roller') || !homeText.includes('SECURE RANDOMIZATION ENGINE')) {
+  if (!homeText.includes('Nothing But A Dice Roller') || !homeText.includes('Physics dice · secure custom rolls')) {
     throw new Error('Roller homepage is missing expected production markers.');
   }
   const csp = home.response.headers.get('content-security-policy') || '';

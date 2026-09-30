@@ -101,8 +101,8 @@ assert.equal(getCriticalOutcome(
   multipleD20s.keptD20s,
 ), null);
 
-assert.equal(formatNaturalRollFeedback('nat20'), '🎉 NATURAL 20! 🎉');
-assert.equal(formatNaturalRollFeedback('nat1'), '💀 NATURAL 1! 💀');
+assert.equal(formatNaturalRollFeedback('nat20'), 'NATURAL 20!');
+assert.equal(formatNaturalRollFeedback('nat1'), 'NATURAL 1!');
 assert.equal(formatNaturalRollFeedback('other'), '');
 
 assert.equal(normalizeCustomSides(2), 2);
