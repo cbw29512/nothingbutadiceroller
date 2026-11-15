@@ -26,16 +26,16 @@ static lv_display_rotation_t determine(float x, float y, float z,
     float az = z < 0 ? -z : z;
     if (az > 0.72f || (ax < 0.65f && ay < 0.65f)) return fallback;
     if (ay > ax + 0.16f) {
-        return y < 0 ? LV_DISPLAY_ROTATION_0 : LV_DISPLAY_ROTATION_180;
+        return y < 0 ? LV_DISPLAY_ROTATION_180 : LV_DISPLAY_ROTATION_0;
     }
     if (ax > ay + 0.16f) {
-        return x < 0 ? LV_DISPLAY_ROTATION_90 : LV_DISPLAY_ROTATION_270;
+        return x < 0 ? LV_DISPLAY_ROTATION_270 : LV_DISPLAY_ROTATION_90;
     }
     return fallback;
 }
 static void monitor(void *arg) {
     lv_display_t *display = (lv_display_t *)arg;
-    lv_display_rotation_t current = LV_DISPLAY_ROTATION_0;
+    lv_display_rotation_t current = LV_DISPLAY_ROTATION_180;
     lv_display_rotation_t candidate = current;
     unsigned stable = 0;
     while (true) {
@@ -62,6 +62,15 @@ void orientation_start(lv_display_t *display) {
     bsp_sensor_config_t config = {
         .type = IMU_ID, .mode = MODE_POLLING, .period = 100
     };
+    // Tab5's native panel is mounted 180 degrees from the original IMU mapping.
+    // Apply a stable readable baseline even when the device is lying flat.
+    if (bsp_display_lock(1000)) {
+        bsp_display_rotate(display, LV_DISPLAY_ROTATION_180);
+        dice_ui_relayout();
+        bsp_display_unlock();
+    } else {
+        ESP_LOGW(TAG, "Could not apply baseline orientation; retaining BSP default");
+    }
     esp_err_t err = bsp_sensor_init(&config, &imu);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "BMI270 init failed (%s); keeping stable orientation",
