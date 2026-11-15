@@ -1,0 +1,36 @@
+name: Tab5 Native Firmware
+on:
+  pull_request:
+    paths:
+      - 'tab5/**'
+      - '.github/workflows/tab5-native.yml'
+  push:
+    branches: [feat/tab5-universal-dice-foundation-20261115]
+    paths:
+      - 'tab5/**'
+      - '.github/workflows/tab5-native.yml'
+  workflow_dispatch:
+
+jobs:
+  host-engine:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Native host tests
+        run: |
+          gcc -std=c11 -Wall -Wextra -Werror -fsanitize=address,undefined -g \
+            tab5/native/main/dice_engine.c tab5/native/tests/test_dice_engine.c \
+            -o /tmp/tab5_dice_engine_test
+          /tmp/tab5_dice_engine_test
+      - name: Portable JS tests
+        run: node --test tab5/*.test.mjs
+  firmware-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build ESP32-P4 firmware with IDF 6.1
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: release-v6.1
+          target: esp32p4
+          path: tab5/native
