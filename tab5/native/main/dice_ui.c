@@ -1,4 +1,5 @@
 #include "dice_ui.h"
+#include "dice_controls.h"
 #include "bsp/esp-bsp.h"
 #include "esp_log.h"
 #include "esp_random.h"
@@ -158,43 +159,25 @@ static void roll_start(void) {
     g_motion = lv_timer_create(motion_step, 33, NULL);
 }
 static void action_event(lv_event_t *e) {
-    const intptr_t code = (intptr_t)lv_event_get_user_data(e);
-    ESP_LOGI(TAG, "Dice control tapped: %ld", (long)code);
-
-    if (code == 0) {
-        // CLEAR must remove displayed dice as well as the selected pool.
-        dice_clear(g_state);
-        if (g_motion) { lv_timer_delete(g_motion); g_motion = NULL; }
-        if (g_tray) lv_obj_clean(g_tray);
-        memset(g_dice, 0, sizeof(g_dice));
-        display_count = 0;
-        update_summary();
+    const int code = (int)(intptr_t)lv_event_get_user_data(e);
+    // Each tap must produce a visible outcome, except CLEAR.
+    const dice_control_result_t result = dice_apply_control(g_state, code);
+    ESP_LOGI(TAG, "Tap control=%d, result=%d, count=%u",
+             code, (int)result, (unsigned)g_state->count);
+    if (result == DICE_CONTROL_REJECTED) {
+        ESP_LOGW(TAG, "Ignored control=%d (pool full, empty or invalid)", code);
         return;
     }
-    if (code == -1) {
-        // ROLL repeats the current pool without adding any dice.
+    if (result == DICE_CONTROL_ROLL_NOW) {
         roll_start();
         return;
     }
-    if (code == -2 || code == -3) {
-        // ADV/DIS are single d20 actions that immediately show both outcomes.
-        g_state->mode = (code == -2) ? DICE_ADV : DICE_DIS;
-        g_state->count = 0;
-        if (!dice_add(g_state, 20)) {
-            ESP_LOGE(TAG, "Could not select d20 for advantage/disadvantage");
-            return;
-        }
-    } else {
-        // A die button adds to the pool AND visibly rolls it immediately.
-        // Repeating D6, for example, builds 1d6, 2d6, 3d6... up to DICE_MAX.
-        g_state->mode = DICE_NORMAL;
-        if (!dice_add(g_state, (uint8_t)code)) {
-            ESP_LOGW(TAG, "Dice selection rejected: %ld (count=%u)",
-                     (long)code, (unsigned)g_state->count);
-            return;
-        }
-    }
-    roll_start();
+    // Clear the old visuals only when a valid CLEAR action is received.
+    if (g_motion) { lv_timer_delete(g_motion); g_motion = NULL; }
+    if (g_tray) lv_obj_clean(g_tray);
+    memset(g_dice, 0, sizeof(g_dice));
+    display_count = 0;
+    update_summary();
 }
 static void show_session(void) {
     clear_screen();
