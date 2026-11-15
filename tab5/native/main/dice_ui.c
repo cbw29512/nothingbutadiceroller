@@ -10,6 +10,7 @@ static const char *TAG = "dice_ui";
 static dice_state_t *g_state;
 static lv_obj_t *g_screen, *g_tray, *g_summary, *g_dice[DICE_MAX + 1];
 static lv_timer_t *g_motion;
+static lv_obj_t *g_controls[11];
 static int16_t x[DICE_MAX + 1], y[DICE_MAX + 1], vx[DICE_MAX + 1], vy[DICE_MAX + 1];
 static uint8_t display_count;
 static unsigned frames;
@@ -35,6 +36,7 @@ static void clear_screen(void) {
     if (g_motion) { lv_timer_delete(g_motion); g_motion = NULL; }
     lv_obj_clean(g_screen);
     g_tray = NULL; g_summary = NULL;
+    memset(g_controls, 0, sizeof(g_controls));
     memset(g_dice, 0, sizeof(g_dice));
 }
 static void choose_event(lv_event_t *e) {
@@ -93,25 +95,31 @@ static void motion_step(lv_timer_t *timer) {
     (void)timer;
     if (!g_tray) return;
     // Simple, bounded 2D presentation simulation; NOT finished 3D tumbling.
+    int max_x = lv_obj_get_width(g_tray) - 110;
+    int max_y = lv_obj_get_height(g_tray) - 100;
+    if (max_x < 2) max_x = 2;
+    if (max_y < 2) max_y = 2;
     for (int i = 0; i < display_count; i++) {
         if (!g_dice[i]) continue;
         x[i] += vx[i]; y[i] += vy[i]; vy[i] += 1;
-        if (x[i] < 2 || x[i] > 1110) {
+        if (x[i] < 2 || x[i] > max_x) {
             vx[i] = -vx[i] * 2 / 3;
-            x[i] = x[i] < 2 ? 2 : 1110;
+            x[i] = x[i] < 2 ? 2 : max_x;
         }
-        if (y[i] > 290) {
-            y[i] = 290;
+        if (y[i] > max_y) {
+            y[i] = max_y;
             vy[i] = -vy[i] / 2;
             vx[i] = vx[i] * 3 / 4;
         }
         lv_obj_set_pos(g_dice[i], x[i], y[i]);
     }
     if (++frames >= 90) {
-        // Deterministic grid makes every result inspectable after movement.
+        // Grid keeps each result individually accessible, with tray scrolling.
+        int columns = (lv_obj_get_width(g_tray) - 20) / 112;
+        if (columns < 1) columns = 1;
         for (int i = 0; i < display_count; i++)
-            if (g_dice[i]) lv_obj_set_pos(g_dice[i], 10 + (i % 8) * 140,
-                                                 12 + (i / 8) * 112);
+            if (g_dice[i]) lv_obj_set_pos(g_dice[i], 8 + (i % columns) * 112,
+                                                 8 + (i / columns) * 104);
         lv_timer_delete(g_motion);
         g_motion = NULL;
     }
@@ -180,22 +188,22 @@ static void show_session(void) {
     for (int i = 0; i < 7; i++) {
         char text[10]; snprintf(text, sizeof(text), "D%d", faces[i]);
         lv_obj_t *b = button(g_screen, text, 160, 94, action_event, faces[i]);
-        lv_obj_set_pos(b, 26 + i * 177, 54);
+        g_controls[i] = b;
     }
     const char *names[4] = {"ADV", "DIS", "CLEAR", "ROLL"};
     const int actions[4] = {-2, -3, 0, -1};
     for (int i = 0; i < 4; i++) {
         lv_obj_t *b = button(g_screen, names[i], 250, 84, action_event, actions[i]);
-        lv_obj_set_pos(b, 60 + i * 300, 158);
+        g_controls[7 + i] = b;
     }
     g_tray = lv_obj_create(g_screen);
-    lv_obj_set_pos(g_tray, 25, 253);
-    lv_obj_set_size(g_tray, 1230, 385);
+    lv_obj_set_size(g_tray, 500, 300);
     lv_obj_set_style_bg_color(g_tray, lv_color_hex(0x20372A), 0);
     lv_obj_set_scroll_dir(g_tray, LV_DIR_VER);
     g_summary = lv_label_create(g_screen);
     lv_obj_align(g_summary, LV_ALIGN_BOTTOM_MID, 0, -18);
     update_summary();
+    dice_ui_relayout();
 }
 void dice_ui_start(dice_state_t *state) {
     if (!state) { ESP_LOGE(TAG, "Missing dice state"); return; }
@@ -204,4 +212,53 @@ void dice_ui_start(dice_state_t *state) {
     lv_obj_set_style_bg_color(g_screen, lv_color_hex(0x101C2B), 0);
     lv_obj_set_style_text_color(g_screen, lv_color_hex(0xF4F4F4), 0);
     show_choose();
+}
+
+void dice_ui_relayout(void) {
+    if (!g_screen || !g_state) return;
+    lv_display_t *display = lv_display_get_default();
+    int w = lv_display_get_horizontal_resolution(display);
+    int h = lv_display_get_vertical_resolution(display);
+    if (g_state->phase != DICE_SESSION) return;
+    bool portrait = h > w;
+    int cols = portrait ? 4 : 7;
+    int margin = portrait ? 12 : 20;
+    int gap = portrait ? 8 : 12;
+    int usable = w - 2 * margin;
+    int bw = (usable - (cols - 1) * gap) / cols;
+    int bh = portrait ? 86 : 94;
+    int y0 = portrait ? 48 : 52;
+    for (int i = 0; i < 11; i++) {
+        if (!g_controls[i]) continue;
+        // In landscape place action buttons on a full-width second row.
+        int row, col, count, roww, startx;
+        if (!portrait && i >= 7) {
+            row = 1; col = i - 7; count = 4;
+            roww = (usable - 3 * gap) / 4;
+            startx = margin;
+        } else {
+            row = i / cols; col = i % cols; count = cols;
+            roww = bw; startx = margin;
+        }
+        (void)count;
+        lv_obj_set_size(g_controls[i], roww, bh);
+        lv_obj_set_pos(g_controls[i], startx + col * (roww + gap),
+                       y0 + row * (bh + gap));
+    }
+    int rows = portrait ? 3 : 2;
+    int tray_y = y0 + rows * (bh + gap) + 8;
+    int summary_h = 52;
+    int tray_h = h - tray_y - summary_h - 12;
+    if (tray_h < 100) tray_h = 100;
+    lv_obj_set_pos(g_tray, margin, tray_y);
+    lv_obj_set_size(g_tray, w - 2 * margin, tray_h);
+    lv_obj_align(g_summary, LV_ALIGN_BOTTOM_MID, 0, -12);
+    // Preserve roll state on rotation; only reposition the die visuals.
+    if (g_state->has_result && !g_motion) {
+        int columns = (lv_obj_get_width(g_tray) - 20) / 112;
+        if (columns < 1) columns = 1;
+        for (int i = 0; i < display_count; i++)
+            if (g_dice[i]) lv_obj_set_pos(g_dice[i], 8 + (i % columns) * 112,
+                                                 8 + (i / columns) * 104);
+    }
 }
