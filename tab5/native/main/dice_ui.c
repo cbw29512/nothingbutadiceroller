@@ -161,7 +161,8 @@ static void action_event(lv_event_t *e) {
     } else {
         g_state->mode = DICE_NORMAL;
         if (!dice_add(g_state, (uint8_t)code)) {
-        ESP_LOGW(TAG, "Dice pool full or die invalid");
+            ESP_LOGW(TAG, "Dice pool full or die invalid");
+        }
     }
     if (g_tray && !g_state->has_result) {
         if (g_motion) { lv_timer_delete(g_motion); g_motion = NULL; }
