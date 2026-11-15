@@ -34,3 +34,22 @@ jobs:
           esp_idf_version: release-v6.1
           target: esp32p4
           path: tab5/native
+      - name: Verify and package flash images
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p tab5/flash-package
+          cp tab5/native/build/bootloader/bootloader.bin tab5/flash-package/
+          cp tab5/native/build/partition_table/partition-table.bin tab5/flash-package/
+          cp tab5/native/build/tab5_dice.bin tab5/flash-package/
+          cd tab5/flash-package
+          sha256sum bootloader.bin partition-table.bin tab5_dice.bin > SHA256SUMS.txt
+          printf 'BOOTLOADER=0x2000\nPARTITION_TABLE=0x8000\nAPP=0x10000\n' > flash-offsets.txt
+          cat SHA256SUMS.txt
+      - name: Upload Tab5 firmware for review
+        uses: actions/upload-artifact@v4
+        with:
+          name: tab5-dice-esp32p4-${{ github.sha }}
+          path: tab5/flash-package/
+          if-no-files-found: error
+          retention-days: 14
