@@ -158,10 +158,10 @@ static void action_event(lv_event_t *e) {
         // ADV and DIS are d20-only controls in this basic version.
         g_state->count = 0;
         dice_add(g_state, 20);
-    } else if (!dice_add(g_state, (uint8_t)code)) {
+    } else {\n        g_state->mode = DICE_NORMAL;\n        if (!dice_add(g_state, (uint8_t)code)) {
         ESP_LOGW(TAG, "Dice pool full or die invalid");
     }
-    if (g_tray && !g_state->has_result) lv_obj_clean(g_tray);
+    if (g_tray && !g_state->has_result) {\n        if (g_motion) { lv_timer_delete(g_motion); g_motion = NULL; }\n        lv_obj_clean(g_tray);\n        memset(g_dice, 0, sizeof(g_dice));\n    }
     update_summary();
 }
 static void show_session(void) {
