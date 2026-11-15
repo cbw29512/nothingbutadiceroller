@@ -20,6 +20,17 @@ Status: **minimal dice-rolling appliance specification + portable rules-engine p
 - Correct display for symbolic dice: keep each original face visible and present the system-specific success/effect summary separately; some systems do not have a meaningful numeric total.
 - Device wiping/flashing happens only after firmware and backups have been verified.
 
+## Physics presentation contract (V1)
+
+- After pressing Roll, individual dice tumble, translate, spin, bounce off tray boundaries and collide with other dice until they settle.
+- Use a real time-step-based collision/physics simulation, not a canned GIF or a series of arbitrary result screens.
+- The unbiased secure RNG fixes each die's actual game face; simulation influences only presentation and must never overwrite a rolled face.
+- Support authentic standard polyhedral shapes and system-specific marked faces; implementation may use optimized 3D meshes, with measured ESP32-P4 frame rates.
+- Sound is tied to actual simulated contacts, with a limiter to avoid loud multi-die rolls.
+- Large pools may reduce rendering detail for performance, but every die and raw result remains inspectable.
+- Verify native display acceleration, LVGL and frame-buffer performance before choosing the 3D rendering implementation. Do not assume browser DiceBox is portable to ESP32-P4.
+- Phase 2 (not V1): saved spell and attack shortcuts, e.g. Fireball 8d6. No shortcuts or customization UI in the initial firmware.
+
 ## V1 interaction contract
 
 - Power on → select a supported game → confirm → session-locked dice screen.
