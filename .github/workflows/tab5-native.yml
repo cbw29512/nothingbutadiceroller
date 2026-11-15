@@ -42,7 +42,8 @@ jobs:
           for img in tab5/native/build/bootloader/bootloader.bin tab5/native/build/tab5_dice.bin; do
             python -m esptool --chip esp32p4 image-info "$img" > /tmp/tab5-image-info.txt
             cat /tmp/tab5-image-info.txt
-            grep -Eq 'Minimal chip revision: v1\\.0' /tmp/tab5-image-info.txt || {
+            grep -Fq 'Minimal chip revision: v1.0' /tmp/tab5-image-info.txt && \
+              grep -Fq 'Maximal chip revision: v1.99' /tmp/tab5-image-info.txt || {
               echo "ERROR: firmware $img does not declare v1.x compatibility" >&2
               exit 1
             }
