@@ -34,6 +34,19 @@ jobs:
           esp_idf_version: release-v6.1
           target: esp32p4
           path: tab5/native
+      - name: Reject firmware incompatible with v1.3 Tab5
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check esptool==5.6.0
+          for img in tab5/native/build/bootloader/bootloader.bin tab5/native/build/tab5_dice.bin; do
+            python -m esptool --chip esp32p4 image-info "$img" > /tmp/tab5-image-info.txt
+            cat /tmp/tab5-image-info.txt
+            grep -Eq 'Minimal chip revision: v1\\.0' /tmp/tab5-image-info.txt || {
+              echo "ERROR: firmware $img does not declare v1.x compatibility" >&2
+              exit 1
+            }
+          done
       - name: Verify and package flash images
         shell: bash
         run: |
