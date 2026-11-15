@@ -79,7 +79,7 @@ static void update_summary(void) {
     if (!g_summary) return;
     char buf[256];
     if (!g_state->has_result) {
-        snprintf(buf, sizeof(buf), "%u dice selected  |  Tap ROLL", g_state->count);
+        snprintf(buf, sizeof(buf), "Tap a die to roll  |  ROLL repeats  |  CLEAR resets");
     } else if (g_state->mode != DICE_NORMAL) {
         snprintf(buf, sizeof(buf), "d20: %u, %u  (%s)  |  TOTAL %ld",
                  g_state->faces[0], g_state->faces[1],
@@ -125,7 +125,7 @@ static void motion_step(lv_timer_t *timer) {
     }
 }
 static void roll_start(void) {
-    if (!g_state->count) return;
+    if (!g_state->count) { ESP_LOGW(TAG, "ROLL ignored: no dice selected"); return; }
     if (!dice_roll(g_state, esp_random)) {
         ESP_LOGE(TAG, "Secure roll failed; results unchanged");
         return;
@@ -158,26 +158,43 @@ static void roll_start(void) {
     g_motion = lv_timer_create(motion_step, 33, NULL);
 }
 static void action_event(lv_event_t *e) {
-    intptr_t code = (intptr_t)lv_event_get_user_data(e);
-    if (code == 0) dice_clear(g_state);
-    else if (code == -1) { roll_start(); return; }
-    else if (code == -2 || code == -3) {
-        g_state->mode = code == -2 ? DICE_ADV : DICE_DIS;
-        // ADV and DIS are d20-only controls in this basic version.
+    const intptr_t code = (intptr_t)lv_event_get_user_data(e);
+    ESP_LOGI(TAG, "Dice control tapped: %ld", (long)code);
+
+    if (code == 0) {
+        // CLEAR must remove displayed dice as well as the selected pool.
+        dice_clear(g_state);
+        if (g_motion) { lv_timer_delete(g_motion); g_motion = NULL; }
+        if (g_tray) lv_obj_clean(g_tray);
+        memset(g_dice, 0, sizeof(g_dice));
+        display_count = 0;
+        update_summary();
+        return;
+    }
+    if (code == -1) {
+        // ROLL repeats the current pool without adding any dice.
+        roll_start();
+        return;
+    }
+    if (code == -2 || code == -3) {
+        // ADV/DIS are single d20 actions that immediately show both outcomes.
+        g_state->mode = (code == -2) ? DICE_ADV : DICE_DIS;
         g_state->count = 0;
-        dice_add(g_state, 20);
+        if (!dice_add(g_state, 20)) {
+            ESP_LOGE(TAG, "Could not select d20 for advantage/disadvantage");
+            return;
+        }
     } else {
+        // A die button adds to the pool AND visibly rolls it immediately.
+        // Repeating D6, for example, builds 1d6, 2d6, 3d6... up to DICE_MAX.
         g_state->mode = DICE_NORMAL;
         if (!dice_add(g_state, (uint8_t)code)) {
-            ESP_LOGW(TAG, "Dice pool full or die invalid");
+            ESP_LOGW(TAG, "Dice selection rejected: %ld (count=%u)",
+                     (long)code, (unsigned)g_state->count);
+            return;
         }
     }
-    if (g_tray && !g_state->has_result) {
-        if (g_motion) { lv_timer_delete(g_motion); g_motion = NULL; }
-        lv_obj_clean(g_tray);
-        memset(g_dice, 0, sizeof(g_dice));
-    }
-    update_summary();
+    roll_start();
 }
 static void show_session(void) {
     clear_screen();
