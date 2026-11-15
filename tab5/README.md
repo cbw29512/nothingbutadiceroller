@@ -1,6 +1,6 @@
 # Tab5 Universal Dice Console — firmware foundation
 
-Status: **minimal dice-rolling appliance specification + portable rules-engine prototype**, not flashed onto the Tab5.
+Status: **initial native ESP32-P4 v1.x dice firmware compiled and physically flashed for first hardware validation**. Rotation and 3D physics are not implemented yet.
 
 ## Definition of Done (V1)
 
@@ -19,6 +19,19 @@ Status: **minimal dice-rolling appliance specification + portable rules-engine p
 - Preserve individual faces, pool total, and selected/discarded dice in history; do not add a history management screen unless needed to inspect large rolls.
 - Correct display for symbolic dice: keep each original face visible and present the system-specific success/effect summary separately; some systems do not have a meaningful numeric total.
 - Device wiping/flashing happens only after firmware and backups have been verified.
+
+## Automatic orientation contract (V1; required before release)
+
+- M5Stack Tab5 has a BMI270 6-axis IMU. Monitor gravity via its accelerometer to detect portrait, landscape, and 180-degree reversals.
+- Rotate the display automatically as the user physically rotates the device; support 0°, 90°, 180°, and 270°.
+- Debounce with a stable-orientation interval and gravity threshold to avoid flipping while rolling dice or when the unit is nearly flat.
+- Use `bsp_display_rotate()` only with the LVGL mutex held, and ensure the touch driver tracks rotation so buttons remain accurate in every orientation.
+- Reflow control buttons and dice tray using the current display dimensions. Never reuse absolute landscape coordinates in portrait orientation.
+- Preserve system lock, selected dice, generated face results, roll summary, and in-flight presentation state across orientation changes; do not reroll on rotation.
+- Initial boot may use a temporary default orientation while the BMI270 initializes, but must settle into the physical device orientation.
+- Test all four orientations on physical Tab5, including rotation during animation, touch accuracy, flat-device behavior, and repeated quick flips.
+- If sensor initialization fails, log the problem clearly and keep a stable usable fallback orientation, not a continuously rotating UI.
+- This requirement is **not satisfied by the first flashed test firmware**; do not label orientation support complete until the hardware tests pass.
 
 ## Physics presentation contract (V1)
 
