@@ -1,6 +1,6 @@
 # Tab5 Universal Dice Console — firmware foundation
 
-Status: **design + portable rules-engine prototype**, not flashed onto the Tab5.
+Status: **minimal dice-rolling appliance specification + portable rules-engine prototype**, not flashed onto the Tab5.
 
 ## Definition of Done (V1)
 
@@ -11,10 +11,24 @@ Status: **design + portable rules-engine prototype**, not flashed onto the Tab5.
 - Every die is inspectable, including large pools; scrolling may be needed, but never silently truncate results.
 - Offline-only operation; no cloud, phone, Netlify or Wi-Fi requirement.
 - Native ESP32-P4 implementation uses a verified CSPRNG/entropy source and unbiased rejection sampling.
-- Standard and custom dice use the same secure numerical engine; animation only visualizes results.
+- All supplied system dice (including proprietary shapes, symbols, face maps and game-specific result interpretation) must be accurate from V1; never substitute a standard d6/d20 unless the rules actually use one.
+- Standard and system-specific dice use the same secure numerical engine, with independent raw face and interpreted result; animation only visualizes results.
+- No user-created custom dice, Dice Studio, themes, community marketplace, accounts, cloud sync, or customization screen in V1.
+- Only game selection at boot and roll-related controls in session. No navigation controls after confirmation.
 - Each game profile defines die faces, face values, roll modifiers, success interpretation and quick actions.
-- Persistent settings, favorites, and history must be explicitly designed before implementation.
+- Preserve individual faces, pool total, and selected/discarded dice in history; do not add a history management screen unless needed to inspect large rolls.
+- Correct display for symbolic dice: keep each original face visible and present the system-specific success/effect summary separately; some systems do not have a meaningful numeric total.
 - Device wiping/flashing happens only after firmware and backups have been verified.
+
+## V1 interaction contract
+
+- Power on → select a supported game → confirm → session-locked dice screen.
+- Top ~30%: large die/pool/advantage or game-specific action buttons, and Roll/Clear as appropriate.
+- Bottom ~70%: animated dice, each individually identified with its raw face/result, and a persistent result summary.
+- On a large pool, shrink/flow/scroll results without hiding or dropping dice; the result summary remains visible.
+- Buttons and dice rendering change automatically with the selected system. No customization menu or system switch button during play.
+- The only supported V1 extension path is preinstalled, source-verified game profiles; custom user-defined dice are deferred.
+- Maintain a tested, versioned registry of game editions and their face maps, probabilities and interpretations; do not infer mechanics from system names.
 
 ## Source architecture
 
