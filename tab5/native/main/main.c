@@ -1,5 +1,6 @@
 #include "dice_engine.h"
 #include "dice_ui.h"
+#include "orientation.h"
 #include "bsp/esp-bsp.h"
 #include "esp_log.h"
 #include "esp_random.h"
@@ -25,5 +26,6 @@ void app_main(void) {
     }
     dice_ui_start(&state);
     bsp_display_unlock();
+    orientation_start(display);
     ESP_LOGI(TAG, "Tab5 dice selection interface initialized");
 }
