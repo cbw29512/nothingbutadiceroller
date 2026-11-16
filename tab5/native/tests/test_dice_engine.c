@@ -52,6 +52,15 @@ int main(void) {
     dice_clear(&s);
     for (int i = 0; i < DICE_MAX; ++i) assert(dice_add(&s, 6));
     assert(!dice_add(&s, 6));
+    sample = 0;
+    assert(dice_roll(&s, sequence));
+    assert(s.has_result && s.count == DICE_MAX);
+    // A new die must work even if the previous completed pool was full.
+    assert(dice_add(&s, 20));
+    assert(s.count == 1 && s.pool[0] == 20);
+    assert(s.mode == DICE_NORMAL && !s.has_result && s.total == 0);
+    assert(!dice_add(&s, 3));
+    assert(s.count == 1 && s.pool[0] == 20);
     puts("Native C dice engine unit tests passed");
     return 0;
 }
