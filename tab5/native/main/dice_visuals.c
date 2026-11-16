@@ -14,6 +14,9 @@ lv_obj_t *dice_visual_create(lv_obj_t *tray, uint8_t sides, uint16_t face,
     lv_obj_t *die = lv_obj_create(tray);
     if (!die) { ESP_LOGE(TAG, "LVGL could not allocate die"); return NULL; }
     lv_obj_set_size(die, size, size);
+    // Spin around the center of the polyhedron, not the widget corner.
+    lv_obj_set_style_transform_pivot_x(die, size / 2, 0);
+    lv_obj_set_style_transform_pivot_y(die, size / 2, 0);
     lv_obj_set_style_pad_all(die, 0, 0);
     lv_obj_set_style_border_width(die, 0, 0);
     lv_obj_set_style_bg_opa(die, LV_OPA_TRANSP, 0);
@@ -39,4 +42,13 @@ lv_obj_t *dice_visual_create(lv_obj_t *tray, uint8_t sides, uint16_t face,
     lv_obj_set_style_text_color(type_label, lv_color_hex(0xEDF5F6), 0);
     lv_obj_align(type_label, LV_ALIGN_CENTER, 0, size / 4);
     return die;
+}
+
+void dice_visual_set_rolling(lv_obj_t *die, bool rolling) {
+    if (!die) return;
+    // The first child is the pre-generated face label, never the RNG source.
+    lv_obj_t *face = lv_obj_get_child(die, 0);
+    if (!face) return;
+    if (rolling) lv_obj_add_flag(face, LV_OBJ_FLAG_HIDDEN);
+    else lv_obj_remove_flag(face, LV_OBJ_FLAG_HIDDEN);
 }
