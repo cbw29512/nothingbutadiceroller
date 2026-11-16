@@ -26,6 +26,10 @@ jobs:
             tab5/native/main/dice_engine.c tab5/native/main/dice_controls.c \
             tab5/native/tests/test_dice_controls.c -o /tmp/tab5_dice_controls_test
           /tmp/tab5_dice_controls_test
+          gcc -std=c11 -Wall -Wextra -Werror -fsanitize=address,undefined -g \
+            tab5/native/main/dice_layout.c tab5/native/tests/test_dice_layout.c \
+            -o /tmp/tab5_dice_layout_test
+          /tmp/tab5_dice_layout_test
       - name: Portable JS tests
         run: node --test tab5/*.test.mjs
   firmware-build:
