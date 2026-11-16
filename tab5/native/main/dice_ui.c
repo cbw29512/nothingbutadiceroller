@@ -1,6 +1,7 @@
 #include "dice_ui.h"
 #include "dice_controls.h"
 #include "dice_tray.h"
+#include "dice_summary.h"
 #include "dice_widgets.h"
 #include "dice_ui_layout.h"
 #include "bsp/esp-bsp.h"
@@ -60,20 +61,20 @@ static void show_confirm(void) {
     lv_obj_align(no, LV_ALIGN_CENTER, -180, 30);
 }
 static void update_summary(void) {
-    if (!g_summary) return;
+    if (!g_state || !g_summary) return;
     char buf[256];
-    if (!g_state->has_result) {
-        snprintf(buf, sizeof(buf), "Tap a die to roll  |  ROLL repeats  |  CLEAR resets");
-    } else if (g_state->mode != DICE_NORMAL) {
-        snprintf(buf, sizeof(buf), "d20: %u, %u  (%s)  |  TOTAL %ld",
-                 g_state->faces[0], g_state->faces[1],
-                 g_state->mode == DICE_ADV ? "ADV" : "DIS",
-                 (long)g_state->total);
-    } else {
-        snprintf(buf, sizeof(buf), "%u dice  |  TOTAL %ld", g_state->count,
-                 (long)g_state->total);
+    if (!dice_summary_format(g_state, buf, sizeof(buf))) {
+        ESP_LOGE(TAG, "Dice summary formatting failed");
+        return;
     }
     lv_label_set_text(g_summary, buf);
+    // Active dice-test mode is visibly selected without creating a new page.
+    if (g_controls[7])
+        lv_obj_set_style_bg_color(g_controls[7], lv_color_hex(
+            g_state->mode == DICE_ADV ? 0x287F5A : 0x355679), 0);
+    if (g_controls[8])
+        lv_obj_set_style_bg_color(g_controls[8], lv_color_hex(
+            g_state->mode == DICE_DIS ? 0x9B533B : 0x355679), 0);
 }
 static void roll_start(void) {
     if (!g_state->count) {
@@ -89,7 +90,7 @@ static void roll_start(void) {
 }
 static void action_event(lv_event_t *e) {
     const int code = (int)(intptr_t)lv_event_get_user_data(e);
-    // Each tap must produce a visible outcome, except CLEAR.
+    // Die taps and ADV/DIS prepare the pool; only ROLL uses the RNG.
     const dice_control_result_t result = dice_apply_control(g_state, code);
     ESP_LOGI(TAG, "Tap control=%d, result=%d, count=%u",
              code, (int)result, (unsigned)g_state->count);
@@ -101,7 +102,7 @@ static void action_event(lv_event_t *e) {
         roll_start();
         return;
     }
-    // Clear the old visuals only when a valid CLEAR action is received.
+    // Selection changes invalidate the old tray without rolling again.
     dice_tray_clear();
     update_summary();
 }
