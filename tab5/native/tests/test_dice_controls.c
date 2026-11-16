@@ -91,6 +91,6 @@ int main(void) {
     assert(dice_apply_control(&state, DICE_CONTROL_CLEAR) == DICE_CONTROL_REDRAW);
     assert(state.count == 0 && !state.has_result && state.mode == DICE_NORMAL);
     assert(dice_apply_control(&state, DICE_CONTROL_REROLL) == DICE_CONTROL_REJECTED);
-    printf("Tab5 immediate single-pair ADV/DIS and normal pool tests passed\\n");
+    printf("Tab5 immediate single-pair ADV/DIS and normal pool tests passed\n");
     return 0;
 }
