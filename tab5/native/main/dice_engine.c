@@ -17,11 +17,16 @@ bool dice_confirm(dice_state_t *s) {
     return true;
 }
 bool dice_add(dice_state_t *s, uint8_t sides) {
-    if (!s || s->phase != DICE_SESSION || s->count >= DICE_MAX) return false;
+    if (!s || s->phase != DICE_SESSION) return false;
+    // Validate before changing state: invalid taps must never erase a result.
     switch (sides) {
         case 4: case 6: case 8: case 10: case 12: case 20: case 100: break;
         default: return false;
     }
+    // The first new selection after a completed roll begins a fresh pool.
+    // ROLL alone still reuses the previous pool; CLEAR is an explicit reset.
+    if (s->has_result) dice_clear(s);
+    if (s->count >= DICE_MAX) return false;
     s->pool[s->count++] = sides;
     s->has_result = false;
     return true;
