@@ -7,7 +7,7 @@ typedef struct {
     int size;           // Die diameter, clamped but never shrunken for a large pool.
     int gap;            // Minimum space between adjacent dice.
     int columns;        // Visible columns; additional rows may scroll.
-    int count;          // Includes second d20 for ADV/DIS display.
+    int count;          // Includes one extra d20 per ADV/DIS test.
 } dice_layout_t;
 
 // Pure layout calculations; LVGL and RNG do not participate.
