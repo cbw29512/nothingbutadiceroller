@@ -5,7 +5,7 @@ bool dice_summary_format(const dice_state_t *state, char *buf, size_t capacity) 
     if (!state || !buf || capacity < 2 || state->count > DICE_MAX) return false;
     buf[0] = '\0';
     if (!state->count) {
-        const int n = snprintf(buf, capacity, "Select dice above, then tap ROLL");
+        const int n = snprintf(buf, capacity, "Tap a die, ADV, or DIS, then ROLL");
         return n >= 0 && (size_t)n < capacity;
     }
     static const uint8_t sides[] = {4, 6, 8, 10, 12, 20, 100};
