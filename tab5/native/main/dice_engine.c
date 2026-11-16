@@ -32,6 +32,9 @@ void dice_clear(dice_state_t *s) {
     s->modifier = 0;
     s->mode = DICE_NORMAL;
     s->has_result = false;
+    s->total = 0;
+    memset(s->faces, 0, sizeof(s->faces));
+    memset(s->second_faces, 0, sizeof(s->second_faces));
 }
 uint32_t dice_unbiased(uint32_t sides, dice_rng_t rng) {
     if (sides < 2 || !rng) return 0;
