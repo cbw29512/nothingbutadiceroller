@@ -1,0 +1,8 @@
+#pragma once
+#include "lvgl.h"
+#include <stdbool.h>
+#include <stdint.h>
+
+// Creates an individually readable die with shape, face and die-type label.
+lv_obj_t *dice_visual_create(lv_obj_t *tray, uint8_t sides, uint16_t face,
+                             int size, bool discarded);
