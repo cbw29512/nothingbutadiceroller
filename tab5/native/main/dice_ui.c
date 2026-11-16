@@ -89,7 +89,7 @@ static void roll_start(void) {
 }
 static void action_event(lv_event_t *e) {
     const int code = (int)(intptr_t)lv_event_get_user_data(e);
-    // Die taps and ADV/DIS prepare the pool; only ROLL uses the RNG.
+    // Die taps queue; ROLL/ADV/DIS execute exactly one secure roll.
     const dice_control_result_t result = dice_apply_control(g_state, code);
     ESP_LOGI(TAG, "Tap control=%d, result=%d, count=%u",
              code, (int)result, (unsigned)g_state->count);
@@ -131,7 +131,11 @@ static void show_session(void) {
     lv_obj_set_style_bg_color(g_tray, lv_color_hex(0x20372A), 0);
     lv_obj_set_scroll_dir(g_tray, LV_DIR_VER);
     g_summary = lv_label_create(g_screen);
-    lv_obj_align(g_summary, LV_ALIGN_BOTTOM_MID, 0, -18);
+    // Montserrat 36 is explicitly enabled in sdkconfig.defaults.
+    // The single footer shows both dice quantity and total at reading distance.
+    lv_obj_set_style_text_font(g_summary, &lv_font_montserrat_36, 0);
+    lv_obj_set_style_text_align(g_summary, LV_TEXT_ALIGN_CENTER, 0);
+    lv_label_set_long_mode(g_summary, LV_LABEL_LONG_WRAP);
     update_summary();
     dice_ui_relayout();
 }
