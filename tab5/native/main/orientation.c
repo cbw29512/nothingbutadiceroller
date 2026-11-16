@@ -39,8 +39,11 @@ static void monitor(void *arg) {
         // Copy sample once; sensor callback writes only, monitor reads only.
         const float x = acc_x, y = acc_y, z = acc_z;
         int chosen = -1;
+        const int previous = policy.current;
         if (!orientation_policy_sample(&policy, x, y, z, &chosen)) continue;
         if (!bsp_display_lock(1000)) {
+            // Do not acknowledge a rotation that never reached the panel.
+            orientation_policy_init(&policy, previous);
             ESP_LOGW(TAG, "LVGL lock busy; orientation stays at prior angle");
             continue;
         }
