@@ -139,7 +139,7 @@ async function validateBuild() {
       'src="/js/app.js"', 'id="desktop-custom-die-btn"',
       'popovertarget="desktop-custom-die-popover"', 'id="desktop-custom-die-popover"', 'popover="auto"',
       '>CUSTOM</button>', 'Keep dice after roll', 'id="tray-roll-hint"', 'CLICK / TAP TRAY TO ROLL',
-      'SECURE RANDOMIZATION ENGINE', 'Physics-resolved dice • Cryptographic custom rolls', 'href="/how-to.html"',
+      'Physics dice · secure custom rolls', '3D physics • cryptographic custom dN', 'href="/how-to.html"',
       'aria-label="Open Dice Studio">Dice Studio</button>',
       'save dice configurations to your account and load them on other devices.',
     ], 'completed UI reference');

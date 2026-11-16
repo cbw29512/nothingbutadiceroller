@@ -20,8 +20,8 @@ export function formatRollButtonLabel(selectedDice = state.selectedDice) {
 
 export function formatNaturalRollFeedback(kind) {
   try {
-    if (kind === 'nat20') return '🎉 NATURAL 20! 🎉';
-    if (kind === 'nat1') return '💀 NATURAL 1! 💀';
+    if (kind === 'nat20') return 'NATURAL 20!';
+    if (kind === 'nat1') return 'NATURAL 1!';
     return '';
   } catch (error) {
     console.error('Failed to format natural-roll feedback:', error);
