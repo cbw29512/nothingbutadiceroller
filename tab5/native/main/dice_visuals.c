@@ -14,6 +14,9 @@ lv_obj_t *dice_visual_create(lv_obj_t *tray, uint8_t sides, uint16_t face,
     lv_obj_t *die = lv_obj_create(tray);
     if (!die) { ESP_LOGE(TAG, "LVGL could not allocate die"); return NULL; }
     lv_obj_set_size(die, size, size);
+    // Spin around the center of the polyhedron, not the widget corner.
+    lv_obj_set_style_transform_pivot_x(die, size / 2, 0);
+    lv_obj_set_style_transform_pivot_y(die, size / 2, 0);
     lv_obj_set_style_pad_all(die, 0, 0);
     lv_obj_set_style_border_width(die, 0, 0);
     lv_obj_set_style_bg_opa(die, LV_OPA_TRANSP, 0);
