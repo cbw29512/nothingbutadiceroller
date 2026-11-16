@@ -1,7 +1,7 @@
 #include "dice_ui.h"
 #include "dice_controls.h"
 #include "dice_tray.h"
-#include "dice_summary.h"
+#include "dice_ui_footer.h"
 #include "dice_widgets.h"
 #include "dice_ui_layout.h"
 #include "bsp/esp-bsp.h"
@@ -61,19 +61,7 @@ static void show_confirm(void) {
     lv_obj_align(no, LV_ALIGN_CENTER, -180, 30);
 }
 static void update_summary(void) {
-    if (!g_state || !g_summary) return;
-    char buf[256];
-    if (!dice_summary_format(g_state, buf, sizeof(buf))) {
-        ESP_LOGE(TAG, "Dice summary formatting failed");
-        return;
-    }
-    lv_label_set_text(g_summary, buf);
-    if (g_controls[7])
-        lv_obj_set_style_bg_color(g_controls[7], lv_color_hex(
-            g_state->mode == DICE_ADV ? 0x287F5A : 0x355679), 0);
-    if (g_controls[8])
-        lv_obj_set_style_bg_color(g_controls[8], lv_color_hex(
-            g_state->mode == DICE_DIS ? 0x9B533B : 0x355679), 0);
+    dice_ui_footer_update(g_state, g_summary, g_controls[7], g_controls[8]);
 }
 static void roll_start(void) {
     if (!g_state->count) {
@@ -130,12 +118,8 @@ static void show_session(void) {
     dice_tray_bind(g_tray);
     lv_obj_set_style_bg_color(g_tray, lv_color_hex(0x20372A), 0);
     lv_obj_set_scroll_dir(g_tray, LV_DIR_VER);
-    g_summary = lv_label_create(g_screen);
-    // Montserrat 36 is explicitly enabled in sdkconfig.defaults.
-    // The single footer shows both dice quantity and total at reading distance.
-    lv_obj_set_style_text_font(g_summary, &lv_font_montserrat_36, 0);
-    lv_obj_set_style_text_align(g_summary, LV_TEXT_ALIGN_CENTER, 0);
-    lv_label_set_long_mode(g_summary, LV_LABEL_LONG_WRAP);
+    g_summary = dice_ui_footer_create(g_screen);
+    if (!g_summary) { ESP_LOGE(TAG, "Footer creation failed"); return; }
     update_summary();
     dice_ui_relayout();
 }
