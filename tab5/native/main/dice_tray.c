@@ -50,7 +50,11 @@ void dice_tray_relayout(void) {
     layout = dice_layout_make(count, lv_obj_get_width(tray), lv_obj_get_height(tray));
     if (motion.count == count && count) dice_motion_resize(&motion, &layout);
     for (int i = 0; i < count; ++i) {
-        if (dice[i]) lv_obj_set_size(dice[i], layout.size, layout.size);
+        if (dice[i]) {
+            lv_obj_set_size(dice[i], layout.size, layout.size);
+            lv_obj_set_style_transform_pivot_x(dice[i], layout.size / 2, 0);
+            lv_obj_set_style_transform_pivot_y(dice[i], layout.size / 2, 0);
+        }
     }
     if (count && !timer) apply_positions(true);
 }
