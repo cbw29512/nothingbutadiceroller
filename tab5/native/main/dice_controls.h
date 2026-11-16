@@ -1,8 +1,8 @@
 #pragma once
 #include "dice_engine.h"
 
-// A queued selection redraws controls without invoking RNG.
-// Only the ROLL action returns ROLL_NOW.
+// Die taps queue without invoking RNG. ROLL, ADV, and DIS return
+// ROLL_NOW; the UI is the sole caller of the secure RNG.
 typedef enum {
     DICE_CONTROL_REJECTED = 0,
     DICE_CONTROL_REDRAW = 1,
