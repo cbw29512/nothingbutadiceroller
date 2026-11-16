@@ -46,26 +46,29 @@ uint32_t dice_unbiased(uint32_t sides, dice_rng_t rng) {
 }
 bool dice_roll(dice_state_t *s, dice_rng_t rng) {
     if (!s || s->phase != DICE_SESSION || !s->count || !rng) return false;
-    // For ADV/DIS, resolve a single d20 from two displayed results.
-    if (s->mode != DICE_NORMAL && !(s->count == 1 && s->pool[0] == 20)) return false;
-    uint16_t faces[DICE_MAX] = {0};
+    // Resolve each selected die exactly once; ADV/DIS adds one d20 per test.
+    // Never commit partially generated faces if entropy generation fails.
+    uint16_t first[DICE_MAX] = {0};
+    uint16_t second[DICE_MAX] = {0};
     int32_t total = s->modifier;
-    for (int i = 0; i < s->count; i++) {
-        uint32_t face = dice_unbiased(s->pool[i], rng);
-        if (!face || total > INT32_MAX - (int32_t)face) return false;
-        faces[i] = (uint16_t)face;
-        total += (int32_t)face;
+    for (int i = 0; i < s->count; ++i) {
+        const uint8_t sides = s->pool[i];
+        const uint32_t primary = dice_unbiased(sides, rng);
+        if (!primary) return false;
+        uint32_t chosen = primary;
+        if (sides == 20 && s->mode != DICE_NORMAL) {
+            const uint32_t secondary = dice_unbiased(20, rng);
+            if (!secondary) return false;
+            second[i] = (uint16_t)secondary;
+            if (s->mode == DICE_ADV && secondary > chosen) chosen = secondary;
+            if (s->mode == DICE_DIS && secondary < chosen) chosen = secondary;
+        }
+        if (total > INT32_MAX - (int32_t)chosen) return false;
+        first[i] = (uint16_t)primary;
+        total += (int32_t)chosen;
     }
-    if (s->mode != DICE_NORMAL) {
-        // V1 control surface shows BOTH d20 faces in roll summary.
-        uint32_t other = dice_unbiased(20, rng);
-        if (!other) return false;
-        if (s->mode == DICE_ADV && other > faces[0]) total += (int32_t)other - faces[0];
-        if (s->mode == DICE_DIS && other < faces[0]) total -= (int32_t)faces[0] - other;
-        // Slot 1 stores the second d20, without adding it to the selected pool.
-        faces[1] = (uint16_t)other;
-    }
-    memcpy(s->faces, faces, sizeof(faces));
+    memcpy(s->faces, first, sizeof(first));
+    memcpy(s->second_faces, second, sizeof(second));
     s->total = total;
     s->has_result = true;
     return true;
