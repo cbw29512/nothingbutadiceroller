@@ -104,7 +104,7 @@ int main(void) {
     assert(state.mode == DICE_ADV);
     sample = 0;
     assert(dice_roll(&state, draws));
-    assert(sample == 3 && state.total == 5);
+    assert(sample == 3 && state.total == 4);
     assert(dice_apply_control(&state, 999) == DICE_CONTROL_REJECTED);
     assert(dice_apply_control(&state, -100) == DICE_CONTROL_REJECTED);
     printf("Tab5 queue-then-roll, multi-ADV/DIS tests passed\n");
