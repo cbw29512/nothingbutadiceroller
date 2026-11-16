@@ -68,7 +68,6 @@ static void update_summary(void) {
         return;
     }
     lv_label_set_text(g_summary, buf);
-    // Active dice-test mode is visibly selected without creating a new page.
     if (g_controls[7])
         lv_obj_set_style_bg_color(g_controls[7], lv_color_hex(
             g_state->mode == DICE_ADV ? 0x287F5A : 0x355679), 0);
