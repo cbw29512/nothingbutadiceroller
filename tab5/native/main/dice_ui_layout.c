@@ -40,11 +40,14 @@ void dice_ui_layout_reflow(const dice_state_t *state, lv_obj_t *const controls[1
     }
     const int rows = portrait ? 3 : 2;
     const int tray_y = y0 + rows * (bh + gap) + 8;
-    int tray_h = h - tray_y - 64;
+    // Reserve 108 px below the tray so 36 px roll count/total never overlaps it.
+    const int footer_h = 108;
+    int tray_h = h - tray_y - footer_h;
     if (tray_h < 100) tray_h = 100;
     lv_obj_set_pos(tray, margin, tray_y);
     lv_obj_set_size(tray, w - 2 * margin, tray_h);
-    lv_obj_align(summary, LV_ALIGN_BOTTOM_MID, 0, -12);
+    lv_obj_set_width(summary, w - 2 * margin);
+    lv_obj_align(summary, LV_ALIGN_BOTTOM_MID, 0, -24);
     // Reposition existing dice objects; the roll result stays unchanged.
     dice_tray_relayout();
 }
