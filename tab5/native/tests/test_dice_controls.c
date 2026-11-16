@@ -35,6 +35,26 @@ int main(void) {
     assert(dice_apply_control(&state, DICE_CONTROL_DIS) == DICE_CONTROL_REDRAW);
     assert(state.mode == DICE_NORMAL);
 
+    // ROLL again replaces previous faces without changing the selected pool.
+    assert(dice_apply_control(&state, DICE_CONTROL_REROLL) == DICE_CONTROL_ROLL_NOW);
+    sample = 7;
+    assert(dice_roll(&state, draws));
+    assert(sample == 9 && state.count == 2 && state.total == 17);
+    assert(state.faces[0] == 8 && state.faces[1] == 9);
+
+    // A new die after a completed roll starts a completely fresh pool.
+    assert(dice_apply_control(&state, 6) == DICE_CONTROL_REDRAW);
+    assert(state.count == 1 && state.pool[0] == 6);
+    assert(state.mode == DICE_NORMAL && !state.has_result);
+    assert(state.total == 0 && state.faces[0] == 0);
+    sample = 0;
+    assert(dice_apply_control(&state, DICE_CONTROL_REROLL) == DICE_CONTROL_ROLL_NOW);
+    assert(dice_roll(&state, draws));
+    assert(sample == 1 && state.total == 1);
+    // A rejected selection never removes valid previously rolled results.
+    assert(dice_apply_control(&state, 999) == DICE_CONTROL_REJECTED);
+    assert(state.count == 1 && state.has_result && state.total == 1);
+
     assert(dice_apply_control(&state, DICE_CONTROL_CLEAR) == DICE_CONTROL_REDRAW);
     assert(state.count == 0 && !state.has_result && state.mode == DICE_NORMAL);
     assert(dice_apply_control(&state, DICE_CONTROL_REROLL) == DICE_CONTROL_REJECTED);
