@@ -1,5 +1,6 @@
 #include "dice_ui.h"
 #include "dice_controls.h"
+#include "dice_tray.h"
 #include "bsp/esp-bsp.h"
 #include "esp_log.h"
 #include "esp_random.h"
@@ -9,12 +10,8 @@
 
 static const char *TAG = "dice_ui";
 static dice_state_t *g_state;
-static lv_obj_t *g_screen, *g_tray, *g_summary, *g_dice[DICE_MAX + 1];
-static lv_timer_t *g_motion;
+static lv_obj_t *g_screen, *g_tray, *g_summary;
 static lv_obj_t *g_controls[11];
-static int16_t x[DICE_MAX + 1], y[DICE_MAX + 1], vx[DICE_MAX + 1], vy[DICE_MAX + 1];
-static uint8_t display_count;
-static unsigned frames;
 
 static void show_choose(void);
 static void show_confirm(void);
@@ -34,11 +31,10 @@ static lv_obj_t *button(lv_obj_t *parent, const char *name, int w, int h,
     return b;
 }
 static void clear_screen(void) {
-    if (g_motion) { lv_timer_delete(g_motion); g_motion = NULL; }
+    dice_tray_release();
     lv_obj_clean(g_screen);
     g_tray = NULL; g_summary = NULL;
     memset(g_controls, 0, sizeof(g_controls));
-    memset(g_dice, 0, sizeof(g_dice));
 }
 static void choose_event(lv_event_t *e) {
     (void)e;
@@ -92,71 +88,17 @@ static void update_summary(void) {
     }
     lv_label_set_text(g_summary, buf);
 }
-static void motion_step(lv_timer_t *timer) {
-    (void)timer;
-    if (!g_tray) return;
-    // Simple, bounded 2D presentation simulation; NOT finished 3D tumbling.
-    int max_x = lv_obj_get_width(g_tray) - 110;
-    int max_y = lv_obj_get_height(g_tray) - 100;
-    if (max_x < 2) max_x = 2;
-    if (max_y < 2) max_y = 2;
-    for (int i = 0; i < display_count; i++) {
-        if (!g_dice[i]) continue;
-        x[i] += vx[i]; y[i] += vy[i]; vy[i] += 1;
-        if (x[i] < 2 || x[i] > max_x) {
-            vx[i] = -vx[i] * 2 / 3;
-            x[i] = x[i] < 2 ? 2 : max_x;
-        }
-        if (y[i] > max_y) {
-            y[i] = max_y;
-            vy[i] = -vy[i] / 2;
-            vx[i] = vx[i] * 3 / 4;
-        }
-        lv_obj_set_pos(g_dice[i], x[i], y[i]);
-    }
-    if (++frames >= 90) {
-        // Grid keeps each result individually accessible, with tray scrolling.
-        int columns = (lv_obj_get_width(g_tray) - 20) / 112;
-        if (columns < 1) columns = 1;
-        for (int i = 0; i < display_count; i++)
-            if (g_dice[i]) lv_obj_set_pos(g_dice[i], 8 + (i % columns) * 112,
-                                                 8 + (i / columns) * 104);
-        lv_timer_delete(g_motion);
-        g_motion = NULL;
-    }
-}
 static void roll_start(void) {
-    if (!g_state->count) { ESP_LOGW(TAG, "ROLL ignored: no dice selected"); return; }
-    if (!dice_roll(g_state, esp_random)) {
-        ESP_LOGE(TAG, "Secure roll failed; results unchanged");
+    if (!g_state->count) {
+        ESP_LOGW(TAG, "ROLL ignored: no dice selected");
         return;
     }
-    if (g_motion) { lv_timer_delete(g_motion); g_motion = NULL; }
-    lv_obj_clean(g_tray);
-    display_count = g_state->count + (g_state->mode != DICE_NORMAL ? 1 : 0);
-    frames = 0;
-    for (int i = 0; i < display_count; i++) {
-        uint16_t face = g_state->faces[i];
-        uint8_t sides = i >= g_state->count ? 20 : g_state->pool[i];
-        g_dice[i] = lv_obj_create(g_tray);
-        lv_obj_set_size(g_dice[i], 100, 90);
-        lv_obj_set_style_radius(g_dice[i], 16, 0);
-        lv_obj_set_style_bg_color(g_dice[i], lv_color_hex(0xB43E42), 0);
-        lv_obj_clear_flag(g_dice[i], LV_OBJ_FLAG_SCROLLABLE);
-        char text[48];
-        snprintf(text, sizeof(text), "d%u\n%u", sides, face);
-        lv_obj_t *label = lv_label_create(g_dice[i]);
-        lv_label_set_text(label, text);
-        lv_obj_center(label);
-        // Visual motion only: outcomes are already determined by RNG.
-        x[i] = 100 + (i % 8) * 120;
-        y[i] = 8 + (i / 8) * 20;
-        vx[i] = (int16_t)(2 + i % 5);
-        vy[i] = (int16_t)(-3 - i % 7);
-        lv_obj_set_pos(g_dice[i], x[i], y[i]);
+    if (!dice_roll(g_state, esp_random)) {
+        ESP_LOGE(TAG, "Secure roll failed; result unchanged");
+        return;
     }
+    dice_tray_render(g_state);
     update_summary();
-    g_motion = lv_timer_create(motion_step, 33, NULL);
 }
 static void action_event(lv_event_t *e) {
     const int code = (int)(intptr_t)lv_event_get_user_data(e);
@@ -173,10 +115,7 @@ static void action_event(lv_event_t *e) {
         return;
     }
     // Clear the old visuals only when a valid CLEAR action is received.
-    if (g_motion) { lv_timer_delete(g_motion); g_motion = NULL; }
-    if (g_tray) lv_obj_clean(g_tray);
-    memset(g_dice, 0, sizeof(g_dice));
-    display_count = 0;
+    dice_tray_clear();
     update_summary();
 }
 static void show_session(void) {
@@ -198,6 +137,10 @@ static void show_session(void) {
     }
     g_tray = lv_obj_create(g_screen);
     lv_obj_set_size(g_tray, 500, 300);
+    lv_obj_set_style_pad_all(g_tray, 0, 0);
+    lv_obj_set_style_border_width(g_tray, 0, 0);
+    lv_obj_set_scrollbar_mode(g_tray, LV_SCROLLBAR_MODE_AUTO);
+    dice_tray_bind(g_tray);
     lv_obj_set_style_bg_color(g_tray, lv_color_hex(0x20372A), 0);
     lv_obj_set_scroll_dir(g_tray, LV_DIR_VER);
     g_summary = lv_label_create(g_screen);
@@ -253,12 +196,6 @@ void dice_ui_relayout(void) {
     lv_obj_set_pos(g_tray, margin, tray_y);
     lv_obj_set_size(g_tray, w - 2 * margin, tray_h);
     lv_obj_align(g_summary, LV_ALIGN_BOTTOM_MID, 0, -12);
-    // Preserve roll state on rotation; only reposition the die visuals.
-    if (g_state->has_result && !g_motion) {
-        int columns = (lv_obj_get_width(g_tray) - 20) / 112;
-        if (columns < 1) columns = 1;
-        for (int i = 0; i < display_count; i++)
-            if (g_dice[i]) lv_obj_set_pos(g_dice[i], 8 + (i % columns) * 112,
-                                                 8 + (i / columns) * 104);
-    }
+    // Keep the same random faces but resize and rearrange the visuals.
+    dice_tray_relayout();
 }
