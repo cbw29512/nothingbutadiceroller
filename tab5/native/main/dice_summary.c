@@ -2,11 +2,11 @@
 #include <stdio.h>
 
 bool dice_summary_format(const dice_state_t *state, char *buf, size_t capacity) {
-    if (!state || !buf || capacity < 2) return false;
+    if (!state || !buf || capacity < 2 || state->count > DICE_MAX) return false;
     buf[0] = '\0';
     if (!state->count) {
-        return snprintf(buf, capacity, "Select dice above, then tap ROLL") <
-               (int)capacity;
+        const int n = snprintf(buf, capacity, "Select dice above, then tap ROLL");
+        return n >= 0 && (size_t)n < capacity;
     }
     static const uint8_t sides[] = {4, 6, 8, 10, 12, 20, 100};
     size_t offset = 0;
@@ -23,9 +23,19 @@ bool dice_summary_format(const dice_state_t *state, char *buf, size_t capacity) 
     }
     const char *mode = state->mode == DICE_ADV ? " | ADV" :
                        state->mode == DICE_DIS ? " | DIS" : "";
-    const int length = state->has_result
-        ? snprintf(buf + offset, capacity - offset, "%s | TOTAL %ld",
-                   mode, (long)state->total)
-        : snprintf(buf + offset, capacity - offset, "%s | TAP ROLL", mode);
+    unsigned d20_count = 0;
+    for (unsigned i = 0; i < state->count; ++i)
+        if (state->pool[i] == 20) ++d20_count;
+    int length;
+    if (!state->has_result) {
+        length = snprintf(buf + offset, capacity - offset, "%s | TAP ROLL", mode);
+    } else if (state->mode != DICE_NORMAL && d20_count > 1) {
+        // Separate attack/check rolls must not be presented as a single D20 total.
+        length = snprintf(buf + offset, capacity - offset,
+                          "%s | %u D20 TESTS: SEE DICE", mode, d20_count);
+    } else {
+        length = snprintf(buf + offset, capacity - offset, "%s | TOTAL %ld",
+                          mode, (long)state->total);
+    }
     return length >= 0 && (size_t)length < capacity - offset;
 }
