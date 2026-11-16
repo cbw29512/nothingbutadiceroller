@@ -1,15 +1,16 @@
 #include "dice_tray.h"
 #include "dice_layout.h"
+#include "dice_results.h"
 #include "dice_visuals.h"
 #include "esp_log.h"
 #include <string.h>
 
 static const char *TAG = "dice_tray";
 static lv_obj_t *tray;
-static lv_obj_t *dice[DICE_MAX + 1];
+static lv_obj_t *dice[DICE_VISIBLE_MAX];
 static lv_timer_t *timer;
-static int16_t pos_x[DICE_MAX + 1], pos_y[DICE_MAX + 1];
-static int16_t vel_x[DICE_MAX + 1], vel_y[DICE_MAX + 1];
+static int16_t pos_x[DICE_VISIBLE_MAX], pos_y[DICE_VISIBLE_MAX];
+static int16_t vel_x[DICE_VISIBLE_MAX], vel_y[DICE_VISIBLE_MAX];
 static int count, ticks;
 static dice_layout_t layout;
 
@@ -89,21 +90,22 @@ void dice_tray_render(const dice_state_t *state) {
         return;
     }
     dice_tray_clear();
-    count = state->count + (state->mode != DICE_NORMAL ? 1 : 0);
-    if (count < 1 || count > DICE_MAX + 1) {
+    count = (int)dice_result_visible_count(state);
+    if (count < 1 || count > DICE_VISIBLE_MAX) {
         ESP_LOGE(TAG, "Invalid visible dice count %d", count);
         count = 0;
         return;
     }
     layout = dice_layout_make(count, lv_obj_get_width(tray), lv_obj_get_height(tray));
     for (int i = 0; i < count; ++i) {
-        const uint8_t sides = i >= state->count ? 20 : state->pool[i];
-        bool out = false;
-        if (state->mode == DICE_ADV && i < 2)
-            out = state->faces[i] < state->faces[1 - i];
-        if (state->mode == DICE_DIS && i < 2)
-            out = state->faces[i] > state->faces[1 - i];
-        dice[i] = dice_visual_create(tray, sides, state->faces[i], layout.size, out);
+        dice_visible_face_t face;
+        if (!dice_result_visible_at(state, (size_t)i, &face)) {
+            ESP_LOGE(TAG, "Invalid result face at visible index %d", i);
+            dice_tray_clear();
+            return;
+        }
+        dice[i] = dice_visual_create(tray, face.sides, face.face,
+                                     layout.size, face.discarded);
         if (!dice[i]) {
             ESP_LOGE(TAG, "Die %d could not be allocated", i);
             dice_tray_clear();
