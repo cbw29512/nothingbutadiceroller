@@ -9,17 +9,14 @@
 #include "lvgl.h"
 #include <stdio.h>
 #include <string.h>
-
 static const char *TAG = "dice_ui";
 static dice_state_t *g_state;
 static lv_obj_t *g_screen, *g_tray, *g_summary;
 static lv_obj_t *g_controls[11];
-
 static void show_choose(void);
 static void show_confirm(void);
 static void show_session(void);
 static void roll_start(void);
-
 static void clear_screen(void) {
     dice_tray_release();
     lv_obj_clean(g_screen);
@@ -146,7 +143,6 @@ void dice_ui_start(dice_state_t *state) {
     lv_obj_set_style_text_color(g_screen, lv_color_hex(0xF4F4F4), 0);
     show_choose();
 }
-
 void dice_ui_relayout(void) {
     if (!g_state) return;
     dice_ui_layout_reflow(g_state, g_controls, g_tray, g_summary);
