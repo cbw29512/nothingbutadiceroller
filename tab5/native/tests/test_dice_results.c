@@ -32,7 +32,8 @@ int main(void) {
     assert(die.face == 4 && !die.discarded && die.selected_index == 1);
     assert(!dice_result_visible_at(&s, 4, &die));
     assert(dice_summary_format(&s, summary, sizeof(summary)));
-    assert(strstr(summary, "ADV") && strstr(summary, "TOTAL 6"));
+    assert(strstr(summary, "ADV") && strstr(summary, "2 D20 TESTS"));
+    assert(!strstr(summary, "TOTAL"));
 
     dice_clear(&s);
     assert(dice_add(&s, 20) && dice_add(&s, 6));
