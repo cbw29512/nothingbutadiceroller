@@ -1,98 +1,104 @@
 #include "dice_shapes.h"
-#include <stdint.h>
+#include "dice_mesh.h"
+#include "dice_project.h"
+#include "dice_silhouette.h"
+#include <string.h>
 
-// Normalized silhouettes are recognizable tabletop polyhedra, not 3D meshes.
-static const uint8_t d4[][2] = {{50,8},{91,88},{9,88}};
-static const uint8_t d6[][2] = {{50,8},{90,27},{90,72},{50,94},{10,73},{10,27}};
-static const uint8_t d8[][2] = {{50,5},{95,50},{50,95},{5,50}};
-static const uint8_t d10[][2] = {{50,5},{83,17},{95,49},{76,80},{50,97},
-                                {23,80},{5,49},{17,17}};
-static const uint8_t d12[][2] = {{50,5},{76,12},{93,31},{96,57},{78,83},
-                                {50,95},{22,83},{4,57},{7,31},{24,12}};
-static const uint8_t d20[][2] = {{50,5},{89,23},{96,67},{71,91},
-                                {29,91},{4,67},{11,23}};
+#define SHAPE_SLOTS 64
 typedef struct {
-    const uint8_t (*p)[2];
-    unsigned count;
-    uint32_t light, mid, dark;
-} shape_t;
-
-static shape_t shape_for(uint8_t sides, bool discarded) {
-    shape_t s = {d20, 7, 0xED6679, 0xBD3249, 0x7A2436};
-    switch (sides) {
-        case 4: s = (shape_t){d4, 3, 0xEAC06F, 0xB67932, 0x75501E}; break;
-        case 6: s = (shape_t){d6, 6, 0x74C1E5, 0x347EB1, 0x204E79}; break;
-        case 8: s = (shape_t){d8, 4, 0xB5A0E9, 0x7955B8, 0x493475}; break;
-        case 10: s = (shape_t){d10, 8, 0x79CBA6, 0x358E71, 0x215C4A}; break;
-        case 12: s = (shape_t){d12, 10, 0xE4A77C, 0xBC623B, 0x783823}; break;
-        case 20: break;
-        case 100: s = (shape_t){d10, 8, 0xE9CF79, 0xB78A35, 0x685226}; break;
-        default: break;
-    }
-    if (discarded) {
-        s.light = 0x81909A; s.mid = 0x52616D; s.dark = 0x35404B;
-    }
-    return s;
+ lv_obj_t *owner;
+ uint8_t sides;
+ bool discarded,mesh;
+ int pitch,yaw,roll;
+} die_shape_state_t;
+static die_shape_state_t slots[SHAPE_SLOTS];
+static uint32_t color_for(uint8_t sides,bool discarded) {
+ if(discarded)return 0x81909A;
+ switch(sides) {
+  case 4:return 0xEAC06F;case 6:return 0x74C1E5;
+  case 8:return 0xB5A0E9;case 10:return 0x79CBA6;
+  case 12:return 0xE4A77C;case 20:return 0xED6679;
+  case 100:return 0xE9CF79;default:return 0x81909A;
+ }
 }
-
-static lv_point_precise_t vertex(const lv_area_t *area, const uint8_t p[2],
-                                  int dx, int dy) {
-    lv_point_precise_t out = {
-        .x = area->x1 + (lv_area_get_width(area) * p[0]) / 100 + dx,
-        .y = area->y1 + (lv_area_get_height(area) * p[1]) / 100 + dy
-    };
-    return out;
+static uint32_t shade_color(uint32_t color,uint8_t shade) {
+ const uint32_t r=((color>>16)&255u)*shade/255u;
+ const uint32_t g=((color>>8)&255u)*shade/255u;
+ const uint32_t b=(color&255u)*shade/255u;
+ return r<<16|g<<8|b;
 }
-
-static void triangle(lv_layer_t *layer, lv_point_precise_t a,
-                     lv_point_precise_t b, lv_point_precise_t c, uint32_t color) {
-    lv_draw_triangle_dsc_t desc;
-    lv_draw_triangle_dsc_init(&desc);
-    desc.p[0] = a; desc.p[1] = b; desc.p[2] = c;
-    desc.color = lv_color_hex(color);
-    desc.opa = LV_OPA_COVER;
-    lv_draw_triangle(layer, &desc);
+static lv_point_precise_t pixel(const lv_area_t *area,int x,int y) {
+ return (lv_point_precise_t){.x=area->x1+x,.y=area->y1+y};
 }
-
-static void line(lv_layer_t *layer, lv_point_precise_t a,
-                 lv_point_precise_t b, uint32_t color, int thickness) {
-    lv_draw_line_dsc_t desc;
-    lv_draw_line_dsc_init(&desc);
-    desc.p1 = a; desc.p2 = b;
-    desc.color = lv_color_hex(color);
-    desc.opa = LV_OPA_COVER;
-    desc.width = thickness;
-    desc.round_start = true; desc.round_end = true;
-    lv_draw_line(layer, &desc);
+static void draw_mesh(lv_layer_t *layer,const lv_area_t *area,
+                      const die_shape_state_t *state) {
+ dice_mesh_t mesh;
+ dice_projection_t projected;
+ if(!dice_mesh_make(state->sides,&mesh) ||
+    !dice_project_mesh(&mesh,state->pitch,state->yaw,state->roll,
+                       lv_area_get_width(area),&projected)) {
+  dice_silhouette_draw(layer,area,state->sides,state->discarded);
+  return;
+ }
+ const uint32_t base=color_for(state->sides,state->discarded);
+ for(unsigned i=0;i<projected.count;++i) {
+  const dice_project_face_t *face=&projected.faces[i];
+  const uint32_t filled=shade_color(base,face->shade);
+  // Convex face triangulation; painter-sorted faces are provided by projector.
+  for(unsigned j=1;j+1<face->corners;++j){
+   lv_draw_triangle_dsc_t tri;lv_draw_triangle_dsc_init(&tri);
+   tri.p[0]=pixel(area,face->x[0],face->y[0]);
+   tri.p[1]=pixel(area,face->x[j],face->y[j]);
+   tri.p[2]=pixel(area,face->x[j+1],face->y[j+1]);
+   tri.color=lv_color_hex(filled);tri.opa=LV_OPA_COVER;
+   lv_draw_triangle(layer,&tri);
+  }
+  for(unsigned j=0;j<face->corners;++j) {
+   const unsigned next=(j+1)%face->corners;
+   lv_draw_line_dsc_t edge;lv_draw_line_dsc_init(&edge);
+   edge.p1=pixel(area,face->x[j],face->y[j]);
+   edge.p2=pixel(area,face->x[next],face->y[next]);
+   edge.color=lv_color_hex(state->discarded?0x36404A:0x202631);
+   edge.opa=LV_OPA_COVER;
+   edge.width=lv_area_get_width(area)>165?3:2;
+   lv_draw_line(layer,&edge);
+  }
+ }
 }
-
-static void draw_dice(lv_event_t *e) {
-    const uintptr_t code = (uintptr_t)lv_event_get_user_data(e);
-    const uint8_t sides = (uint8_t)(code & 0xFF);
-    const shape_t s = shape_for(sides, (code & 0x100) != 0);
-    lv_layer_t *layer = lv_event_get_layer(e);
-    lv_obj_t *obj = lv_event_get_target(e);
-    if (!obj || !layer) return;
-    lv_area_t area;
-    lv_obj_get_coords(obj, &area);
-    const uint8_t center[2] = {50,50};
-    const lv_point_precise_t c = vertex(&area, center, 0, 0);
-    const int thickness = lv_area_get_width(&area) > 165 ? 4 : 3;
-    for (unsigned i = 0; i < s.count; ++i) {
-        const unsigned next = (i + 1) % s.count;
-        const lv_point_precise_t a = vertex(&area, s.p[i], 0, 0);
-        const lv_point_precise_t b = vertex(&area, s.p[next], 0, 0);
-        // Alternating facets mimic light falling on each visible face.
-        triangle(layer, c, a, b, i % 3 == 0 ? s.light :
-                                i % 3 == 1 ? s.mid : s.dark);
-        line(layer, a, b, 0x151D2B, thickness);
-        if (sides != 4 || (i & 1) == 0)
-            line(layer, a, c, 0x233040, thickness > 3 ? 3 : 2);
-    }
+static void on_draw(lv_event_t *event) {
+ const die_shape_state_t *state=lv_event_get_user_data(event);
+ lv_layer_t *layer=lv_event_get_layer(event);
+ lv_obj_t *object=lv_event_get_target(event);
+ if(!state||!state->owner||!object||!layer)return;
+ lv_area_t area;lv_obj_get_coords(object,&area);
+ if(state->mesh) draw_mesh(layer,&area,state);
+ else dice_silhouette_draw(layer,&area,state->sides,state->discarded);
 }
-
-void dice_shapes_attach(lv_obj_t *object, uint8_t sides, bool discarded) {
-    if (!object) return;
-    const uintptr_t code = (uintptr_t)sides | (discarded ? 0x100u : 0);
-    lv_obj_add_event_cb(object, draw_dice, LV_EVENT_DRAW_MAIN, (void *)code);
+static void on_delete(lv_event_t *event) {
+ die_shape_state_t *state=lv_event_get_user_data(event);
+ if(state)memset(state,0,sizeof(*state));
+}
+void dice_shapes_attach(lv_obj_t *object,uint8_t sides,bool discarded) {
+ if(!object)return;
+ for(unsigned i=0;i<SHAPE_SLOTS;++i){
+  die_shape_state_t *slot=&slots[i];
+  if(slot->owner)continue;
+  *slot=(die_shape_state_t){.owner=object,.sides=sides,
+                            .discarded=discarded,.mesh=false};
+  lv_obj_add_event_cb(object,on_draw,LV_EVENT_DRAW_MAIN,slot);
+  lv_obj_add_event_cb(object,on_delete,LV_EVENT_DELETE,slot);
+  return;
+ }
+}
+void dice_shapes_set_tumble(lv_obj_t *object,bool enabled,
+                            int pitch,int yaw,int roll) {
+ if(!object)return;
+ for(unsigned i=0;i<SHAPE_SLOTS;++i){
+  die_shape_state_t *slot=&slots[i];
+  if(slot->owner!=object)continue;
+  slot->mesh=enabled;slot->pitch=pitch;
+  slot->yaw=yaw;slot->roll=roll;
+  lv_obj_invalidate(object);
+  return;
+ }
 }
