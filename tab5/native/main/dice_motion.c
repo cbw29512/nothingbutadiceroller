@@ -42,6 +42,10 @@ bool dice_motion_begin(dice_motion_t *scene, const dice_layout_t *layout,
         b->vy = -3.0f - random_unit(&seed) * 8.0f;
         b->angle = random_unit(&seed) * 3600.0f;
         b->spin = (random_unit(&seed) - .5f) * 300.0f;
+        b->pitch = random_unit(&seed) * 3600.0f;
+        b->yaw = random_unit(&seed) * 3600.0f;
+        b->pitch_speed = (random_unit(&seed) - .5f) * 240.0f;
+        b->yaw_speed = (random_unit(&seed) - .5f) * 240.0f;
     }
     return true;
 }
@@ -78,6 +82,8 @@ static void collide(dice_motion_t *scene) {
             a->vx -= impulse * nx; a->vy -= impulse * ny;
             b->vx += impulse * nx; b->vy += impulse * ny;
             a->spin += relative * 4.0f; b->spin -= relative * 4.0f;
+            a->pitch_speed += relative * 1.2f;
+            b->yaw_speed -= relative * 1.2f;
         }
         walls(scene, a); walls(scene, b);
     }
@@ -94,12 +100,19 @@ bool dice_motion_step(dice_motion_t *scene) {
             b->vx *= .983f;
             b->spin *= .963f;
             b->angle = fmodf(b->angle + b->spin + 36000.0f, 3600.0f);
+            b->pitch = fmodf(b->pitch + b->pitch_speed + 36000.0f, 3600.0f);
+            b->yaw = fmodf(b->yaw + b->yaw_speed + 36000.0f, 3600.0f);
+            b->pitch_speed *= .986f;
+            b->yaw_speed *= .986f;
             walls(scene, b);
         } else {
             // An eased, readable landing grid avoids overlapping final faces.
             b->x += (b->home_x - b->x) * .31f;
             b->y += (b->home_y - b->y) * .31f;
             b->angle *= .72f;
+            if(b->pitch > 1800.0f)b->pitch -= 3600.0f;
+            if(b->yaw > 1800.0f)b->yaw -= 3600.0f;
+            b->pitch *= .69f;b->yaw *= .69f;
         }
     }
     if (frame <= 49) collide(scene);
@@ -107,6 +120,7 @@ bool dice_motion_step(dice_motion_t *scene) {
         for (int i = 0; i < scene->count; ++i) {
             dice_motion_body_t *b = &scene->bodies[i];
             b->x = b->home_x; b->y = b->home_y; b->angle = 0;
+            b->pitch = 0; b->yaw = 0;
         }
     }
     return frame < DICE_MOTION_FRAMES;

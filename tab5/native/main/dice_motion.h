@@ -10,6 +10,7 @@
 typedef struct {
     float x, y, vx, vy;
     float angle, spin;
+    float pitch, yaw, pitch_speed, yaw_speed; // 3D presentation rotation only.
     float home_x, home_y;
 } dice_motion_body_t;
 typedef struct {

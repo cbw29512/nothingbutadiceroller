@@ -1,6 +1,7 @@
 #include "dice_tray.h"
 #include "dice_layout.h"
 #include "dice_motion.h"
+#include "dice_shapes.h"
 #include "dice_results.h"
 #include "dice_visuals.h"
 #include "esp_log.h"
@@ -38,10 +39,19 @@ static void apply_positions(bool finished) {
         if (!dice[i]) continue;
         const dice_motion_body_t *b = &motion.bodies[i];
         lv_obj_set_pos(dice[i], (int)b->x, (int)b->y);
-        // LVGL rotating many large widgets costs memory; only animate small pools.
-        if (count <= 12)
+        // Shade and tumble real polyhedral faces for small pools. Large
+        // pools retain the cheap silhouette path for steady frame rates.
+        if (count <= 8) {
+            lv_obj_set_style_transform_rotation(dice[i], 0, 0);
+            dice_shapes_set_tumble(dice[i], true,
+                finished ? 0 : (int)b->pitch,
+                finished ? 0 : (int)b->yaw,
+                finished ? 0 : (int)b->angle);
+        } else {
+            dice_shapes_set_tumble(dice[i], false, 0, 0, 0);
             lv_obj_set_style_transform_rotation(dice[i],
                 finished ? 0 : (int)b->angle, 0);
+        }
         dice_visual_set_rolling(dice[i], !finished);
     }
 }
