@@ -12,9 +12,12 @@ int main(void) {
     char summary[128];
     dice_state_reset(&s);
     assert(dice_select(&s, 0) && dice_confirm(&s));
+    // An empty session footer must not show any instruction prompts.
+    assert(dice_summary_format(&s, summary, sizeof(summary)));
+    assert(strcmp(summary, "") == 0);
     assert(dice_add(&s, 20) && dice_add(&s, 20));
     assert(dice_summary_format(&s, summary, sizeof(summary)));
-    assert(strstr(summary, "2d20") && strstr(summary, "TAP ROLL"));
+    assert(strcmp(summary, "2d20") == 0);
     assert(dice_result_visible_count(&s) == 0);
     s.mode = DICE_ADV;
     value = 0;
