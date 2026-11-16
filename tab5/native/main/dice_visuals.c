@@ -40,3 +40,12 @@ lv_obj_t *dice_visual_create(lv_obj_t *tray, uint8_t sides, uint16_t face,
     lv_obj_align(type_label, LV_ALIGN_CENTER, 0, size / 4);
     return die;
 }
+
+void dice_visual_set_rolling(lv_obj_t *die, bool rolling) {
+    if (!die) return;
+    // The first child is the pre-generated face label, never the RNG source.
+    lv_obj_t *face = lv_obj_get_child(die, 0);
+    if (!face) return;
+    if (rolling) lv_obj_add_flag(face, LV_OBJ_FLAG_HIDDEN);
+    else lv_obj_remove_flag(face, LV_OBJ_FLAG_HIDDEN);
+}
