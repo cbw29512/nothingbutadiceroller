@@ -1,4 +1,5 @@
 #include "orientation.h"
+#include "orientation_policy.h"
 #include "dice_ui.h"
 #include "bsp/esp-bsp.h"
 #include "esp_log.h"
@@ -19,42 +20,35 @@ static void sensor_event(void *arg, esp_event_base_t base,
     sample_valid = true;
 }
 
-static lv_display_rotation_t determine(float x, float y, float z,
-                                      lv_display_rotation_t fallback) {
-    // Ignore nearly flat or diagonal poses to prevent jitter while rolling.
-    float ax = x < 0 ? -x : x, ay = y < 0 ? -y : y;
-    float az = z < 0 ? -z : z;
-    if (az > 0.72f || (ax < 0.65f && ay < 0.65f)) return fallback;
-    if (ay > ax + 0.16f) {
-        return y < 0 ? LV_DISPLAY_ROTATION_180 : LV_DISPLAY_ROTATION_0;
+static lv_display_rotation_t display_angle(int angle) {
+    switch (angle) {
+        case 0: return LV_DISPLAY_ROTATION_0;
+        case 1: return LV_DISPLAY_ROTATION_90;
+        case 2: return LV_DISPLAY_ROTATION_180;
+        case 3: return LV_DISPLAY_ROTATION_270;
+        default: return LV_DISPLAY_ROTATION_180;
     }
-    if (ax > ay + 0.16f) {
-        return x < 0 ? LV_DISPLAY_ROTATION_270 : LV_DISPLAY_ROTATION_90;
-    }
-    return fallback;
 }
 static void monitor(void *arg) {
     lv_display_t *display = (lv_display_t *)arg;
-    lv_display_rotation_t current = LV_DISPLAY_ROTATION_180;
-    lv_display_rotation_t candidate = current;
-    unsigned stable = 0;
+    orientation_policy_t policy;
+    orientation_policy_init(&policy, 2);
     while (true) {
         vTaskDelay(pdMS_TO_TICKS(150));
         if (!sample_valid) continue;
-        lv_display_rotation_t next = determine(acc_x, acc_y, acc_z, current);
-        if (next == current) { stable = 0; candidate = current; continue; }
-        if (next != candidate) { candidate = next; stable = 1; continue; }
-        if (++stable < 4) continue;
+        // Copy sample once; sensor callback writes only, monitor reads only.
+        const float x = acc_x, y = acc_y, z = acc_z;
+        int chosen = -1;
+        if (!orientation_policy_sample(&policy, x, y, z, &chosen)) continue;
         if (!bsp_display_lock(1000)) {
-            ESP_LOGW(TAG, "LVGL lock busy; rotation deferred");
+            ESP_LOGW(TAG, "LVGL lock busy; orientation stays at prior angle");
             continue;
         }
-        bsp_display_rotate(display, candidate);
+        bsp_display_rotate(display, display_angle(chosen));
         dice_ui_relayout();
         bsp_display_unlock();
-        current = candidate;
-        stable = 0;
-        ESP_LOGI(TAG, "Rotated to orientation code %d", (int)current);
+        ESP_LOGI(TAG, "Stable upright stand orientation=%d (x=%.2f y=%.2f z=%.2f)",
+                 chosen, (double)x, (double)y, (double)z);
     }
 }
 void orientation_start(lv_display_t *display) {
