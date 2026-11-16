@@ -12,7 +12,8 @@ typedef struct {
     int selected_system; // 0=D&D; additional verified profiles follow.
     uint8_t pool[DICE_MAX]; // Each entry is the number of sides.
     uint8_t count;
-    uint16_t faces[DICE_MAX]; // Die outcome, separate from visual movement.
+    uint16_t faces[DICE_MAX]; // Primary outcome of each selected die.
+    uint16_t second_faces[DICE_MAX]; // Optional additional d20 per test, 0 if not used.
     int32_t modifier;
     int32_t total;
     bool has_result;
