@@ -57,15 +57,16 @@ Status: **initial native ESP32-P4 v1.x dice firmware and large polyhedral visual
 
 ## V1 interaction contract
 
-- Power on → select a supported game → confirm → session-locked dice screen.
-- Top ~30%: tapping a die button adds to the pending pool; no dice are rolled until ROLL is tapped. ROLL throws the full selected pool once, and a later ROLL rerolls it.\n- ADV/DIS selects a mode for each d20 test in the pending pool. Each selected d20 gets a separate second d20; the chosen face is the higher/lower one. Other die types roll normally.\n- ADV/DIS without a selected d20 queues one d20 test and activates the requested mode. Neither control triggers an RNG draw; press ROLL to resolve the 2d20 pair. When a d20 is already selected, ADV/DIS changes that test mode and highlights the active button. Pressing an active mode again toggles it off.\n- ADV/DIS on a pending non-d20 pool adds one d20 test without altering the existing damage dice. On a completed non-d20 roll, the shortcut starts a fresh d20 test.\n- CLEAR resets the pending pool, mode and visible results.
-- Once a roll completes, pressing ROLL again clears its previous rendered results and rerolls the same selection once. Pressing any die-type button instead starts a fresh pool (and resets ADV/DIS); ROLL is still required to throw it.
-- Invalid die requests must never erase the previous result; a completed maximum-sized pool can be replaced by a fresh valid die selection.
-- Bottom ~70%: animated dice, each individually identified with its raw face/result, and a persistent result summary.
-- On a large pool, shrink/flow/scroll results without hiding or dropping dice; the result summary remains visible.
-- Buttons and dice rendering change automatically with the selected system. No customization menu or system switch button during play.
-- The only supported V1 extension path is preinstalled, source-verified game profiles; custom user-defined dice are deferred.
-- Maintain a tested, versioned registry of game editions and their face maps, probabilities and interpretations; do not infer mechanics from system names.
+- Power on → choose a supported game → confirm → session-locked dice screen.
+- Die buttons queue dice without rolling. ROLL throws that entire pool once; another ROLL clears the previous result and rerolls the same pool.
+- ADV and DIS are instant **single-check** shortcuts. One tap replaces any pending or completed selection with one d20 check, rolls exactly two d20s once, and selects the higher (ADV) or lower (DIS) face.
+- Repeated ADV/DIS taps reroll a fresh single check. They never stack, toggle off, or add another pair. A subsequent ROLL rerolls the last single check with its active ADV/DIS mode.
+- A die button pressed after a completed result starts a new normal pool. CLEAR resets pool, total, mode, and visible results.
+- Invalid die requests preserve the existing result. A quick ADV/DIS replaces even a full pending pool.
+- The bottom summary clearly displays selected dice quantity, roll mode, and result total using an enlarged 36 px typeface; the footer is reserved in portrait and landscape.
+- Bottom tray displays individual rolled faces with muted OUT dice for ADV/DIS, with scrolling for large pools; it must never silently drop dice.
+- Buttons and dice rendering change with the selected game system. No customization menu or system switch during play.
+- Only source-verified game profiles are supported; custom user dice are deferred.
 
 ## Source architecture
 
