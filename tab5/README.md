@@ -1,6 +1,6 @@
 # Tab5 Universal Dice Console — firmware foundation
 
-Status: **initial native ESP32-P4 v1.x dice firmware compiled and physically flashed for first hardware validation**. Rotation and 3D physics are not implemented yet.
+Status: **initial native ESP32-P4 v1.x dice firmware and large polyhedral visual prototype**. Native and host tests are required before any on-device verification. The built-in motion is visual-only bounce, not full 3D dynamics.
 
 ## Definition of Done (V1)
 
@@ -32,6 +32,17 @@ Status: **initial native ESP32-P4 v1.x dice firmware compiled and physically fla
 - Test all four orientations on physical Tab5, including rotation during animation, touch accuracy, flat-device behavior, and repeated quick flips.
 - If sensor initialization fails, log the problem clearly and keep a stable usable fallback orientation, not a continuously rotating UI.
 - This requirement is **not satisfied by the first flashed test firmware**; do not label orientation support complete until the hardware tests pass.
+
+## Large, recognizable tabletop dice visual tranche
+
+- Each D&D die has a faceted silhouette with its own type and a large face value; no identical rounded-rectangle result tiles.
+- Scale dice by visible count: single 230 px, two 200 px, 3–4 at 170 px, 5–8 at 136 px, 9–12 at 114 px, and larger pools at 104 px.
+- The selection is immutable during a visual animation: label displays the RNG-generated face, not an animated substitute.
+- Layout is computed from actual tray dimensions and centers short rows; additional rows scroll and never drop results.
+- Draw ADV/DIS discarded dice with muted facets and an OUT label, without hiding either face.
+- Use LVGL's draw-event triangle and line primitives; no per-die bitmap allocation or external image dependencies.
+- Preserve orientation reflow, touch actions, result totals, clear/reset behavior and the existing guarded flash process.
+- Device quality still requires real Tab5 verification of all four orientations, visual frame rate, and touch alignment.
 
 ## Physics presentation contract (V1)
 
