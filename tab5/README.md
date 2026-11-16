@@ -1,6 +1,6 @@
 # Tab5 Universal Dice Console — firmware foundation
 
-Status: **initial native ESP32-P4 v1.x dice firmware and large polyhedral visual prototype**. Native and host tests are required before any on-device verification. The built-in motion is visual-only bounce, not full 3D dynamics.
+Status: **initial native ESP32-P4 v1.x dice firmware and large polyhedral visual prototype**. Native and host tests are required before any on-device verification. The current motion is source-independent 2D contact simulation with individual rebounds, spin and soft landing; this is **not** certified 3D rigid-body physics.
 
 ## Definition of Done (V1)
 
@@ -55,6 +55,14 @@ Status: **initial native ESP32-P4 v1.x dice firmware and large polyhedral visual
 - Verify native display acceleration, LVGL and frame-buffer performance before choosing the 3D rendering implementation. Do not assume browser DiceBox is portable to ESP32-P4.
 - Phase 2 (not V1): saved spell and attack shortcuts, e.g. Fireball 8d6. No shortcuts or customization UI in the initial firmware.
 
+## Stand orientation and rolling quality (review build)
+ 
+- When upright on a stand, six consistent gravity observations (~900 ms) are required before auto-rotation. Flat/diagonal readings and momentary vibration keep the last readable angle.
+- The current Tab5 IMU-to-display orientation mapping is retained; confirm actual physical upright text and touch in all four directions before release.
+- Die animation gets separate per-die initial impulses, wall reflections, contact response and angular spin. A soft ease-in places settled numbers into the existing non-overlapping grid.
+- The immutable secure dice result is computed before motion. Its numeric face is hidden until animation settles. Large pools skip the expensive rotating-widget transform.
+- This is an improved 2D visual simulation, **not** final 3D mesh collision or audio. Hardware quality, frame rate, stand angle, touch and performance need on-device acceptance.
+ 
 ## V1 interaction contract
 
 - Power on → choose a supported game → confirm → session-locked dice screen.
