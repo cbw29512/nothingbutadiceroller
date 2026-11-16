@@ -58,7 +58,7 @@ Status: **initial native ESP32-P4 v1.x dice firmware and large polyhedral visual
 ## V1 interaction contract
 
 - Power on → select a supported game → confirm → session-locked dice screen.
-- Top ~30%: large die/pool/advantage or game-specific action buttons, and Roll/Clear as appropriate.
+- Top ~30%: tapping a die button adds to the pending pool; no dice are rolled until ROLL is tapped. ROLL throws the full selected pool once, and a later ROLL rerolls it.\n- ADV/DIS selects a mode for each d20 test in the pending pool. Each selected d20 gets a separate second d20; the chosen face is the higher/lower one. Other die types roll normally.\n- ADV/DIS never automatically selects/rolls an extra test, and the same mode button toggles that mode off.\n- CLEAR resets the pending pool, mode and visible results.
 - Bottom ~70%: animated dice, each individually identified with its raw face/result, and a persistent result summary.
 - On a large pool, shrink/flow/scroll results without hiding or dropping dice; the result summary remains visible.
 - Buttons and dice rendering change automatically with the selected system. No customization menu or system switch button during play.
