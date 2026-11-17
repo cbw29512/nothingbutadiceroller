@@ -40,6 +40,28 @@ function painterContent() {
   return code("dice_mesh_painter.c");
 }
 
+test("only the settled selected face illuminates", () => {
+  const painter = code("dice_mesh_painter.c");
+  const shapes = code("dice_shapes.c");
+  const values = code("dice_face_values.c");
+  const tray = code("dice_tray.c");
+
+  // Source face zero is oriented frontmost at rest and carries the actual
+  // result, including tens/units for a percentile pair.
+  assert.match(shapes, /dice_mesh_front_angles\(&mesh, 0/);
+  assert.match(values, /const unsigned offset = \(face_index \+ count - front_index\) % count/);
+
+  // The selected face alone lights when settled, never during movement
+  // and never on an ADV/DIS discarded die.
+  assert.match(painter, /const bool winner=!moving && !discarded && face->source_index==0/);
+  assert.match(painter, /const uint32_t filled=winner\?0x293A51:shade_color/);
+  assert.match(painter, /edge\.color=lv_color_hex\(winner\?0xFFF19B:/);
+  assert.match(painter, /desc\.color=lv_color_hex\(winner\?0xFFF1A0:/);
+  assert.match(painter, /draw_face_number\(layer,area,face,face_text\[face->source_index\],moving,winner,discarded\)/);
+  assert.match(tray, /dice_shapes_set_tumble\(dice\[i\], true, !finished/);
+  assert.doesNotMatch(painter, /esp_random|dice_roll/);
+});
+
 test("secure random source resolves results before visual animation", () => {
   const ui = code("dice_ui.c");
   const engine = code("dice_engine.c");
