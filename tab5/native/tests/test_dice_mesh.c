@@ -44,6 +44,9 @@ static void verify_solid(uint8_t sides,unsigned corners,unsigned faces){
  dice_projection_t front;
  assert(dice_project_mesh(&mesh,fp,fy,0,200,&front));
  assert(front.count>=1&&front.count<=mesh.faces_count);
+ if(front.faces[front.count-1].source_index!=0)
+  fprintf(stderr,"d%u: front face=%u expected=0, pitch=%d yaw=%d\\n",
+          (unsigned)sides,(unsigned)front.faces[front.count-1].source_index,fp,fy);
  assert(front.faces[front.count-1].source_index==0);
  for(int pitch=0;pitch<=2700;pitch+=900){
   for(int yaw=0;yaw<=2700;yaw+=900){
