@@ -70,7 +70,7 @@ void dice_shapes_attach(lv_obj_t *object,uint8_t sides,
   const uint8_t shape_sides=sides==100?10:sides;
   dice_mesh_t m;
   if(!dice_mesh_make(shape_sides,&m) ||
-     !dice_mesh_front_angles(&m,0,&state->front_pitch,&state->front_y)){
+     !dice_mesh_front_angles(&m,0,&state->front_pitch,&state->front_yaw)){
    ESP_LOGE(TAG,"Unsupported face geometry: d%u",(unsigned)sides);
    memset(state,0,sizeof(*state));
    return;
