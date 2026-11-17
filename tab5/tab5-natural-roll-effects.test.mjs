@@ -29,7 +29,9 @@ test("NAT spectacle starts only after dice have visibly settled", () => {
   assert.match(tray, /const bool moving = dice_motion_step\(&motion\)/);
   assert.match(tray, /if \(on_settled\) on_settled\(\)/);
   assert.match(ui, /dice_tray_set_settled_callback\(on_roll_settled\)/);
-  assert.match(ui, /dice_nat_fx_show\(g_screen, dice_nat_event_detect\(g_state\)\)/);
+  assert.match(ui, /const dice_nat_event_t event = dice_nat_event_detect\(g_state\)/);
+  assert.match(ui, /dice_nat_fx_show\(g_screen, event\)/);
+  assert.match(ui, /dice_nat_sound_play\(event\)/);
   assert.match(fx, /frame >= 19/);
   assert.match(fx, /frame >= 1 && frame <= 2/);
   assert.match(fx, /frame >= 7 && frame <= 8/);
@@ -48,4 +50,26 @@ test("effects never call the roll generator or power hardware", () => {
   assert.match(fx, /"CRITICAL MISS!"/);
   assert.doesNotMatch(event + fx, /esp_random|dice_roll\(|Math\.random|tab5_power/);
   assert.match(ui, /dice_roll\(g_state, esp_random\)/);
+});
+
+test("critical cues use the onboard codec from a bounded audio task", () => {
+  const sound = source("dice_nat_sound.c");
+  const tone = source("dice_nat_tone.c");
+  const main = source("main.c");
+  assert.match(main, /dice_nat_sound_start\(\)/);
+  assert.match(sound, /bsp_audio_codec_speaker_init\(\)/);
+  assert.match(sound, /xTaskCreate\(worker,/);
+  assert.match(sound, /xQueueCreate\(1,/);
+  assert.match(sound, /xQueueOverwrite\(sound_queue, &event\)/);
+  assert.match(sound, /esp_codec_dev_open\(speaker, &format\)/);
+  assert.match(sound, /esp_codec_dev_write\(speaker, pcm,/);
+  assert.match(sound, /esp_codec_dev_set_out_vol\(speaker, SPEAKER_VOLUME\)/);
+  assert.match(sound, /esp_codec_dev_close\(speaker\)/);
+  assert.match(sound, /bsp_feature_enable\(BSP_FEATURE_SPEAKER, false\)/);
+  assert.match(sound, /#define SPEAKER_VOLUME 35/);
+  assert.match(tone, /static const dice_tone_note_t victory/);
+  assert.match(tone, /static const dice_tone_note_t boo/);
+  assert.match(tone, /DICE_TONE_TRUMPET/);
+  assert.match(tone, /DICE_TONE_BOO/);
+  assert.doesNotMatch(sound + tone, /esp_random|dice_roll\(|tab5_power|CHARGE_ENABLE|IO_EXPANDER_PIN_NUM_7/);
 });
