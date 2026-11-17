@@ -34,6 +34,11 @@ jobs:
             -o /tmp/tab5_dice_nat_event_test
           /tmp/tab5_dice_nat_event_test
           gcc -std=c11 -Wall -Wextra -Werror -fsanitize=address,undefined -g \
+            tab5/native/main/dice_nat_tone.c \
+            tab5/native/tests/test_dice_nat_tone.c \
+            -o /tmp/tab5_dice_nat_tone_test
+          /tmp/tab5_dice_nat_tone_test
+          gcc -std=c11 -Wall -Wextra -Werror -fsanitize=address,undefined -g \
             tab5/native/main/dice_layout.c tab5/native/tests/test_dice_layout.c \
             -o /tmp/tab5_dice_layout_test
           /tmp/tab5_dice_layout_test
