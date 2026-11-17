@@ -47,6 +47,62 @@ int main(void) {
     assert(dice_result_visible_at(&s, 2, &die));
     assert(die.sides == 6 && !die.discarded && !die.secondary);
     assert(!dice_summary_format(&s, summary, 3));
-    puts("Tab5 multi-d20 result mapping and pending summary passed");
+
+    // One logical d100 is exactly two FULL SIZE physical ten-sided dice.
+    // It still consumes ONE secure 1..100 RNG draw and contributes once.
+    dice_clear(&s);
+    assert(dice_add(&s, 100));
+    value = 99;
+    assert(dice_roll(&s, next_value));
+    assert(value == 100 && s.total == 100 && s.faces[0] == 100);
+    assert(dice_result_visible_count(&s) == 2);
+    assert(dice_result_visible_at(&s, 0, &die));
+    assert(die.sides == 100 && die.face == 100);
+    assert(die.percentile_tens && !die.secondary && !die.discarded);
+    assert(dice_result_visible_at(&s, 1, &die));
+    assert(die.sides == 100 && die.face == 100);
+    assert(!die.percentile_tens && die.secondary && !die.discarded);
+    assert(!dice_result_visible_at(&s, 2, &die));
+
+    // Two logical percentile dice must show four physical d10s.
+    dice_clear(&s);
+    assert(dice_add(&s, 100) && dice_add(&s, 100));
+    value = 0;
+    assert(dice_roll(&s, next_value));
+    assert(s.total == 3 && value == 2);
+    assert(dice_result_visible_count(&s) == 4);
+    for (size_t i = 0; i < 4; ++i) {
+        assert(dice_result_visible_at(&s, i, &die));
+        assert(die.sides == 100 && die.selected_index == i / 2);
+        assert(die.percentile_tens == (i % 2 == 0));
+        assert(die.secondary == (i % 2 == 1));
+        assert(!die.discarded);
+    }
+
+    // Mixed pools keep the right order and do not multiply totals.
+    dice_clear(&s);
+    assert(dice_add(&s, 6) && dice_add(&s, 100) && dice_add(&s, 20));
+    value = 0;
+    assert(dice_roll(&s, next_value));
+    assert(s.total == 6 && dice_result_visible_count(&s) == 4);
+    assert(dice_result_visible_at(&s, 0, &die));
+    assert(die.sides == 6 && !die.percentile_tens);
+    assert(dice_result_visible_at(&s, 1, &die));
+    assert(die.sides == 100 && die.percentile_tens);
+    assert(dice_result_visible_at(&s, 2, &die));
+    assert(die.sides == 100 && !die.percentile_tens);
+    assert(dice_result_visible_at(&s, 3, &die));
+    assert(die.sides == 20 && !die.percentile_tens);
+
+    // Worst-case physical pool is exactly 64 d10 widgets.
+    dice_clear(&s);
+    for (int i = 0; i < DICE_MAX; ++i) assert(dice_add(&s, 100));
+    value = 0;
+    assert(dice_roll(&s, next_value));
+    assert(dice_result_visible_count(&s) == DICE_VISIBLE_MAX);
+    assert(dice_result_visible_at(&s, DICE_VISIBLE_MAX - 1, &die));
+    assert(die.sides == 100 && die.secondary);
+    assert(!dice_result_visible_at(&s, DICE_VISIBLE_MAX, &die));
+    puts("Tab5 d20, full-size d100 presentation, and summary mapping passed");
     return 0;
 }
