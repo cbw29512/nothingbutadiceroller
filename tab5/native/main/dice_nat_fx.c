@@ -7,6 +7,7 @@ static lv_timer_t *timer;
 static dice_nat_event_t active;
 static unsigned frame;
 
+bool dice_nat_fx_is_active(void) { return overlay != NULL; }
 void dice_nat_fx_cancel(void) {
     if (timer) { lv_timer_delete(timer); timer = NULL; }
     if (overlay) { lv_obj_delete(overlay); overlay = NULL; }
