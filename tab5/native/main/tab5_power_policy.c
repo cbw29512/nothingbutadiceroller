@@ -11,3 +11,9 @@ uint32_t tab5_power_decode_ina226_mv(uint8_t msb, uint8_t lsb) {
     // INA226 bus voltage LSB is 1.25mV; integer rounding to nearest mV.
     return (raw * 5u + 2u) / 4u;
 }
+int32_t tab5_power_decode_ina226_shunt_uv(uint8_t msb, uint8_t lsb) {
+    const uint16_t raw = ((uint16_t)msb << 8) | lsb;
+    // Sign-extend explicitly; avoid implementation-defined unsigned-to-signed casts.
+    const int32_t signed_raw = raw & 0x8000 ? (int32_t)raw - 65536 : raw;
+    return (signed_raw * 5) / 2;  // 2.5uV per LSB, truncate to whole uV.
+}
