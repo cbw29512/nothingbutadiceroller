@@ -46,8 +46,8 @@ test("effects never call the roll generator or power hardware", () => {
   assert.match(event, /if \(has_one\) return DICE_NAT_1/);
   assert.match(fx, /"NATURAL 20!"/);
   assert.match(fx, /"NATURAL 1!"/);
-  assert.match(fx, /"CRITICAL HIT!"/);
-  assert.match(fx, /"CRITICAL MISS!"/);
+  assert.match(fx, /"HELL YEAH!"/);
+  assert.match(fx, /"OH NO!"/);
   assert.doesNotMatch(event + fx, /esp_random|dice_roll\(|Math\.random|tab5_power/);
   assert.match(ui, /dice_roll\(g_state, esp_random\)/);
 });
