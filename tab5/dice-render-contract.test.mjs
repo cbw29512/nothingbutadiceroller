@@ -58,9 +58,9 @@ test("die type text never floats over physical die faces", () => {
   // Only numbered physical faces may identify the die during a toss.
   assert.doesNotMatch(visuals, /lv_label_set_text_fmt\(type_label/);
   assert.doesNotMatch(visuals, /lv_label_set_text_fmt\([^;]*"d%u%s"/);
-  // Preserve the first-child contract used by dice_visual_set_rolling().
-  assert.ok(visuals.indexOf("lv_label_create(die)") <
-            visuals.indexOf("if (discarded) {"));
+  // Preserve first-child face label, but never allocate overlay labels.
+  assert.match(visuals, /face_label = lv_label_create\(die\)/);
+  assert.equal((visuals.match(/lv_label_create\(die\)/g) ?? []).length, 1);
   // The visual discard state is color-only; never put text on dice.
   assert.doesNotMatch(visuals, /lv_label_set_text\(out_label/);
   const painter = source("dice_mesh_painter.c");
