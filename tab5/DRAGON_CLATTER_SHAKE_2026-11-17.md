@@ -57,3 +57,13 @@ source, battery recovery, factory bootloader and 0x100000-byte app partition.
 - No direct Tab5 hardware audio/IMU/graphics acceptance was performed here.
   The synthetic clatter and vector dragon are low-memory approximations,
   not a studio-quality animation or sampled dice sound.
+
+## Critical-art revision after physical feedback
+
+The procedural polygon dragon and cracked d20 looked poor on the real
+display. They have been **removed**, not recolored or hidden behind
+new assets. The replacement uses just two smoothly expanding gold
+shockwave outlines for NAT20, two inward red outlines for NAT1,
+and eight restrained accent streaks around the same large result
+number. The overlay still dismisses automatically. No sound, shake
+logic, dice results, buttons, battery, or roll behavior changes.
