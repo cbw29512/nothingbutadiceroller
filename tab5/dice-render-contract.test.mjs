@@ -29,6 +29,7 @@ test("d100 uses two full-sized dice instead of one half-sized composite", () => 
   assert.doesNotMatch(shapes, /lv_area_t tens/);
   const tray = source("dice_tray.c");
   assert.match(tray, /face\.percentile_tens/);
+  assert.match(tray, /dice_visual_resize\(dice\[i\], layout\.size\)/);
   const values = source("dice_face_values.c");
   assert.match(values, /result == 100 \? 0u/);
   assert.match(values, /"%02u"/);
