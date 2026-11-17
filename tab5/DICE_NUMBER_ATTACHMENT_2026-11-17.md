@@ -61,3 +61,22 @@
   animation, charging, and recovery behavior remain unchanged.
 - Host geometry and mapping tests plus visual contract and firmware CI must
   pass; actual readability/color on Tab5 remains a physical acceptance test.
+
+## Physical readability feedback — portrait Tab5 photograph
+
+- In the actual ADV d20 photograph, the selected face is correct but its
+  beige/amber number and border are insufficiently conspicuous. Several
+  surrounding digits, especially on the discarded d20, look bright white.
+- Keep result/animation/roll state as before. Only `!moving && !discarded &&
+  source_index == 0` is the highlighted face.
+- Render that face with a deep navy fill (`0x142637`), vivid highlighter
+  yellow (`0xE7FF00`) digit and five-pixel border.
+- Enlarge the winner from 28px to 36px **only when the entire numeral text
+  rectangle fits within its projected polygon**; otherwise keep the prior
+  size and prevent clipped/floating digits.
+- Other visible digits use muted slate shades at 60% opacity, and discarded
+  ADV/DIS digits use slate at 40% opacity. Never use opaque near-white for
+  side faces. Percentile fallback is highlighter yellow when settled.
+- Recheck actual contrast/legibility on device, including d4, d10, d20,
+  d100, ties and discarded ADV/DIS. Native host, JS contracts and ESP32-P4
+  build must all pass before application-only flashing.
