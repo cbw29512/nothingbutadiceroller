@@ -21,7 +21,11 @@ lv_obj_t *dice_visual_create(lv_obj_t *tray, uint8_t sides, uint16_t face,
     lv_obj_set_style_border_width(die, 0, 0);
     lv_obj_set_style_bg_opa(die, LV_OPA_TRANSP, 0);
     lv_obj_clear_flag(die, LV_OBJ_FLAG_SCROLLABLE);
-    dice_shapes_attach(die, sides, face, discarded, percentile_tens);
+    if (!dice_shapes_attach(die, sides, face, discarded, percentile_tens)) {
+        ESP_LOGE(TAG, "Cannot register die visual for d%u", (unsigned)sides);
+        lv_obj_delete(die);
+        return NULL;
+    }
 
     lv_obj_t *face_label = lv_label_create(die);
     if (!face_label) { lv_obj_delete(die); return NULL; }
