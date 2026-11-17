@@ -13,3 +13,7 @@ CONFIG_ESP32P4_REV_MIN_100=y
 # The Tab5 COM5 port is the ESP32-P4 USB Serial/JTAG peripheral.
 # Route ESP_LOG output here so battery readings appear in Miniterm.
 CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y
+
+# Keep application inside the verified 1 MiB factory app partition.
+# ESP-IDF 6.1 officially supports -Os and the native CI checks final size.
+CONFIG_COMPILER_OPTIMIZATION_SIZE=y

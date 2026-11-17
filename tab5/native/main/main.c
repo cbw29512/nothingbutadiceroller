@@ -1,5 +1,6 @@
 #include "dice_engine.h"
 #include "dice_ui.h"
+#include "dice_nat_sound.h"
 #include "orientation.h"
 #include "tab5_power.h"
 #include "tab5_board_power.h"
@@ -27,6 +28,10 @@ void app_main(void) {
     // Failure is logged; do not prevent running the die roller on USB.
     if (!tab5_power_init()) {
         ESP_LOGW(TAG, "Battery charging is not active; inspect power logs");
+    }
+    // Audio worker is optional and lazy. Never delay or block LVGL.
+    if (!dice_nat_sound_start()) {
+        ESP_LOGW(TAG, "Critical cue unavailable; visual dice remain usable");
     }
     if (bsp_display_brightness_set(85) != ESP_OK) {
         ESP_LOGW(TAG, "Could not set LCD brightness");

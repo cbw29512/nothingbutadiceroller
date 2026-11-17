@@ -9,3 +9,6 @@ void dice_tray_clear(void);
 void dice_tray_release(void);
 void dice_tray_render(const dice_state_t *state);
 void dice_tray_relayout(void);
+
+// Called once when a roll actually settles (including timer-failure fallback).
+void dice_tray_set_settled_callback(void (*callback)(void));

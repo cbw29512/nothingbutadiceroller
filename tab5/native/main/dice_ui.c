@@ -4,6 +4,10 @@
 #include "dice_ui_footer.h"
 #include "dice_widgets.h"
 #include "dice_ui_layout.h"
+#include "dice_ui_boot.h"
+#include "dice_nat_event.h"
+#include "dice_nat_fx.h"
+#include "dice_nat_sound.h"
 #include "tab5_power_widget.h"
 #include "bsp/esp-bsp.h"
 #include "esp_log.h"
@@ -14,58 +18,21 @@
 static const char *TAG = "dice_ui";
 static dice_state_t *g_state;
 static lv_obj_t *g_screen, *g_tray, *g_summary;
-static lv_obj_t *g_controls[11];
-static void show_choose(void);
-static void show_confirm(void);
+static lv_obj_t *g_controls[10];
 static void show_session(void);
 static void roll_start(void);
+static void on_roll_settled(void) {
+    const dice_nat_event_t event = dice_nat_event_detect(g_state);
+    dice_nat_fx_show(g_screen, event);
+    dice_nat_sound_play(event);
+}
 static void clear_screen(void) {
+    dice_nat_fx_cancel();
     tab5_power_widget_detach();
     dice_tray_release();
     lv_obj_clean(g_screen);
     g_tray = NULL; g_summary = NULL;
     memset(g_controls, 0, sizeof(g_controls));
-}
-static void choose_event(lv_event_t *e) {
-    (void)e;
-    if (!dice_select(g_state, 0)) { ESP_LOGE(TAG, "Game system selection refused"); return; }
-    show_confirm();
-}
-static void confirm_event(lv_event_t *e) {
-    intptr_t yes = (intptr_t)lv_event_get_user_data(e);
-    if (yes) {
-        if (!dice_confirm(g_state)) { ESP_LOGE(TAG, "Session confirmation failed"); return; }
-        show_session();
-    } else {
-        dice_state_reset(g_state);
-        show_choose();
-    }
-}
-static void show_choose(void) {
-    clear_screen();
-    lv_obj_t *title = lv_label_create(g_screen);
-    lv_label_set_text(title, "CHOOSE YOUR DICE SYSTEM");
-    lv_obj_align(title, LV_ALIGN_TOP_MID, 0, 100);
-    lv_obj_t *b = dice_widget_button(g_screen, "D&D 5e", 350, 120, choose_event, 0);
-    if (!b) { ESP_LOGE(TAG, "Could not allocate system choice"); return; }
-    lv_obj_align(b, LV_ALIGN_CENTER, 0, 0);
-    lv_obj_t *hint = lv_label_create(g_screen);
-    lv_label_set_text(hint, "Additional verified game profiles are coming.");
-    lv_obj_align(hint, LV_ALIGN_BOTTOM_MID, 0, -100);
-    tab5_power_widget_attach(g_screen);
-}
-static void show_confirm(void) {
-    clear_screen();
-    lv_obj_t *label = lv_label_create(g_screen);
-    lv_label_set_text(label, "START D&D 5e?\nLocked until device restart.");
-    lv_obj_align(label, LV_ALIGN_CENTER, 0, -120);
-    lv_obj_t *yes = dice_widget_button(g_screen, "START", 310, 115, confirm_event, 1);
-    if (!yes) { ESP_LOGE(TAG, "Could not allocate START button"); return; }
-    lv_obj_align(yes, LV_ALIGN_CENTER, 180, 30);
-    lv_obj_t *no = dice_widget_button(g_screen, "CHANGE", 310, 115, confirm_event, 0);
-    if (!no) { ESP_LOGE(TAG, "Could not allocate CHANGE button"); return; }
-    lv_obj_align(no, LV_ALIGN_CENTER, -180, 30);
-    tab5_power_widget_attach(g_screen);
 }
 static void update_summary(void) {
     dice_ui_footer_update(g_state, g_summary, g_controls[7], g_controls[8]);
@@ -79,6 +46,7 @@ static void roll_start(void) {
         ESP_LOGE(TAG, "Secure roll failed; result unchanged");
         return;
     }
+    dice_nat_fx_cancel();
     dice_tray_render(g_state);
     update_summary();
 }
@@ -97,6 +65,7 @@ static void action_event(lv_event_t *e) {
         return;
     }
     // Selection changes invalidate the old tray without rolling again.
+    dice_nat_fx_cancel();
     dice_tray_clear();
     update_summary();
 }
@@ -112,9 +81,9 @@ static void show_session(void) {
         if (!b) { ESP_LOGE(TAG, "Could not allocate die control"); return; }
         g_controls[i] = b;
     }
-    const char *names[4] = {"ADV", "DIS", "CLEAR", "ROLL"};
-    const int actions[4] = {-2, -3, 0, -1};
-    for (int i = 0; i < 4; i++) {
+    const char *names[3] = {"ADV", "DIS", "ROLL"};
+    const int actions[3] = {-2, -3, -1};
+    for (int i = 0; i < 3; i++) {
         lv_obj_t *b = dice_widget_button(g_screen, names[i], 250, 84, action_event, actions[i]);
         if (!b) { ESP_LOGE(TAG, "Could not allocate action control"); return; }
         g_controls[7 + i] = b;
@@ -126,6 +95,7 @@ static void show_session(void) {
     lv_obj_set_style_border_width(g_tray, 0, 0);
     lv_obj_set_scrollbar_mode(g_tray, LV_SCROLLBAR_MODE_AUTO);
     dice_tray_bind(g_tray);
+    dice_tray_set_settled_callback(on_roll_settled);
     lv_obj_set_style_bg_color(g_tray, lv_color_hex(0x20372A), 0);
     lv_obj_set_scroll_dir(g_tray, LV_DIR_VER);
     g_summary = dice_ui_footer_create(g_screen);
@@ -141,7 +111,8 @@ void dice_ui_start(dice_state_t *state) {
     if (!g_screen) { ESP_LOGE(TAG, "Could not resolve active screen"); return; }
     lv_obj_set_style_bg_color(g_screen, lv_color_hex(0x101C2B), 0);
     lv_obj_set_style_text_color(g_screen, lv_color_hex(0xF4F4F4), 0);
-    show_choose();
+    dice_ui_boot_bind(g_screen, g_state, clear_screen, show_session);
+    dice_ui_boot_show_choose();
 }
 void dice_ui_relayout(void) {
     if (!g_state) return;

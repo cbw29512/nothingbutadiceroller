@@ -12,6 +12,7 @@ static const char *TAG = "dice_tray";
 static lv_obj_t *tray;
 static lv_obj_t *dice[DICE_VISIBLE_MAX];
 static lv_timer_t *timer;
+static void (*on_settled)(void);
 static int count;
 static dice_layout_t layout;
 static dice_motion_t motion;
@@ -19,6 +20,9 @@ static dice_motion_t motion;
 void dice_tray_bind(lv_obj_t *parent) {
     dice_tray_release();
     tray = parent;
+}
+void dice_tray_set_settled_callback(void (*callback)(void)) {
+    on_settled = callback;
 }
 void dice_tray_clear(void) {
     if (timer) { lv_timer_delete(timer); timer = NULL; }
@@ -28,6 +32,7 @@ void dice_tray_clear(void) {
     count = 0;
 }
 void dice_tray_release(void) {
+    on_settled = NULL;
     if (timer) { lv_timer_delete(timer); timer = NULL; }
     tray = NULL;
     memset(dice, 0, sizeof(dice));
@@ -76,6 +81,7 @@ static void animate(lv_timer_t *event) {
     if (!moving) {
         lv_timer_delete(timer);
         timer = NULL;
+        if (on_settled) on_settled();
     }
 }
 void dice_tray_render(const dice_state_t *state) {
@@ -116,5 +122,6 @@ void dice_tray_render(const dice_state_t *state) {
         ESP_LOGW(TAG, "No animation timer; showing valid static dice");
         while (dice_motion_step(&motion)) { /* Present final verified result. */ }
         apply_positions(true);
+        if (on_settled) on_settled();
     }
 }
