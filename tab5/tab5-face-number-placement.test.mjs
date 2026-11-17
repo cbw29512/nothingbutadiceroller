@@ -54,11 +54,19 @@ test("only the settled selected face illuminates", () => {
   // The selected face alone lights when settled, never during movement
   // and never on an ADV/DIS discarded die.
   assert.match(painter, /const bool winner=!moving && !discarded && face->source_index==0/);
-  assert.match(painter, /const uint32_t filled=winner\?0x293A51:shade_color/);
-  assert.match(painter, /edge\.color=lv_color_hex\(winner\?0xFFF19B:/);
-  assert.match(painter, /desc\.color=lv_color_hex\(winner\?0xFFF1A0:/);
+  assert.match(painter, /const uint32_t filled=winner\?0x142637:shade_color/);
+  assert.match(painter, /edge\.color=lv_color_hex\(winner\?0xE7FF00:/);
+  assert.match(painter, /desc\.color=lv_color_hex\(winner\?0xE7FF00:/);
   assert.match(painter, /draw_face_number\(layer,area,face,face_text\[face->source_index\],moving,winner,discarded\)/);
   assert.match(tray, /dice_shapes_set_tumble\(dice\[i\], true, !finished/);
+  // Physical photo regression: side faces should never look bright white.
+  assert.match(painter, /desc\.opa=winner\?LV_OPA_COVER:discarded\?LV_OPA_40:LV_OPA_60/);
+  assert.match(painter, /discarded\?0x596575:/);
+  assert.match(painter, /face->shade<158\?0x8594A6:0x344356/);
+  assert.match(painter, /const bool winner_large=winner/);
+  assert.match(painter, /dice_label_fits_face\(face,x,y,win_width,40\)/);
+  assert.match(painter, /edge\.width=winner\?5:/);
+  assert.doesNotMatch(painter, /0xFFF1A0|0xFFF19B|0xFFFFFF/);
   assert.doesNotMatch(painter, /esp_random|dice_roll/);
 });
 
