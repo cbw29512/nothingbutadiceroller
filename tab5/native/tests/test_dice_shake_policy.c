@@ -3,60 +3,45 @@
 #include <math.h>
 #include <stdio.h>
 
-static void arm(dice_shake_policy_t *s, uint32_t *ms) {
-    for (int i=0; i<5; ++i) {
-        *ms += 100;
-        assert(!dice_shake_policy_sample(s, 0, 0, 1, *ms));
-    }
+static void sample(dice_shake_policy_t *s, unsigned *t, float x,
+                   float y, float z, bool rolled) {
+    *t+=40;
+    assert(dice_shake_policy_sample(s,x,y,z,*t)==rolled);
 }
-static void pulse(dice_shake_policy_t *s, uint32_t *ms,
-                  bool should_trigger) {
-    *ms += 100;
-    assert(dice_shake_policy_sample(s, 0, 0, 2.0f, *ms) == should_trigger);
-    *ms += 100;
-    assert(!dice_shake_policy_sample(s, 0, 0, 1.0f, *ms));
+static void rest(dice_shake_policy_t *s, unsigned *t) {
+    for(int i=0;i<7;i++)sample(s,t,0,0,1,false);
 }
 int main(void) {
-    dice_shake_policy_t s;
+    dice_shake_policy_t s;unsigned t=0;
     dice_shake_policy_init(&s);
-    uint32_t ms=0;
-    assert(!dice_shake_policy_sample(NULL, 0, 0, 1, ms));
-    assert(!dice_shake_policy_sample(&s, NAN, 0, 1, ms));
-    arm(&s, &ms);
-    // Turning or tilting a tablet isn't three violent impulses.
-    for (int i=0; i<50; ++i) {
-        ms += 100;
-        assert(!dice_shake_policy_sample(&s,
-                  (i%2 ? .9f : -.9f), .1f, .3f, ms));
-    }
-    // A single bump/held high-g is not enough.
-    ms += 100;
-    assert(!dice_shake_policy_sample(&s, 0, 0, 2, ms));
-    for (int i=0; i<6; ++i) {
-        ms += 100;
-        assert(!dice_shake_policy_sample(&s, 0, 0, 2, ms));
-    }
-    ms += 100;
-    assert(!dice_shake_policy_sample(&s, 0, 0, 1, ms));
-    pulse(&s, &ms, false); // second distinct impulse
-    pulse(&s, &ms, true);  // third distinct impulse, one roll
-    // Holding a shake cannot trigger twice.
-    for (int i=0; i<35; ++i) {
-        ms += 100;
-        assert(!dice_shake_policy_sample(&s, 0, 0, 2, ms));
-    }
-    arm(&s, &ms);
-    pulse(&s, &ms, false);
-    pulse(&s, &ms, false);
-    pulse(&s, &ms, true);
-    // Slow isolated bumps expire without a roll.
-    dice_shake_policy_init(&s);
-    arm(&s, &ms);
-    pulse(&s, &ms, false);
-    ms += 1700;
-    pulse(&s, &ms, false);
-    pulse(&s, &ms, false);
-    assert(s.peaks == 2);
-    puts("Tab5 intentional three-impulse shake and cooldown policy passed");
-    return 0;
+    assert(!dice_shake_policy_sample(NULL,0,0,1,0));
+    assert(!dice_shake_policy_sample(&s,NAN,0,1,0));
+    rest(&s,&t);
+    assert(s.armed);
+    // Ordinary light handling doesn't trigger a roll.
+    for(int i=0;i<30;i++)sample(&s,&t,.12f,0, .99f,false);
+    // One physical back-and-forth gesture rolls once.
+    sample(&s,&t, .85f,0,1,false);
+    sample(&s,&t, .60f,0,1,false);
+    sample(&s,&t,-.85f,0,1,true);
+    for(int i=0;i<25;i++)
+        sample(&s,&t,i%2?.75f:-.75f,0,1,false);
+    // Cooldown plus stable rest permits the next single shake.
+    rest(&s,&t);
+    while(t-s.last_trigger_ms < 1850u)sample(&s,&t,0,0,1,false);
+    sample(&s,&t,0,.8f,1,false);
+    sample(&s,&t,0,-.8f,1,true);
+    // A single bump isn't a full shake.
+    dice_shake_policy_init(&s);rest(&s,&t);
+    sample(&s,&t,.8f,0,1,false);
+    for(int i=0;i<25;i++)sample(&s,&t,.1f,0,1,false);
+    // Slow reversal outside 850ms window does not roll.
+    dice_shake_policy_init(&s);rest(&s,&t);
+    sample(&s,&t,0,.7f,1,false);
+    for(int i=0;i<25;i++)sample(&s,&t,0,.1f,1,false);
+    sample(&s,&t,0,-.7f,1,false);
+    // Stationary noise and slow tilts stay below trigger.
+    dice_shake_policy_init(&s);rest(&s,&t);
+    for(int i=0;i<30;i++)sample(&s,&t,.15f*sin(i*.1f),0,1,false);
+    puts("Tab5 one-shake reversal and cooldown tests passed");
 }
