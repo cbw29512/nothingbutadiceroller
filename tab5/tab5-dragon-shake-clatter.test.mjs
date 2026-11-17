@@ -10,18 +10,20 @@ function c(name) {
     throw err;
   }
 }
-test("dragon and broken d20 use only ephemeral vector art", () => {
+test("critical spectacle is a temporary abstract shockwave, not cartoon art", () => {
   const art = c("dice_critical_art.c");
   const fx = c("dice_nat_fx.c");
   assert.match(fx, /lv_obj_add_event_cb\(overlay, dice_critical_art_draw/);
   assert.match(fx, /art.frame = frame/);
   assert.match(fx, /dice_nat_fx_cancel\(\)/);
-  assert.match(art, /dice_critical_art_draw/);
-  assert.match(art, /lv_draw_triangle\(layer,&d\)/);
-  assert.match(art, /lv_draw_line\(layer,&d\)/);
-  assert.match(art, /DICE_NAT_20\) dragon/);
-  assert.match(art, /DICE_NAT_1\) shattered/);
-  assert.doesNotMatch(art + fx, /lv_image_create|malloc\(|esp_random|wifi|http/);
+  assert.match(art, /void dice_critical_art_draw\(lv_event_t \*event\)/);
+  assert.match(art, /static void ring\(/);
+  assert.match(art, /const int outer=victory\?/);
+  assert.match(art, /const int inner=victory\?/);
+  assert.match(art, /DICE_NAT_20/);
+  assert.match(art, /DICE_NAT_1/);
+  assert.doesNotMatch(art, /static void dragon\(|static void shattered\(/);
+  assert.doesNotMatch(art, /lv_draw_triangle|lv_image_create|malloc\(|esp_random|wifi|http/);
 });
 test("clatter is derived from actual physics collisions not random rolls", () => {
   const motion = c("dice_motion.c");
