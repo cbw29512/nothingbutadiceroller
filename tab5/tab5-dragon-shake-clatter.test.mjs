@@ -44,22 +44,29 @@ test("clatter is derived from actual physics collisions not random rolls", () =>
   assert.match(impact, /dice_impact_audio_sample/);
   assert.doesNotMatch(impact, /esp_random|dice_roll|malloc|rand\(/);
 });
-test("shake reuses BMI270 orientation samples and refuses busy rolls", () => {
+test("one ordinary shake rolls already tapped dice, without UI changes", () => {
   const imu = c("orientation.c");
   const shake = c("dice_shake_policy.c");
   const ui = c("dice_ui.c");
-  assert.match(imu, /dice_shake_policy_sample\(&shake, x, y, z, ms\)/);
-  assert.match(imu, /if \(bsp_display_lock\(0\)\)/);
+  const engine = c("dice_engine.c");
+  const controls = c("dice_controls.c");
+  assert.match(imu, /\.period=40/);
+  assert.match(imu, /xQueueOverwrite\(sample_queue, &sample\)/);
+  assert.match(imu, /xQueueReceive\(sample_queue, &sample,/);
+  assert.match(imu, /dice_shake_policy_sample\(&shake,sample.x,sample.y,sample.z,ms\)/);
+  assert.match(imu, /if \(bsp_display_lock\(100\)\)/);
   assert.match(imu, /dice_ui_try_shake_roll\(\)/);
-  assert.match(shake, /p->peaks < 3/);
-  assert.match(shake, /1500u/);
-  assert.match(shake, /3000u/);
-  assert.match(shake, /p->calm_samples >= 5/);
+  assert.match(shake, /p->waiting_reverse/);
+  assert.match(shake, /REVERSE_DOT/);
+  assert.match(shake, /1800u/);
+  assert.doesNotMatch(shake, /p->peaks|p->peaks < 3/);
   assert.match(ui, /g_state->phase != DICE_SESSION/);
   assert.match(ui, /dice_tray_is_rolling\(\)/);
   assert.match(ui, /dice_nat_fx_is_active\(\)/);
   assert.match(ui, /return roll_start\(\)/);
   assert.match(ui, /dice_roll\(g_state, esp_random\)/);
+  assert.match(controls, /dice_add\(state, \(uint8_t\)code\)/);
+  assert.match(engine, /if \(s->has_result\) dice_clear\(s\)/);
   assert.doesNotMatch(shake, /esp_random|dice_roll|dice_clear/);
 });
 test("enhancements preserve visible ten buttons and battery init path", () => {
