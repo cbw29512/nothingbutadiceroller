@@ -28,14 +28,13 @@ static void on_draw(lv_event_t *event) {
 
     // Each d100 result owns TWO independent widgets with full-size d10
     // solids: first a tens die (00...90), then a units die (0...9).
-    const uint8_t geometry = state->sides == 100 ? 10 : state->sides;
     if (state->mesh &&
-        dice_mesh_paint(layer, &area, geometry, state->discarded,
+        dice_mesh_paint(layer, &area, state->sides, state->discarded,
                         state->front_pitch + state->pitch,
                         state->front_yaw + state->yaw,
                         state->roll, state->face_text)) return;
 
-    dice_silhouette_draw(layer, &area, geometry, state->discarded);
+    dice_silhouette_draw(layer, &area, state->sides, state->discarded);
     if (state->sides == 100)
         dice_mesh_paint_fallback_number(layer, &area, state->face_text[0]);
 }
