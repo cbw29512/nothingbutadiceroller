@@ -1,0 +1,143 @@
+name: Tab5 Native Firmware
+on:
+  pull_request:
+    paths:
+      - 'tab5/**'
+      - '.github/workflows/tab5-native.yml'
+  push:
+    branches: [feat/tab5-universal-dice-foundation-20261115]
+    paths:
+      - 'tab5/**'
+      - '.github/workflows/tab5-native.yml'
+  workflow_dispatch:
+
+jobs:
+  host-engine:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Native host tests
+        run: |
+          gcc -std=c11 -Wall -Wextra -Werror -fsanitize=address,undefined -g \
+            tab5/native/main/dice_engine.c tab5/native/tests/test_dice_engine.c \
+            -o /tmp/tab5_dice_engine_test
+          /tmp/tab5_dice_engine_test
+          gcc -std=c11 -Wall -Wextra -Werror -fsanitize=address,undefined -g \
+            tab5/native/main/dice_engine.c tab5/native/main/dice_controls.c \
+            tab5/native/main/dice_results.c tab5/native/main/dice_summary.c \
+            tab5/native/tests/test_dice_controls.c -o /tmp/tab5_dice_controls_test
+          /tmp/tab5_dice_controls_test
+          gcc -std=c11 -Wall -Wextra -Werror -fsanitize=address,undefined -g \
+            tab5/native/main/dice_engine.c tab5/native/main/dice_results.c \
+            tab5/native/main/dice_nat_event.c \
+            tab5/native/tests/test_dice_nat_event.c \
+            -o /tmp/tab5_dice_nat_event_test
+          /tmp/tab5_dice_nat_event_test
+          gcc -std=c11 -Wall -Wextra -Werror -fsanitize=address,undefined -g \
+            tab5/native/main/dice_nat_tone.c \
+            tab5/native/tests/test_dice_nat_tone.c \
+            -o /tmp/tab5_dice_nat_tone_test
+          /tmp/tab5_dice_nat_tone_test
+          gcc -std=c11 -Wall -Wextra -Werror -fsanitize=address,undefined -g \
+            tab5/native/main/dice_impact_audio.c \
+            tab5/native/tests/test_dice_impact_audio.c \
+            -o /tmp/tab5_dice_impact_audio_test
+          /tmp/tab5_dice_impact_audio_test
+          gcc -std=c11 -Wall -Wextra -Werror -fsanitize=address,undefined -g \
+            tab5/native/main/dice_shake_policy.c \
+            tab5/native/tests/test_dice_shake_policy.c -lm \
+            -o /tmp/tab5_dice_shake_policy_test
+          /tmp/tab5_dice_shake_policy_test
+          gcc -std=c11 -Wall -Wextra -Werror -fsanitize=address,undefined -g \
+            tab5/native/main/dice_engine.c tab5/native/main/dice_controls.c \
+            tab5/native/main/dice_shake_policy.c \
+            tab5/native/tests/test_selected_dice_shake.c -lm \
+            -o /tmp/tab5_selected_shake_test
+          /tmp/tab5_selected_shake_test
+          gcc -std=c11 -Wall -Wextra -Werror -fsanitize=address,undefined -g \
+            tab5/native/main/dice_layout.c tab5/native/tests/test_dice_layout.c \
+            -o /tmp/tab5_dice_layout_test
+          /tmp/tab5_dice_layout_test
+          gcc -std=c11 -Wall -Wextra -Werror -fsanitize=address,undefined -g \
+            tab5/native/main/dice_layout.c tab5/native/main/dice_motion.c \
+            tab5/native/tests/test_dice_motion.c -lm -o /tmp/tab5_dice_motion_test
+          /tmp/tab5_dice_motion_test
+          gcc -std=c11 -Wall -Wextra -Werror -fsanitize=address,undefined -g \
+            tab5/native/main/dice_mesh.c tab5/native/main/dice_project.c \
+            tab5/native/tests/test_dice_mesh.c -lm -o /tmp/tab5_dice_mesh_test
+          /tmp/tab5_dice_mesh_test
+          gcc -std=c11 -Wall -Wextra -Werror -fsanitize=address,undefined -g \
+            tab5/native/main/dice_label_fit.c \
+            tab5/native/tests/test_dice_label_fit.c \
+            -o /tmp/tab5_dice_label_fit_test
+          /tmp/tab5_dice_label_fit_test
+          gcc -std=c11 -Wall -Wextra -Werror -fsanitize=address,undefined -g \
+            tab5/native/main/dice_face_values.c \
+            tab5/native/tests/test_dice_face_values.c \
+            -o /tmp/tab5_dice_face_values_test
+          /tmp/tab5_dice_face_values_test
+          gcc -std=c11 -Wall -Wextra -Werror -fsanitize=address,undefined -g \
+            tab5/native/main/orientation_policy.c \
+            tab5/native/tests/test_orientation_policy.c -lm \
+            -o /tmp/tab5_orientation_test
+          /tmp/tab5_orientation_test
+          gcc -std=c11 -Wall -Wextra -Werror -fsanitize=address,undefined -g \
+            tab5/native/main/tab5_power_policy.c \
+            tab5/native/tests/test_tab5_power_policy.c \
+            -o /tmp/tab5_power_policy_test
+          /tmp/tab5_power_policy_test
+          gcc -std=c11 -Wall -Wextra -Werror -fsanitize=address,undefined -g \
+            tab5/native/main/tab5_recovery_policy.c \
+            tab5/native/tests/test_tab5_recovery_policy.c \
+            -o /tmp/tab5_recovery_policy_test
+          /tmp/tab5_recovery_policy_test
+          gcc -std=c11 -Wall -Wextra -Werror -fsanitize=address,undefined -g \
+            tab5/native/main/dice_engine.c tab5/native/main/dice_results.c \
+            tab5/native/main/dice_summary.c tab5/native/tests/test_dice_results.c \
+            -o /tmp/tab5_dice_results_test
+          /tmp/tab5_dice_results_test
+      - name: Portable JS tests
+        run: node --test tab5/*.test.mjs
+  firmware-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build ESP32-P4 firmware with IDF 6.1
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: release-v6.1
+          target: esp32p4
+          path: tab5/native
+      - name: Reject firmware incompatible with v1.3 Tab5
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check esptool==5.6.0
+          for img in tab5/native/build/bootloader/bootloader.bin tab5/native/build/tab5_dice.bin; do
+            python -m esptool --chip esp32p4 image-info "$img" > /tmp/tab5-image-info.txt
+            cat /tmp/tab5-image-info.txt
+            grep -Fq 'Minimal chip revision: v1.0' /tmp/tab5-image-info.txt && \
+              grep -Fq 'Maximal chip revision: v1.99' /tmp/tab5-image-info.txt || {
+              echo "ERROR: firmware $img does not declare v1.x compatibility" >&2
+              exit 1
+            }
+          done
+      - name: Verify and package flash images
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p tab5/flash-package
+          cp tab5/native/build/bootloader/bootloader.bin tab5/flash-package/
+          cp tab5/native/build/partition_table/partition-table.bin tab5/flash-package/
+          cp tab5/native/build/tab5_dice.bin tab5/flash-package/
+          cd tab5/flash-package
+          sha256sum bootloader.bin partition-table.bin tab5_dice.bin > SHA256SUMS.txt
+          printf 'BOOTLOADER=0x2000\nPARTITION_TABLE=0x8000\nAPP=0x10000\n' > flash-offsets.txt
+          cat SHA256SUMS.txt
+      - name: Upload Tab5 firmware for review
+        uses: actions/upload-artifact@v4
+        with:
+          name: tab5-dice-esp32p4-${{ github.sha }}
+          path: tab5/flash-package/
+          if-no-files-found: error
+          retention-days: 14

@@ -1,0 +1,139 @@
+#include "dice_tray.h"
+#include "dice_layout.h"
+#include "dice_motion.h"
+#include "dice_shapes.h"
+#include "dice_results.h"
+#include "dice_nat_sound.h"
+#include "dice_visuals.h"
+#include "esp_log.h"
+#include "esp_random.h"
+#include <string.h>
+
+static const char *TAG = "dice_tray";
+static lv_obj_t *tray;
+static lv_obj_t *dice[DICE_VISIBLE_MAX];
+static lv_timer_t *timer;
+static void (*on_settled)(void);
+static int count;
+static int last_clack_frame;
+static dice_layout_t layout;
+static dice_motion_t motion;
+
+bool dice_tray_is_rolling(void) { return timer != NULL; }
+void dice_tray_bind(lv_obj_t *parent) {
+    dice_tray_release();
+    tray = parent;
+}
+void dice_tray_set_settled_callback(void (*callback)(void)) {
+    on_settled = callback;
+}
+void dice_tray_clear(void) {
+    if (timer) { lv_timer_delete(timer); timer = NULL; }
+    if (tray) lv_obj_clean(tray);
+    memset(dice, 0, sizeof(dice));
+    memset(&motion, 0, sizeof(motion));
+    count = 0;
+    last_clack_frame = -10;
+}
+void dice_tray_release(void) {
+    on_settled = NULL;
+    if (timer) { lv_timer_delete(timer); timer = NULL; }
+    tray = NULL;
+    memset(dice, 0, sizeof(dice));
+    memset(&motion, 0, sizeof(motion));
+    count = 0;
+}
+static void apply_positions(bool finished) {
+    for (int i = 0; i < count; ++i) {
+        if (!dice[i]) continue;
+        const dice_motion_body_t *b = &motion.bodies[i];
+        lv_obj_set_pos(dice[i], (int)b->x, (int)b->y);
+        // Shade and tumble real polyhedral faces for small pools. Large
+        // pools retain the cheap silhouette path for steady frame rates.
+        if (count <= 8) {
+            lv_obj_set_style_transform_rotation(dice[i], 0, 0);
+            dice_shapes_set_tumble(dice[i], true, !finished,
+                finished ? 0 : (int)b->pitch,
+                finished ? 0 : (int)b->yaw,
+                finished ? 0 : (int)b->angle);
+        } else {
+            // Large pools animate with the cheap path, then settle as
+            // authentic 3D solids so every final die has its actual shape.
+            dice_shapes_set_tumble(dice[i], finished, !finished, 0, 0, 0);
+            lv_obj_set_style_transform_rotation(dice[i],
+                finished ? 0 : (int)b->angle, 0);
+        }
+        // Never float a duplicate result over numbers engraved on 3D faces.
+        dice_visual_set_rolling(dice[i],
+            !finished || dice_shapes_has_embedded_numbers(dice[i]));
+    }
+}
+void dice_tray_relayout(void) {
+    if (!tray) return;
+    layout = dice_layout_make(count, lv_obj_get_width(tray), lv_obj_get_height(tray));
+    if (motion.count == count && count) dice_motion_resize(&motion, &layout);
+    for (int i = 0; i < count; ++i) {
+        if (dice[i]) dice_visual_resize(dice[i], layout.size);
+    }
+    if (count && !timer) apply_positions(true);
+}
+static void animate(lv_timer_t *event) {
+    (void)event;
+    if (!tray || !count) return;
+    const bool moving = dice_motion_step(&motion);
+    // Trigger clatter from collisions *reported by the actual simulation*.
+    // Limit to ~5 contacts/second even with a 64-die tray.
+    if (moving && motion.frame < 50 && motion.impacts &&
+        motion.frame-last_clack_frame >= 6) {
+        dice_nat_sound_impact(false);
+        last_clack_frame = motion.frame;
+    }
+    if (moving && motion.frame == 50) dice_nat_sound_impact(true);
+    apply_positions(!moving);
+    if (!moving) {
+        lv_timer_delete(timer);
+        timer = NULL;
+        if (on_settled) on_settled();
+    }
+}
+void dice_tray_render(const dice_state_t *state) {
+    if (!tray || !state || !state->has_result) {
+        ESP_LOGE(TAG, "Cannot render missing dice result or tray");
+        return;
+    }
+    dice_tray_clear();
+    count = (int)dice_result_visible_count(state);
+    if (count < 1 || count > DICE_VISIBLE_MAX) {
+        ESP_LOGE(TAG, "Invalid visible dice count %d", count);
+        count = 0; return;
+    }
+    layout = dice_layout_make(count, lv_obj_get_width(tray), lv_obj_get_height(tray));
+    // ESP hardware RNG supplies a throw trajectory only, NOT the rolled faces.
+    if (!dice_motion_begin(&motion, &layout, esp_random())) {
+        ESP_LOGE(TAG, "Could not prepare visual dice roll");
+        count = 0; return;
+    }
+    for (int i = 0; i < count; ++i) {
+        dice_visible_face_t face;
+        if (!dice_result_visible_at(state, (size_t)i, &face)) {
+            ESP_LOGE(TAG, "Invalid result face at index %d", i);
+            dice_tray_clear(); return;
+        }
+        dice[i] = dice_visual_create(tray, face.sides, face.face,
+                                     layout.size, face.discarded,
+                                     face.percentile_tens);
+        if (!dice[i]) {
+            ESP_LOGE(TAG, "Die %d could not be allocated", i);
+            dice_tray_clear(); return;
+        }
+    }
+    apply_positions(false);
+    lv_obj_scroll_to_y(tray, 0, LV_ANIM_OFF);
+    timer = lv_timer_create(animate, 33, NULL);
+    if (!timer) {
+        ESP_LOGW(TAG, "No animation timer; showing valid static dice");
+        while (dice_motion_step(&motion)) { /* Present final verified result. */ }
+        apply_positions(true);
+        if (on_settled) on_settled();
+    }
+}
