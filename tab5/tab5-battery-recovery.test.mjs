@@ -70,8 +70,8 @@ test("hardware-verified recovery remains a permanent future-feature contract", (
   assert.match(readme, /Battery power — mandatory non-regression contract/);
   assert.match(readme, /PR #63/);
   assert.match(readme, /about 7 V with CHG CMD ON/);
-  assert.match(readme, /not yet confirmation of USB-unplug operation/);
-  assert.match(readme, /preserve the visible BAT\/SHUNT\/CHG CMD diagnostics/i);
+  assert.match(readme, /confirmed USB-to-battery handoff/);
+  assert.match(readme, /preserve the fault-visible BAT\/SHUNT\/CHG CMD diagnostics/i);
 
   assert.match(recovery, /Confirmed recovery on the physical Tab5/);
   assert.match(recovery, /pushing the button fixed it/);
