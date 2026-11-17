@@ -41,8 +41,14 @@ static void draw_face_number(lv_layer_t *layer,const lv_area_t *area,
  // While moving, draw only on faces large enough to contain the *entire*
  // numeral rectangle. Steep/edge-on facets naturally lose their numbers.
  const bool large = !moving && xhi-xlo>64;
- const int width=moving ? (strlen(text)>1?30:20) : (large?52:33);
- const int height=moving?20:28;
+ // Enlarge the winning digit only if its entire text box fits its polygon.
+ // A small triangular face keeps the existing readable font instead.
+ const int win_width = strlen(text)>1?55:36;
+ const bool winner_large=winner && xhi-xlo>65 && yhi-ylo>48 &&
+                         dice_label_fits_face(face,x,y,win_width,40);
+ const int width=moving ? (strlen(text)>1?30:20) :
+                 winner_large?win_width:(large?52:33);
+ const int height=moving?20:winner_large?40:28;
  if(moving && !dice_label_fits_face(face,x,y,width,height))return;
  lv_area_t text_area={
   .x1=area->x1+x-width/2,.y1=area->y1+y-height/2,
@@ -50,13 +56,15 @@ static void draw_face_number(lv_layer_t *layer,const lv_area_t *area,
  };
  lv_draw_label_dsc_t desc;lv_draw_label_dsc_init(&desc);
  desc.text=text; // Persistent state storage; task may draw asynchronously.
- desc.font=large?&lv_font_montserrat_28:&lv_font_montserrat_20;
- // Dim every non-winning number; only the completed selected face glows.
- // Discarded ADV/DIS dice must never illuminate a face.
- desc.color=lv_color_hex(winner?0xFFF1A0:
-                         discarded?0x758390:
-                         face->shade<158?0xA9B9C6:0x374656);
- desc.align=LV_TEXT_ALIGN_CENTER;desc.opa=LV_OPA_COVER;
+ desc.font=winner_large?&lv_font_montserrat_36:
+           large?&lv_font_montserrat_28:&lv_font_montserrat_20;
+ // The winner is vivid highlighter yellow. Other numbers are translucent,
+ // muted slate, never full-opacity bright white (including the losing d20).
+ desc.color=lv_color_hex(winner?0xE7FF00:
+                         discarded?0x596575:
+                         face->shade<158?0x8594A6:0x344356);
+ desc.align=LV_TEXT_ALIGN_CENTER;
+ desc.opa=winner?LV_OPA_COVER:discarded?LV_OPA_40:LV_OPA_60;
  lv_draw_label(layer,&desc,&text_area);
 }
 bool dice_mesh_paint(lv_layer_t *layer,const lv_area_t *area,uint8_t sides,
@@ -73,7 +81,7 @@ bool dice_mesh_paint(lv_layer_t *layer,const lv_area_t *area,uint8_t sides,
   // Face 0 is the source-mapped result and is oriented nearest at rest.
   // Highlight is presentation-only: never illuminate moving or discarded dice.
   const bool winner=!moving && !discarded && face->source_index==0;
-  const uint32_t filled=winner?0x293A51:shade_color(base,face->shade);
+  const uint32_t filled=winner?0x142637:shade_color(base,face->shade);
   for(unsigned j=1;j+1<face->corners;++j){
    lv_draw_triangle_dsc_t triangle;lv_draw_triangle_dsc_init(&triangle);
    triangle.p[0]=pixel(area,face->x[0],face->y[0]);
@@ -87,8 +95,8 @@ bool dice_mesh_paint(lv_layer_t *layer,const lv_area_t *area,uint8_t sides,
    lv_draw_line_dsc_t edge;lv_draw_line_dsc_init(&edge);
    edge.p1=pixel(area,face->x[j],face->y[j]);
    edge.p2=pixel(area,face->x[next],face->y[next]);
-   edge.color=lv_color_hex(winner?0xFFF19B:discarded?0x36404A:0x202631);
-   edge.opa=LV_OPA_COVER;edge.width=winner?4:(lv_area_get_width(area)>165?3:2);
+   edge.color=lv_color_hex(winner?0xE7FF00:discarded?0x36404A:0x202631);
+   edge.opa=LV_OPA_COVER;edge.width=winner?5:(lv_area_get_width(area)>165?3:2);
    lv_draw_line(layer,&edge);
   }
   draw_face_number(layer,area,face,face_text[face->source_index],moving,winner,discarded);
@@ -103,6 +111,6 @@ void dice_mesh_paint_fallback_number(lv_layer_t *layer,const lv_area_t *area,
  label.y2=label.y1+28;
  lv_draw_label_dsc_t desc;lv_draw_label_dsc_init(&desc);
  desc.text=text;desc.font=&lv_font_montserrat_20;
- desc.color=lv_color_hex(0xFFFFFF);desc.align=LV_TEXT_ALIGN_CENTER;
+ desc.color=lv_color_hex(0xE7FF00);desc.align=LV_TEXT_ALIGN_CENTER;
  desc.opa=LV_OPA_COVER;lv_draw_label(layer,&desc,&label);
 }
