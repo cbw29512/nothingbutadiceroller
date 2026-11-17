@@ -18,11 +18,12 @@ static void recovery_tap(lv_event_t *event);
 
 static void refresh(lv_timer_t *timer) {
     (void)timer;
-    if (!g_label) return;
+    // Poll the safety deadline even while no screen is attached.
     const tab5_power_reading_t reading = tab5_power_diag_read();
     const int64_t now = now_ms();
     tab5_power_recovery_poll(&reading, now);
 
+    if (!g_label) return;
     char line[144] = {0};
     tab5_power_diag_format(line, sizeof(line), &reading,
                             tab5_power_charge_command_enabled());
