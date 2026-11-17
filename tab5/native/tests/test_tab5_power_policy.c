@@ -18,6 +18,11 @@ int main(void) {
     assert(tab5_power_pack_present_mv(8800));
     assert(!tab5_power_pack_present_mv(8801));
     assert(!tab5_power_pack_present_mv(9000));
+    assert(tab5_power_decode_ina226_shunt_uv(0, 0) == 0);
+    assert(tab5_power_decode_ina226_shunt_uv(0, 2) == 5);
+    assert(tab5_power_decode_ina226_shunt_uv(0xFF, 0xFE) == -5);
+    assert(tab5_power_decode_ina226_shunt_uv(0x80, 0) == -81920);
+    assert(tab5_power_decode_ina226_shunt_uv(0x7F, 0xFF) == 81917);
     puts("Tab5 power policy and INA226 conversion passed");
     return 0;
 }
