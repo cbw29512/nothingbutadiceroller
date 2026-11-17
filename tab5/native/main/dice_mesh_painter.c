@@ -27,8 +27,10 @@ static void draw_face_number(lv_layer_t *layer,const lv_area_t *area,
  for(unsigned j=0;j<face->corners;++j){
   const int px=face->x[j],py=face->y[j];
   x+=px;y+=py;
-  if(px<xlo)xlo=px;if(px>xhi)xhi=px;
-  if(py<ylo)ylo=py;if(py>yhi)yhi=py;
+  if (px < xlo) xlo = px;
+  if (px > xhi) xhi = px;
+  if (py < ylo) ylo = py;
+  if (py > yhi) yhi = py;
  }
  if(xhi-xlo<31 || yhi-ylo<26)return; // Too edge-on to read.
  x/=face->corners;y/=face->corners;
