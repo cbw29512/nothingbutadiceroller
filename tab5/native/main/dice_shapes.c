@@ -11,7 +11,7 @@
 typedef struct {
     lv_obj_t *owner;
     uint8_t sides;
-    bool discarded, mesh, percentile_tens;
+    bool discarded, mesh, percentile_tens, moving;
     int pitch, yaw, roll, front_pitch, front_yaw;
     char face_text[20][4]; // Persistent through LVGL asynchronous draw.
 } die_shape_state_t;
@@ -30,7 +30,7 @@ static void on_draw(lv_event_t *event) {
     // solids: first a tens die (00...90), then a units die (0...9).
     if (state->mesh &&
         dice_mesh_paint(layer, &area, state->sides, state->discarded,
-                        state->front_pitch + state->pitch,
+                        state->moving, state->front_pitch + state->pitch,
                         state->front_yaw + state->yaw,
                         state->roll, state->face_text)) return;
 
@@ -81,13 +81,14 @@ bool dice_shapes_attach(lv_obj_t *object, uint8_t sides,
     ESP_LOGE(TAG, "No LVGL die shape slots remain");
     return false;
 }
-void dice_shapes_set_tumble(lv_obj_t *object, bool enabled,
+void dice_shapes_set_tumble(lv_obj_t *object, bool enabled, bool moving,
                             int pitch, int yaw, int roll) {
     if (!object) return;
     for (unsigned i = 0; i < SHAPE_SLOTS; ++i) {
         die_shape_state_t *state = &slots[i];
         if (state->owner != object) continue;
         state->mesh = enabled;
+        state->moving = moving;
         state->pitch = pitch;
         state->yaw = yaw;
         state->roll = roll;
