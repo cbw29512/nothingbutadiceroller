@@ -24,6 +24,25 @@ static uint8_t shade(float value) {
  if (value>1.0f)value=1.0f;
  return (uint8_t)(value*255.0f);
 }
+bool dice_mesh_front_angles(const dice_mesh_t *mesh, uint8_t face_index,
+                            int *pitch, int *yaw) {
+ if (!mesh || !pitch || !yaw || face_index >= mesh->faces_count) return false;
+ const dice_mesh_face_t *f=&mesh->faces[face_index];
+ if (f->corners<3 || f->vertex[0]>=mesh->vertices_count ||
+     f->vertex[1]>=mesh->vertices_count ||
+     f->vertex[2]>=mesh->vertices_count) return false;
+ const dice_vec3_t a=mesh->vertices[f->vertex[0]];
+ const dice_vec3_t b=mesh->vertices[f->vertex[1]];
+ const dice_vec3_t c=mesh->vertices[f->vertex[2]];
+ dice_vec3_t n=cross(sub(b,a),sub(c,a));
+ const float len=sqrtf(dot(n,n));
+ if (!(len>.001f) || !isfinite(len)) return false;
+ if (dot(n,a)<0) {n.x=-n.x;n.y=-n.y;n.z=-n.z;}
+ const float degrees=572.957795f; // radians to tenths of a degree
+ *pitch=(int)roundf(atan2f(n.y,n.z)*degrees);
+ *yaw=(int)roundf(atan2f(-n.x,sqrtf(n.y*n.y+n.z*n.z))*degrees);
+ return true;
+}
 bool dice_project_mesh(const dice_mesh_t *mesh,
                        int pitch,int yaw,int roll,int size,
                        dice_projection_t *out) {
@@ -61,6 +80,7 @@ bool dice_project_mesh(const dice_mesh_t *mesh,
   if (normal.z<.025f)continue; // Backface culling for convex die solids.
   dice_project_face_t face={0};
   face.corners=f->corners;
+  face.source_index=(uint8_t)k;
   float depth=0;
   for (unsigned j=0;j<f->corners;++j) {
    const dice_vec3_t p=v[f->vertex[j]];
