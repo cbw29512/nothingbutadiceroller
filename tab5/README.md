@@ -2,6 +2,37 @@
 
 Status: **initial native ESP32-P4 v1.x dice firmware and large polyhedral visual prototype**. Native and host tests are required before any on-device verification. The current motion is source-independent 2D contact simulation with individual rebounds, spin and soft landing; this is **not** certified 3D rigid-body physics.
 
+## Battery power — mandatory non-regression contract (physically observed 2026-11-17)
+
+**Never remove or bypass the Tab5 battery/power initialization when adding dice,
+sound, UI, recorder, wireless or other features.** See
+[`BATTERY_RECOVERY_2026-11-17.md`](BATTERY_RECOVERY_2026-11-17.md)
+for the verified pin map, state transitions, source evidence and recovery steps.
+
+- A custom firmware build previously left a known-good NP-F550 unable to run
+  the Tab5 without USB; INA226 displayed **1.014 V, shunt near 0 µV, CHG CMD OFF**.
+  Our 4.0 V charger gate prevented battery-recovery charging.
+- The corrected **PR #63** firmware was installed on **2026-11-17**. The
+  user tapped the two-step on-screen recovery control and reported that this
+  **restored the battery bus to about 7 V with CHG CMD ON**. This is confirmed
+  hardware feedback, **not yet confirmation of USB-unplug operation or measured
+  battery charging current**.
+- Preserve startup order: display/shared I²C initialization, factory
+  power-off pulse idle **P4 LOW**, then safe charger initialization, then UI.
+  Preserve INA226 readings at I²C `0x41` and IP2326 control on the **second**
+  expander `0x44`: P7 = CHG_EN HIGH, P5 = disable quick-charge HIGH.
+- Do not reset or overwrite those expander outputs from later modules. Do
+  not pulse P4 HIGH except for an explicitly designed and independently
+  reviewed power-off operation.
+- Preserve the visible BAT/SHUNT/CHG CMD diagnostics and the guarded,
+  user-confirmed 30-second recovery control. No unprompted charging of an
+  unverified pack, no removal of the charger-off presence check, no
+  bypass of the 8.45 V safety ceiling. CHG CMD ON is not measured current.
+- Every Tab5 firmware change must run the native host/Node contracts,
+  ESP32-P4 v1.3 firmware build, and an actual USB-to-battery power
+  handoff test before describing battery-only operation as verified.
+  Flash application-only with a verified backup/partition table.
+
 ## Definition of Done (V1)
 
 - Boot shows game-system selection; after confirmation, system stays locked until reboot.
