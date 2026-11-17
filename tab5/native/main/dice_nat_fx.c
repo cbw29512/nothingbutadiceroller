@@ -1,4 +1,5 @@
 #include "dice_nat_fx.h"
+#include "dice_critical_art.h"
 #include "esp_log.h"
 
 static const char *TAG = "dice_nat_fx";
@@ -6,6 +7,7 @@ static lv_obj_t *overlay, *hero, *title, *footer;
 static lv_timer_t *timer;
 static dice_nat_event_t active;
 static unsigned frame;
+static dice_critical_art_t art;
 
 bool dice_nat_fx_is_active(void) { return overlay != NULL; }
 void dice_nat_fx_cancel(void) {
@@ -13,6 +15,7 @@ void dice_nat_fx_cancel(void) {
     if (overlay) { lv_obj_delete(overlay); overlay = NULL; }
     hero = NULL; title = NULL; footer = NULL;
     frame = 0; active = DICE_NAT_NONE;
+    art.event = DICE_NAT_NONE; art.frame = 0;
 }
 
 static void set_colors(bool flash) {
@@ -34,6 +37,8 @@ static void tick(lv_timer_t *unused) {
     (void)unused;
     if (!overlay) { dice_nat_fx_cancel(); return; }
     ++frame;
+    art.frame = frame;
+    lv_obj_invalidate(overlay);
     // Two deliberate pulses at 2 Hz, never a rapid strobe.
     set_colors((frame >= 1 && frame <= 2) ||
                (frame >= 7 && frame <= 8));
@@ -54,6 +59,7 @@ void dice_nat_fx_show(lv_obj_t *screen, dice_nat_event_t event) {
     dice_nat_fx_cancel();
     if (!screen || (event != DICE_NAT_20 && event != DICE_NAT_1)) return;
     active = event;
+    art.event = event; art.frame = 0;
     overlay = lv_obj_create(screen);
     if (!overlay) {
         ESP_LOGE(TAG, "Could not allocate natural-roll overlay");
@@ -67,6 +73,8 @@ void dice_nat_fx_show(lv_obj_t *screen, dice_nat_event_t event) {
     lv_obj_set_style_border_width(overlay, 12, 0);
     lv_obj_set_style_bg_opa(overlay, LV_OPA_COVER, 0);
     lv_obj_clear_flag(overlay, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_add_event_cb(overlay, dice_critical_art_draw,
+                        LV_EVENT_DRAW_MAIN, &art);
     hero = make_label(overlay, event == DICE_NAT_20 ? "20" : "1",
                       &lv_font_montserrat_48, -100);
     title = make_label(overlay, event == DICE_NAT_20 ?
