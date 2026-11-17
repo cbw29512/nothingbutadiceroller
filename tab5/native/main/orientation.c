@@ -1,5 +1,6 @@
 #include "orientation.h"
 #include "orientation_policy.h"
+#include "dice_shake_policy.h"
 #include "dice_ui.h"
 #include "bsp/esp-bsp.h"
 #include "esp_log.h"
@@ -33,11 +34,25 @@ static void monitor(void *arg) {
     lv_display_t *display = (lv_display_t *)arg;
     orientation_policy_t policy;
     orientation_policy_init(&policy, 2);
+    dice_shake_policy_t shake;
+    dice_shake_policy_init(&shake);
     while (true) {
         vTaskDelay(pdMS_TO_TICKS(150));
         if (!sample_valid) continue;
         // Copy sample once; sensor callback writes only, monitor reads only.
         const float x = acc_x, y = acc_y, z = acc_z;
+        const uint32_t ms = (uint32_t)(xTaskGetTickCount() * portTICK_PERIOD_MS);
+        // Reuse the already-running BMI270 monitor. A deliberate triple
+        // acceleration impulse triggers only if the UI is idle and has dice.
+        if (dice_shake_policy_sample(&shake, x, y, z, ms)) {
+            if (bsp_display_lock(0)) {
+                if (dice_ui_try_shake_roll())
+                    ESP_LOGI(TAG, "Deliberate shake: new secure dice roll");
+                bsp_display_unlock();
+            } else {
+                ESP_LOGW(TAG, "Shake ignored: display lock busy");
+            }
+        }
         int chosen = -1;
         const int previous = policy.current;
         if (!orientation_policy_sample(&policy, x, y, z, &chosen)) continue;

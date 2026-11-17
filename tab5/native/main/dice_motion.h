@@ -16,6 +16,7 @@ typedef struct {
 typedef struct {
     dice_motion_body_t bodies[DICE_MOTION_MAX];
     int count, width, height, size, frame;
+    unsigned impacts; // Count physical wall/die contacts this visual frame.
 } dice_motion_t;
 
 // seed is presentation entropy only; game outcomes are already final.

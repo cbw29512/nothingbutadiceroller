@@ -53,10 +53,12 @@ static void walls(dice_motion_t *scene, dice_motion_body_t *b) {
     const float max_x = (float)(scene->width - scene->size - 3);
     const float max_y = (float)(scene->height - scene->size - 3);
     if (b->x < 2 || b->x > max_x) {
+        if (fabsf(b->vx) > 2.0f) scene->impacts++;
         b->x = clamp(b->x, 2, max_x);
         b->vx *= -.63f; b->spin *= .82f;
     }
     if (b->y < 2 || b->y > max_y) {
+        if (fabsf(b->vy) > 2.0f) scene->impacts++;
         b->y = clamp(b->y, 2, max_y);
         b->vy *= -.51f;
         b->vx *= .79f; b->spin *= .76f;
@@ -78,6 +80,7 @@ static void collide(dice_motion_t *scene) {
         b->x += nx * correction; b->y += ny * correction;
         const float relative = (b->vx - a->vx) * nx + (b->vy - a->vy) * ny;
         if (relative < 0) {
+            if (relative < -2.0f) scene->impacts++;
             const float impulse = relative * -.72f;
             a->vx -= impulse * nx; a->vy -= impulse * ny;
             b->vx += impulse * nx; b->vy += impulse * ny;
@@ -92,6 +95,7 @@ bool dice_motion_step(dice_motion_t *scene) {
     if (!scene || scene->count < 1 || scene->count > DICE_MOTION_MAX ||
         scene->frame >= DICE_MOTION_FRAMES) return false;
     const int frame = ++scene->frame;
+    scene->impacts = 0;
     for (int i = 0; i < scene->count; ++i) {
         dice_motion_body_t *b = &scene->bodies[i];
         if (frame <= 49) {

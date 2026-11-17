@@ -11,8 +11,11 @@ static void check_toss(int count, int w, int h, uint32_t seed) {
     assert(scene.count == count && scene.frame == 0);
     float first_x = scene.bodies[0].x, first_y = scene.bodies[0].y;
     int steps = 0;
+    unsigned impacts = 0;
     while (dice_motion_step(&scene)) {
         assert(++steps < DICE_MOTION_FRAMES);
+        if (scene.frame <= 49) impacts += scene.impacts;
+        else assert(scene.impacts == 0);
         for (int i = 0; i < scene.count; ++i) {
             const dice_motion_body_t *b = &scene.bodies[i];
             assert(isfinite(b->x) && isfinite(b->y) && isfinite(b->angle));
@@ -20,6 +23,7 @@ static void check_toss(int count, int w, int h, uint32_t seed) {
         }
     }
     assert(scene.frame == DICE_MOTION_FRAMES);
+    if (count >= 32) assert(impacts > 0); // Dense dice hit walls or each other.
     assert(!dice_motion_step(&scene));
     if (count <= 2)
         assert(scene.bodies[0].x != first_x || scene.bodies[0].y != first_y);

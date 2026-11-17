@@ -1,5 +1,6 @@
 #include "dice_nat_sound.h"
 #include "dice_nat_tone.h"
+#include "dice_impact_audio.h"
 #include "bsp/esp-bsp.h"
 #include "esp_log.h"
 #include "esp_codec_dev.h"
@@ -11,13 +12,17 @@
 #define SPEAKER_VOLUME 35
 static const char *TAG = "dice_nat_sound";
 static QueueHandle_t sound_queue;
-
+typedef enum {
+    DICE_SOUND_NAT_20 = DICE_NAT_20,
+    DICE_SOUND_NAT_1 = DICE_NAT_1,
+    DICE_SOUND_CLACK = 10,
+    DICE_SOUND_LAND = 11
+} dice_sound_cue_t;
 static bool emit_notes(esp_codec_dev_handle_t speaker,
                        dice_nat_event_t event) {
     const dice_tone_note_t *notes = NULL;
     const size_t count = dice_nat_tone_notes(event, &notes);
     if (!notes || !count) return false;
-
     int16_t pcm[PCM_BLOCK];
     for (size_t i = 0; i < count; ++i) {
         const uint32_t frames =
@@ -40,10 +45,27 @@ static bool emit_notes(esp_codec_dev_handle_t speaker,
     return true;
 }
 
+static bool emit_impact(esp_codec_dev_handle_t speaker, bool landing) {
+    const uint32_t ms = landing ? DICE_LANDING_MS : DICE_CLACK_MS;
+    const uint32_t frames = ms * DICE_IMPACT_RATE / 1000u;
+    int16_t pcm[PCM_BLOCK];
+    for (uint32_t start=0; start<frames; start+=PCM_BLOCK) {
+        const uint32_t remaining = frames-start;
+        const uint32_t n = remaining<PCM_BLOCK ? remaining:PCM_BLOCK;
+        for (uint32_t j=0; j<n; ++j)
+            pcm[j]=dice_impact_audio_sample(landing,start+j,frames);
+        if (esp_codec_dev_write(speaker,pcm,n*sizeof(pcm[0]))
+            != ESP_CODEC_DEV_OK) {
+            ESP_LOGE(TAG,"Dice collision PCM playback failed");
+            return false;
+        }
+    }
+    return true;
+}
 static void worker(void *unused) {
     (void)unused;
     esp_codec_dev_handle_t speaker = NULL;
-    dice_nat_event_t event = DICE_NAT_NONE;
+    dice_sound_cue_t event = DICE_SOUND_NAT_20;
 
     while (true) {
         if (xQueueReceive(sound_queue, &event, portMAX_DELAY) != pdTRUE)
@@ -75,8 +97,13 @@ static void worker(void *unused) {
         const int volume = esp_codec_dev_set_out_vol(speaker, SPEAKER_VOLUME);
         if (volume != ESP_CODEC_DEV_OK) {
             ESP_LOGE(TAG, "Could not set safe speaker volume: %d", volume);
-        } else if (!emit_notes(speaker, event)) {
-            ESP_LOGW(TAG, "Critical cue was not completely played");
+        } else {
+            const bool impact = event == DICE_SOUND_CLACK ||
+                                event == DICE_SOUND_LAND;
+            const bool played = impact ?
+                emit_impact(speaker, event == DICE_SOUND_LAND) :
+                emit_notes(speaker, (dice_nat_event_t)event);
+            if (!played) ESP_LOGW(TAG,"Dice speaker cue incomplete");
         }
         const int closed = esp_codec_dev_close(speaker);
         if (closed != ESP_CODEC_DEV_OK)
@@ -90,7 +117,7 @@ static void worker(void *unused) {
 
 bool dice_nat_sound_start(void) {
     if (sound_queue) return true;
-    QueueHandle_t q = xQueueCreate(1, sizeof(dice_nat_event_t));
+    QueueHandle_t q = xQueueCreate(1, sizeof(dice_sound_cue_t));
     if (!q) {
         ESP_LOGE(TAG, "Could not create critical audio queue");
         return false;
@@ -108,7 +135,15 @@ bool dice_nat_sound_start(void) {
 void dice_nat_sound_play(dice_nat_event_t event) {
     if (!sound_queue || (event != DICE_NAT_20 && event != DICE_NAT_1))
         return;
-    // One-item mailbox avoids sound piling up; no waiting in LVGL.
-    if (xQueueOverwrite(sound_queue, &event) != pdPASS)
+    // A critical overrides pending clatter, never the other way around.
+    const dice_sound_cue_t cue =
+        event == DICE_NAT_20 ? DICE_SOUND_NAT_20 : DICE_SOUND_NAT_1;
+    if (xQueueOverwrite(sound_queue, &cue) != pdPASS)
         ESP_LOGW(TAG, "Critical audio queue refused event");
+}
+void dice_nat_sound_impact(bool landing) {
+    if (!sound_queue) return;
+    const dice_sound_cue_t cue = landing ? DICE_SOUND_LAND : DICE_SOUND_CLACK;
+    // Drop excess impacts instead of stalling UI or replacing NAT20/NAT1.
+    (void)xQueueSend(sound_queue, &cue, 0);
 }
