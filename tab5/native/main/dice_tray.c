@@ -3,6 +3,7 @@
 #include "dice_motion.h"
 #include "dice_shapes.h"
 #include "dice_results.h"
+#include "dice_nat_sound.h"
 #include "dice_visuals.h"
 #include "esp_log.h"
 #include "esp_random.h"
@@ -14,6 +15,7 @@ static lv_obj_t *dice[DICE_VISIBLE_MAX];
 static lv_timer_t *timer;
 static void (*on_settled)(void);
 static int count;
+static int last_clack_frame;
 static dice_layout_t layout;
 static dice_motion_t motion;
 
@@ -31,6 +33,7 @@ void dice_tray_clear(void) {
     memset(dice, 0, sizeof(dice));
     memset(&motion, 0, sizeof(motion));
     count = 0;
+    last_clack_frame = -10;
 }
 void dice_tray_release(void) {
     on_settled = NULL;
@@ -78,6 +81,14 @@ static void animate(lv_timer_t *event) {
     (void)event;
     if (!tray || !count) return;
     const bool moving = dice_motion_step(&motion);
+    // Trigger clatter from collisions *reported by the actual simulation*.
+    // Limit to ~5 contacts/second even with a 64-die tray.
+    if (moving && motion.frame < 50 && motion.impacts &&
+        motion.frame-last_clack_frame >= 6) {
+        dice_nat_sound_impact(false);
+        last_clack_frame = motion.frame;
+    }
+    if (moving && motion.frame == 50) dice_nat_sound_impact(true);
     apply_positions(!moving);
     if (!moving) {
         lv_timer_delete(timer);
