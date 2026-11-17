@@ -15,8 +15,9 @@ for the verified pin map, state transitions, source evidence and recovery steps.
 - The corrected **PR #63** firmware was installed on **2026-11-17**. The
   user tapped the two-step on-screen recovery control and reported that this
   **restored the battery bus to about 7 V with CHG CMD ON**. This is confirmed
-  hardware feedback, **not yet confirmation of USB-unplug operation or measured
-  battery charging current**.
+  hardware feedback. The user then unplugged USB and confirmed the Tab5
+  **stayed powered on** — a confirmed USB-to-battery handoff. Charging current
+  and independent pack voltage remain unmeasured.
 - Preserve startup order: display/shared I²C initialization, factory
   power-off pulse idle **P4 LOW**, then safe charger initialization, then UI.
   Preserve INA226 readings at I²C `0x41` and IP2326 control on the **second**
@@ -24,8 +25,10 @@ for the verified pin map, state transitions, source evidence and recovery steps.
 - Do not reset or overwrite those expander outputs from later modules. Do
   not pulse P4 HIGH except for an explicitly designed and independently
   reviewed power-off operation.
-- Preserve the visible BAT/SHUNT/CHG CMD diagnostics and the guarded,
-  user-confirmed 30-second recovery control. No unprompted charging of an
+- Preserve the fault-visible BAT/SHUNT/CHG CMD diagnostics and the guarded,
+  user-confirmed 30-second recovery control. Hide temporary test readings
+  and completed-recovery status during normal dice play; retain serial logs
+  and display controls automatically when a fault or recovery is active. No unprompted charging of an
   unverified pack, no removal of the charger-off presence check, no
   bypass of the 8.45 V safety ceiling. CHG CMD ON is not measured current.
 - Every Tab5 firmware change must run the native host/Node contracts,

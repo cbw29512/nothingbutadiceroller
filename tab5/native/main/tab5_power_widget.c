@@ -32,6 +32,20 @@ static void refresh(lv_timer_t *timer) {
     ESP_LOGI(TAG, "%s", line);
 
     const tab5_recovery_phase_t phase = tab5_power_recovery_phase();
+    // Keep operational battery instrumentation in serial logs, but reclaim
+    // the dice screen when a healthy pack and charger command are confirmed.
+    // Faults and user-confirmed recovery remain visible when needed.
+    const bool healthy = reading.error == ESP_OK &&
+                         reading.voltage_valid &&
+                         reading.battery_mv >= 5500 &&
+                         reading.battery_mv <= 8450 &&
+                         tab5_power_charge_command_enabled() &&
+                         (phase == TAB5_RECOVERY_READY ||
+                          phase == TAB5_RECOVERY_CHARGING);
+    if (healthy)
+        lv_obj_add_flag(g_label, LV_OBJ_FLAG_HIDDEN);
+    else
+        lv_obj_clear_flag(g_label, LV_OBJ_FLAG_HIDDEN);
     if (g_button && g_button_label) {
         char action[80] = {0};
         if (phase == TAB5_RECOVERY_READY &&
@@ -45,9 +59,8 @@ static void refresh(lv_timer_t *timer) {
         } else if (phase == TAB5_RECOVERY_VERIFY_OFF) {
             snprintf(action, sizeof(action), "STOP / VERIFY CHARGER OFF");
         } else {
-            const char *status = phase == TAB5_RECOVERY_CHARGING ?
-                "RECOVERY: CHARGER ON" :
-                phase == TAB5_RECOVERY_NO_PACK ? "RECOVERY: PACK NOT DETECTED" :
+            const char *status = phase == TAB5_RECOVERY_NO_PACK ?
+                "RECOVERY: PACK NOT DETECTED" :
                 phase == TAB5_RECOVERY_CANCELLED ? "RECOVERY CANCELLED" :
                 phase == TAB5_RECOVERY_ERROR ? "RECOVERY ERROR" : "";
             if (*status) {
