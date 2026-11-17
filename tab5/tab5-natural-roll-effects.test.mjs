@@ -60,7 +60,7 @@ test("critical cues use the onboard codec from a bounded audio task", () => {
   assert.match(sound, /bsp_audio_codec_speaker_init\(\)/);
   assert.match(sound, /xTaskCreate\(worker,/);
   assert.match(sound, /xQueueCreate\(1,/);
-  assert.match(sound, /xQueueOverwrite\(sound_queue, &event\)/);
+  assert.match(sound, /xQueueOverwrite\(sound_queue, &cue\)/);
   assert.match(sound, /esp_codec_dev_open\(speaker, &format\)/);
   assert.match(sound, /esp_codec_dev_write\(speaker, pcm,/);
   assert.match(sound, /esp_codec_dev_set_out_vol\(speaker, SPEAKER_VOLUME\)/);
