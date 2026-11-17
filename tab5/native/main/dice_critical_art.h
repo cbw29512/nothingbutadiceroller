@@ -2,7 +2,7 @@
 #include "dice_nat_event.h"
 #include "lvgl.h"
 
-// Frame-owned vector illustration; no images, animation buffers, or new UI.
+// Frame-owned abstract shockwave, not a drawn creature or die.
 typedef struct {
     dice_nat_event_t event;
     unsigned frame;
