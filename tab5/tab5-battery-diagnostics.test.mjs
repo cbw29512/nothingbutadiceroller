@@ -32,6 +32,7 @@ test("battery reading is visible and refreshed without changing dice state", () 
   assert.match(widget, /lv_timer_create\(refresh, 15000, NULL\)/);
   assert.match(widget, /tab5_power_diag_format/);
   // Normal gameplay stays uncluttered; diagnostics appear on faults only.
+  assert.match(widget, /reading\.error == ESP_OK/);
   assert.match(widget, /reading\.battery_mv >= 5500/);
   assert.match(widget, /reading\.battery_mv <= 8450/);
   assert.match(widget, /lv_obj_add_flag\(g_label, LV_OBJ_FLAG_HIDDEN\)/);
