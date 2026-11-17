@@ -31,6 +31,14 @@ test("battery reading is visible and refreshed without changing dice state", () 
   const ui = read("./native/main/dice_ui.c");
   assert.match(widget, /lv_timer_create\(refresh, 15000, NULL\)/);
   assert.match(widget, /tab5_power_diag_format/);
+  // Normal gameplay stays uncluttered; diagnostics appear on faults only.
+  assert.match(widget, /reading\.battery_mv >= 5500/);
+  assert.match(widget, /reading\.battery_mv <= 8450/);
+  assert.match(widget, /lv_obj_add_flag\(g_label, LV_OBJ_FLAG_HIDDEN\)/);
+  assert.match(widget, /lv_obj_clear_flag\(g_label, LV_OBJ_FLAG_HIDDEN\)/);
+  assert.doesNotMatch(widget, /"RECOVERY: CHARGER ON"/);
+  assert.match(widget, /"RECOVERY: PACK NOT DETECTED"/);
+  assert.match(widget, /"RECOVER BATTERY \(30s\)"/);
   assert.match(ui, /tab5_power_widget_detach\(\)/);
   assert.equal((ui.match(/tab5_power_widget_attach\(g_screen\)/g) ?? []).length, 3);
   assert.ok(ui.indexOf("tab5_power_widget_detach();") <
