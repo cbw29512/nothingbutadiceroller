@@ -44,6 +44,10 @@ Status: **initial native ESP32-P4 v1.x dice firmware and large polyhedral visual
 - Preserve orientation reflow, touch actions, result totals, clear/reset behavior and the existing guarded flash process.
 - Device quality still requires real Tab5 verification of all four orientations, visual frame rate, and touch alignment.
 
+## Die face cleanup
+- The original UI's `d4/d6/d8/d10/d12/d20/d100` captions no longer float across polyhedron faces. Dice shape and engraved values carry identity.
+- ADV/DIS discarded dice remain muted, with only a small `OUT` marker along the bottom edge; face values, results and footer totals stay unchanged.
+
 ## Authentic shapes and numbered faces — geometry audit
 - d4 is a tetrahedron, d6 a cube, d8 an octahedron, d10 a mathematically planar pentagonal trapezohedron, d12 a dodecahedron, and d20 an icosahedron.
 - For d100, show **two separate actual d10 solids**: one with percentile tens (00, 10, ..., 90) and one with units (0–9). The combination 00+0 is interpreted as 100, without modifying the secure roll or its total.
