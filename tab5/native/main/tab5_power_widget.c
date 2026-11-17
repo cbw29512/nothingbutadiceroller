@@ -35,7 +35,8 @@ static void refresh(lv_timer_t *timer) {
     // Keep operational battery instrumentation in serial logs, but reclaim
     // the dice screen when a healthy pack and charger command are confirmed.
     // Faults and user-confirmed recovery remain visible when needed.
-    const bool healthy = reading.voltage_valid &&
+    const bool healthy = reading.error == ESP_OK &&
+                         reading.voltage_valid &&
                          reading.battery_mv >= 5500 &&
                          reading.battery_mv <= 8450 &&
                          tab5_power_charge_command_enabled() &&
