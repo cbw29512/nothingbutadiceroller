@@ -1,6 +1,8 @@
 #include "dice_mesh_painter.h"
 #include "dice_mesh.h"
 #include "dice_project.h"
+#include "dice_label_fit.h"
+#include <string.h>
 
 static uint32_t base_color(uint8_t sides, bool discarded) {
  if(discarded)return 0x81909A;
@@ -21,7 +23,8 @@ static lv_point_precise_t pixel(const lv_area_t *a,int x,int y){
  return (lv_point_precise_t){.x=a->x1+x,.y=a->y1+y};
 }
 static void draw_face_number(lv_layer_t *layer,const lv_area_t *area,
-                             const dice_project_face_t *face,const char *text){
+                             const dice_project_face_t *face,const char *text,
+                             bool moving){
  if(!text||!text[0])return;
  int x=0,y=0,xlo=32767,xhi=-32768,ylo=32767,yhi=-32768;
  for(unsigned j=0;j<face->corners;++j){
@@ -34,20 +37,26 @@ static void draw_face_number(lv_layer_t *layer,const lv_area_t *area,
  }
  if(xhi-xlo<31 || yhi-ylo<26)return; // Too edge-on to read.
  x/=face->corners;y/=face->corners;
- const int width=xhi-xlo>64?52:33;
+ // Horizontal LVGL text does not rotate with the projected polygon.
+ // While moving, draw only on faces large enough to contain the *entire*
+ // numeral rectangle. Steep/edge-on facets naturally lose their numbers.
+ const bool large = !moving && xhi-xlo>64;
+ const int width=moving ? (strlen(text)>1?30:20) : (large?52:33);
+ const int height=moving?20:28;
+ if(moving && !dice_label_fits_face(face,x,y,width,height))return;
  lv_area_t text_area={
-  .x1=area->x1+x-width/2,.y1=area->y1+y-14,
-  .x2=area->x1+x+width/2,.y2=area->y1+y+14
+  .x1=area->x1+x-width/2,.y1=area->y1+y-height/2,
+  .x2=area->x1+x+width/2,.y2=area->y1+y+height/2
  };
  lv_draw_label_dsc_t desc;lv_draw_label_dsc_init(&desc);
  desc.text=text; // Persistent state storage; task may draw asynchronously.
- desc.font=width==52?&lv_font_montserrat_28:&lv_font_montserrat_20;
+ desc.font=large?&lv_font_montserrat_28:&lv_font_montserrat_20;
  desc.color=lv_color_hex(face->shade<158?0xFFFFFF:0x152538);
  desc.align=LV_TEXT_ALIGN_CENTER;desc.opa=LV_OPA_COVER;
  lv_draw_label(layer,&desc,&text_area);
 }
 bool dice_mesh_paint(lv_layer_t *layer,const lv_area_t *area,uint8_t sides,
-                     bool discarded,int pitch,int yaw,int roll,
+                     bool discarded,bool moving,int pitch,int yaw,int roll,
                      const char face_text[20][4]){
  if(!layer||!area||!face_text)return false;
  dice_mesh_t mesh;dice_projection_t projected;
@@ -75,7 +84,7 @@ bool dice_mesh_paint(lv_layer_t *layer,const lv_area_t *area,uint8_t sides,
    edge.opa=LV_OPA_COVER;edge.width=lv_area_get_width(area)>165?3:2;
    lv_draw_line(layer,&edge);
   }
-  draw_face_number(layer,area,face,face_text[face->source_index]);
+  draw_face_number(layer,area,face,face_text[face->source_index],moving);
  }
  return true;
 }
