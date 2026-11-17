@@ -43,7 +43,10 @@ test("visible values are painted on faces and not duplicated as floating labels"
   assert.match(painter, /desc\.text=text/);
   const tray = source("dice_tray.c");
   assert.match(tray, /dice_shapes_has_embedded_numbers\(dice\[i\]\)/);
-  assert.match(tray, /dice_shapes_set_tumble\(dice\[i\], finished, 0, 0, 0\)/);
+  // Shape presentation now explicitly distinguishes animated vs settled
+  // polygons, so spinning labels cannot extend beyond the die surface.
+  assert.match(tray, /dice_shapes_set_tumble\(dice\[i\], finished, !finished, 0, 0, 0\)/);
+  assert.match(painter, /moving && !dice_label_fits_face/);
 });
 
 test("the secure game engine is separate from visual rendering", () => {

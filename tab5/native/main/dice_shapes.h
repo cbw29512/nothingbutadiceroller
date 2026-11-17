@@ -13,5 +13,5 @@ bool dice_shapes_attach(lv_obj_t *object, uint8_t sides,
 bool dice_shapes_has_embedded_numbers(lv_obj_t *object);
 
 // Rendering-only rotation in 0.1 degrees, disconnected from actual game faces.
-void dice_shapes_set_tumble(lv_obj_t *object,bool enabled,
+void dice_shapes_set_tumble(lv_obj_t *object,bool enabled,bool moving,
                             int pitch,int yaw,int roll);
