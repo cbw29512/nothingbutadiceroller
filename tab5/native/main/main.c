@@ -1,6 +1,7 @@
 #include "dice_engine.h"
 #include "dice_ui.h"
 #include "orientation.h"
+#include "tab5_power.h"
 #include "bsp/esp-bsp.h"
 #include "esp_log.h"
 #include "esp_random.h"
@@ -14,6 +15,12 @@ void app_main(void) {
     if (!display) {
         ESP_LOGE(TAG, "Tab5 BSP display initialization failed; refusing to continue");
         return;
+    }
+    // Display bring-up initialized the board's shared I2C bus.
+    // The BSP does not automatically enable IP2326 battery charging.
+    // Failure is logged; do not prevent running the die roller on USB.
+    if (!tab5_power_init()) {
+        ESP_LOGW(TAG, "Battery charging is not active; inspect power logs");
     }
     if (bsp_display_brightness_set(85) != ESP_OK) {
         ESP_LOGW(TAG, "Could not set LCD brightness");
