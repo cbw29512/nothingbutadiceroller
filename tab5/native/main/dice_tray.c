@@ -106,7 +106,8 @@ void dice_tray_render(const dice_state_t *state) {
             dice_tray_clear(); return;
         }
         dice[i] = dice_visual_create(tray, face.sides, face.face,
-                                     layout.size, face.discarded);
+                                     layout.size, face.discarded,
+                                     face.percentile_tens);
         if (!dice[i]) {
             ESP_LOGE(TAG, "Die %d could not be allocated", i);
             dice_tray_clear(); return;
