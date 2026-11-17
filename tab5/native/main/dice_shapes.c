@@ -35,7 +35,10 @@ static void on_draw(lv_event_t *event) {
                         state->roll, state->face_text)) return;
 
     dice_silhouette_draw(layer, &area, state->sides, state->discarded);
-    if (state->sides == 100)
+    // Large percentile pools use a lightweight spinning silhouette; do not
+    // overlay fixed 2D numbers while rotating. Show the mapped die face
+    // after it settles, when the authentic numbered mesh is enabled.
+    if (state->sides == 100 && !state->moving)
         dice_mesh_paint_fallback_number(layer, &area, state->face_text[0]);
 }
 static void on_delete(lv_event_t *event) {
