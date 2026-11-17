@@ -45,6 +45,7 @@ static void show_choose(void) {
     lv_label_set_text(title, "CHOOSE YOUR DICE SYSTEM");
     lv_obj_align(title, LV_ALIGN_TOP_MID, 0, 100);
     lv_obj_t *b = dice_widget_button(g_screen, "D&D 5e", 350, 120, choose_event, 0);
+    if (!b) { ESP_LOGE(TAG, "Could not allocate system choice"); return; }
     lv_obj_align(b, LV_ALIGN_CENTER, 0, 0);
     lv_obj_t *hint = lv_label_create(g_screen);
     lv_label_set_text(hint, "Additional verified game profiles are coming.");
@@ -56,8 +57,10 @@ static void show_confirm(void) {
     lv_label_set_text(label, "START D&D 5e?\nLocked until device restart.");
     lv_obj_align(label, LV_ALIGN_CENTER, 0, -120);
     lv_obj_t *yes = dice_widget_button(g_screen, "START", 310, 115, confirm_event, 1);
+    if (!yes) { ESP_LOGE(TAG, "Could not allocate START button"); return; }
     lv_obj_align(yes, LV_ALIGN_CENTER, 180, 30);
     lv_obj_t *no = dice_widget_button(g_screen, "CHANGE", 310, 115, confirm_event, 0);
+    if (!no) { ESP_LOGE(TAG, "Could not allocate CHANGE button"); return; }
     lv_obj_align(no, LV_ALIGN_CENTER, -180, 30);
 }
 static void update_summary(void) {
@@ -102,15 +105,18 @@ static void show_session(void) {
     for (int i = 0; i < 7; i++) {
         char text[10]; snprintf(text, sizeof(text), "D%d", faces[i]);
         lv_obj_t *b = dice_widget_button(g_screen, text, 160, 94, action_event, faces[i]);
+        if (!b) { ESP_LOGE(TAG, "Could not allocate die control"); return; }
         g_controls[i] = b;
     }
     const char *names[4] = {"ADV", "DIS", "CLEAR", "ROLL"};
     const int actions[4] = {-2, -3, 0, -1};
     for (int i = 0; i < 4; i++) {
         lv_obj_t *b = dice_widget_button(g_screen, names[i], 250, 84, action_event, actions[i]);
+        if (!b) { ESP_LOGE(TAG, "Could not allocate action control"); return; }
         g_controls[7 + i] = b;
     }
     g_tray = lv_obj_create(g_screen);
+    if (!g_tray) { ESP_LOGE(TAG, "Could not allocate dice tray"); return; }
     lv_obj_set_size(g_tray, 500, 300);
     lv_obj_set_style_pad_all(g_tray, 0, 0);
     lv_obj_set_style_border_width(g_tray, 0, 0);
@@ -127,6 +133,7 @@ void dice_ui_start(dice_state_t *state) {
     if (!state) { ESP_LOGE(TAG, "Missing dice state"); return; }
     g_state = state;
     g_screen = lv_display_get_screen_active(NULL);
+    if (!g_screen) { ESP_LOGE(TAG, "Could not resolve active screen"); return; }
     lv_obj_set_style_bg_color(g_screen, lv_color_hex(0x101C2B), 0);
     lv_obj_set_style_text_color(g_screen, lv_color_hex(0xF4F4F4), 0);
     show_choose();
