@@ -17,6 +17,7 @@ static int count;
 static dice_layout_t layout;
 static dice_motion_t motion;
 
+bool dice_tray_is_rolling(void) { return timer != NULL; }
 void dice_tray_bind(lv_obj_t *parent) {
     dice_tray_release();
     tray = parent;
