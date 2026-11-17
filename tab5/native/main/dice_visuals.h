@@ -3,7 +3,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-// Creates an individually readable die with shape, face and die-type label.
+// Creates a die with accurate polygonal faces, no floating die-type text.
+// An excluded ADV/DIS die retains a small OUT marker, separate from its value.
 lv_obj_t *dice_visual_create(lv_obj_t *tray, uint8_t sides, uint16_t face,
                              int size, bool discarded);
 
