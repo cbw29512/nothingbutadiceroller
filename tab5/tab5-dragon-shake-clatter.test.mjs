@@ -10,20 +10,23 @@ function c(name) {
     throw err;
   }
 }
-test("critical spectacle is a temporary abstract shockwave, not cartoon art", () => {
-  const art = c("dice_critical_art.c");
+test("bold flashing NAT typography replaces all crude vector drawings", () => {
   const fx = c("dice_nat_fx.c");
-  assert.match(fx, /lv_obj_add_event_cb\(overlay, dice_critical_art_draw/);
-  assert.match(fx, /art.frame = frame/);
-  assert.match(fx, /dice_nat_fx_cancel\(\)/);
-  assert.match(art, /void dice_critical_art_draw\(lv_event_t \*event\)/);
-  assert.match(art, /static void ring\(/);
-  assert.match(art, /const int outer=victory\?/);
-  assert.match(art, /const int inner=victory\?/);
-  assert.match(art, /DICE_NAT_20/);
-  assert.match(art, /DICE_NAT_1/);
-  assert.doesNotMatch(art, /static void dragon\(|static void shattered\(/);
-  assert.doesNotMatch(art, /lv_draw_triangle|lv_image_create|malloc\(|esp_random|wifi|http/);
+  const cmake = c("CMakeLists.txt");
+  assert.doesNotMatch(fx, /dice_critical_art_draw|dice_critical_art\.h/);
+  assert.doesNotMatch(cmake, /dice_critical_art\.c/);
+  assert.match(fx, /"NATURAL 20!"/);
+  assert.match(fx, /"NATURAL 1!"/);
+  assert.match(fx, /"HELL YEAH!"/);
+  assert.match(fx, /"OH NO!"/);
+  assert.match(fx, /LV_SCALE_NONE \* 4/);
+  assert.match(fx, /LV_SCALE_NONE \* 7 \/ 2/);
+  assert.match(fx, /lv_obj_set_style_transform_scale_x\(hero, zoom, 0\)/);
+  assert.match(fx, /lv_obj_set_style_transform_scale_y\(hero, zoom, 0\)/);
+  assert.match(fx, /0xFFD447/);
+  assert.match(fx, /0xFF526B/);
+  assert.match(fx, /frame >= 19/);
+  assert.doesNotMatch(fx, /lv_image_create|malloc\(|esp_random|wifi|http/);
 });
 test("clatter is derived from actual physics collisions not random rolls", () => {
   const motion = c("dice_motion.c");
@@ -69,6 +72,6 @@ test("enhancements preserve visible ten buttons and battery init path", () => {
   assert.match(main, /tab5_board_poweroff_idle_init\(\)/);
   assert.match(main, /tab5_power_init\(\)/);
   assert.match(cmake, /"dice_shake_policy.c"/);
-  assert.match(cmake, /"dice_critical_art.c"/);
+  assert.doesNotMatch(cmake, /"dice_critical_art.c"/);
   assert.match(cmake, /"dice_impact_audio.c"/);
 });
