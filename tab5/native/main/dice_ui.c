@@ -20,7 +20,7 @@ static dice_state_t *g_state;
 static lv_obj_t *g_screen, *g_tray, *g_summary;
 static lv_obj_t *g_controls[10];
 static void show_session(void);
-static void roll_start(void);
+static bool roll_start(void);
 static void on_roll_settled(void) {
     const dice_nat_event_t event = dice_nat_event_detect(g_state);
     dice_nat_fx_show(g_screen, event);
@@ -37,18 +37,26 @@ static void clear_screen(void) {
 static void update_summary(void) {
     dice_ui_footer_update(g_state, g_summary, g_controls[7], g_controls[8]);
 }
-static void roll_start(void) {
-    if (!g_state->count) {
+static bool roll_start(void) {
+    if (!g_state || !g_state->count) {
         ESP_LOGW(TAG, "ROLL ignored: no dice selected");
-        return;
+        return false;
     }
     if (!dice_roll(g_state, esp_random)) {
         ESP_LOGE(TAG, "Secure roll failed; result unchanged");
-        return;
+        return false;
     }
     dice_nat_fx_cancel();
     dice_tray_render(g_state);
     update_summary();
+    return true;
+}
+bool dice_ui_try_shake_roll(void) {
+    // The gesture must not change screens or override an existing roll.
+    if (!g_state || g_state->phase != DICE_SESSION || !g_state->count ||
+        !g_tray || dice_tray_is_rolling() || dice_nat_fx_is_active())
+        return false;
+    return roll_start();
 }
 static void action_event(lv_event_t *e) {
     const int code = (int)(intptr_t)lv_event_get_user_data(e);
@@ -61,7 +69,7 @@ static void action_event(lv_event_t *e) {
         return;
     }
     if (result == DICE_CONTROL_ROLL_NOW) {
-        roll_start();
+        (void)roll_start();
         return;
     }
     // Selection changes invalidate the old tray without rolling again.
