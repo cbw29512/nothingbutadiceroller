@@ -37,7 +37,7 @@ test("d100 uses two full-sized dice instead of one half-sized composite", () => 
 
 test("visible values are painted on faces and not duplicated as floating labels", () => {
   const shape = source("dice_shapes.c");
-  assert.match(shape, /dice_face_text\(sides,outcome/);
+  assert.match(shape, /dice_face_text\(sides,\s*outcome/);
   const painter = source("dice_mesh_painter.c");
   assert.match(painter, /draw_face_number\(layer,area,face/);
   assert.match(painter, /desc\.text=text/);
