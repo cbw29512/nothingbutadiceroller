@@ -66,3 +66,15 @@ stock Tab5 hardware (no documented vibration motor). This tranche adds nonblocki
   untouched. No haptic motor or new storage/network dependency.
 - The physical speaker timbre, volume, orientation behavior and
   USB-to-battery operation still need direct Tab5 confirmation.
+
+## Firmware size gate (audio integration)
+
+- First ES8388-enabled image reached 0x111ad0 bytes and failed ESP-IDF's
+  hard 0x100000-byte factory-app partition limit (overflow 0x11ad0).
+- Do **not** change the partition table, flash offsets, bootloader or
+  battery recovery to accommodate sound.
+- ESP-IDF's documented `CONFIG_COMPILER_OPTIMIZATION_SIZE=y` enables
+  size-oriented `-Os`; repeat all native tests, full validation, and the
+  native v1.3 firmware build with strict existing partition-size check.
+- Until the build actually fits and passes, the audio change remains
+  unshippable. Do not provide a flash instruction or claim it is installed.
