@@ -7,6 +7,7 @@
 #include "driver/i2c_master.h"
 
 static const char *TAG = "tab5_power";
+static bool g_charge_command_enabled = false;
 #define BATTERY_INA226_ADDR 0x41
 #define INA226_BUS_VOLTAGE_REG 0x02
 #define CHARGE_ENABLE IO_EXPANDER_PIN_NUM_7
@@ -80,6 +81,11 @@ bool tab5_power_init(void) {
                  esp_err_to_name(err));
         return false;
     }
+    g_charge_command_enabled = true;
     ESP_LOGI(TAG, "IP2326 charging enabled; quick-charge disabled");
     return true;
+}
+
+bool tab5_power_charge_command_enabled(void) {
+    return g_charge_command_enabled;
 }
