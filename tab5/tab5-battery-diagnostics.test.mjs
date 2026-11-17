@@ -29,6 +29,7 @@ test("battery diagnostic reads INA226 voltage and signed shunt", () => {
 test("battery reading is visible and refreshed without changing dice state", () => {
   const widget = read("./native/main/tab5_power_widget.c");
   const ui = read("./native/main/dice_ui.c");
+  const boot = read("./native/main/dice_ui_boot.c");
   assert.match(widget, /lv_timer_create\(refresh, 15000, NULL\)/);
   assert.match(widget, /tab5_power_diag_format/);
   // Normal gameplay stays uncluttered; diagnostics appear on faults only.
@@ -41,7 +42,13 @@ test("battery reading is visible and refreshed without changing dice state", () 
   assert.match(widget, /"RECOVERY: PACK NOT DETECTED"/);
   assert.match(widget, /"RECOVER BATTERY \(30s\)"/);
   assert.match(ui, /tab5_power_widget_detach\(\)/);
-  assert.equal((ui.match(/tab5_power_widget_attach\(g_screen\)/g) ?? []).length, 3);
+  // Two pre-session screens moved to the focused boot module.
+  // The session screen still owns its own attachment; check all three.
+  const sessionAttach = (ui.match(/tab5_power_widget_attach\(g_screen\)/g) ?? []).length;
+  const bootAttach = (boot.match(/tab5_power_widget_attach\(screen\)/g) ?? []).length;
+  assert.equal(sessionAttach, 1);
+  assert.equal(bootAttach, 2);
+  assert.equal(sessionAttach + bootAttach, 3);
   assert.ok(ui.indexOf("tab5_power_widget_detach();") <
             ui.indexOf("lv_obj_clean(g_screen);"));
 });
