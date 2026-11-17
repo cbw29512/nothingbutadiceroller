@@ -34,6 +34,17 @@ test("charger cannot be left on after an unsuccessful recovery", () => {
   assert.doesNotMatch(recovery, /vTaskDelay/);
 });
 
+test("factory power-off pulse is held LOW, never pulsed HIGH", () => {
+  const board = read("./native/main/tab5_board_power.c");
+  const main = read("./native/main/main.c");
+  assert.match(board, /POWER_OFF_PULSE IO_EXPANDER_PIN_NUM_4/);
+  assert.match(board, /esp_io_expander_set_level\(io, POWER_OFF_PULSE, 0\)/);
+  assert.match(board, /IO_EXPANDER_OUTPUT_MODE_PUSH_PULL/);
+  assert.doesNotMatch(board, /esp_io_expander_set_level\(io, POWER_OFF_PULSE, 1\)/);
+  assert.ok(main.indexOf("tab5_board_poweroff_idle_init()") <
+            main.indexOf("tab5_power_init()"));
+});
+
 test("normal charger is not enabled at boot when pack is unverified", () => {
   const power = read("./native/main/tab5_power.c");
   const main = read("./native/main/main.c");
