@@ -4,6 +4,7 @@
 #include "dice_ui_footer.h"
 #include "dice_widgets.h"
 #include "dice_ui_layout.h"
+#include "tab5_power_widget.h"
 #include "bsp/esp-bsp.h"
 #include "esp_log.h"
 #include "esp_random.h"
@@ -19,6 +20,7 @@ static void show_confirm(void);
 static void show_session(void);
 static void roll_start(void);
 static void clear_screen(void) {
+    tab5_power_widget_detach();
     dice_tray_release();
     lv_obj_clean(g_screen);
     g_tray = NULL; g_summary = NULL;
@@ -50,6 +52,7 @@ static void show_choose(void) {
     lv_obj_t *hint = lv_label_create(g_screen);
     lv_label_set_text(hint, "Additional verified game profiles are coming.");
     lv_obj_align(hint, LV_ALIGN_BOTTOM_MID, 0, -100);
+    tab5_power_widget_attach(g_screen);
 }
 static void show_confirm(void) {
     clear_screen();
@@ -62,6 +65,7 @@ static void show_confirm(void) {
     lv_obj_t *no = dice_widget_button(g_screen, "CHANGE", 310, 115, confirm_event, 0);
     if (!no) { ESP_LOGE(TAG, "Could not allocate CHANGE button"); return; }
     lv_obj_align(no, LV_ALIGN_CENTER, -180, 30);
+    tab5_power_widget_attach(g_screen);
 }
 static void update_summary(void) {
     dice_ui_footer_update(g_state, g_summary, g_controls[7], g_controls[8]);
@@ -128,6 +132,7 @@ static void show_session(void) {
     if (!g_summary) { ESP_LOGE(TAG, "Footer creation failed"); return; }
     update_summary();
     dice_ui_relayout();
+    tab5_power_widget_attach(g_screen);
 }
 void dice_ui_start(dice_state_t *state) {
     if (!state) { ESP_LOGE(TAG, "Missing dice state"); return; }
