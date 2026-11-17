@@ -61,6 +61,23 @@ int main(void) {
     assert(s.mode == DICE_NORMAL && !s.has_result && s.total == 0);
     assert(!dice_add(&s, 3));
     assert(s.count == 1 && s.pool[0] == 20);
-    puts("Native C dice engine unit tests passed");
+    // Reject corrupted internal state before the RNG is read or arrays used.
+    dice_clear(&s);
+    assert(dice_add(&s, 6));
+    s.has_result = true;
+    s.total = 77;
+    s.count = DICE_MAX + 1;
+    sample = 123;
+    assert(!dice_roll(&s, sequence));
+    assert(sample == 123 && s.total == 77 && s.has_result);
+    s.count = 1;
+    s.pool[0] = 7;
+    assert(!dice_roll(&s, sequence));
+    assert(sample == 123 && s.total == 77 && s.has_result);
+    s.pool[0] = 6;
+    s.mode = (dice_mode_t)99;
+    assert(!dice_roll(&s, sequence));
+    assert(sample == 123 && s.total == 77 && s.has_result);
+    puts("Native C dice engine and corrupt-state guards passed");
     return 0;
 }
