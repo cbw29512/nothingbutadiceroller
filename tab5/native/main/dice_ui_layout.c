@@ -2,7 +2,7 @@
 #include "dice_tray.h"
 #include "esp_log.h"
 
-void dice_ui_layout_reflow(const dice_state_t *state, lv_obj_t *const controls[11],
+void dice_ui_layout_reflow(const dice_state_t *state, lv_obj_t *const controls[10],
                            lv_obj_t *tray, lv_obj_t *summary) {
     if (!state || state->phase != DICE_SESSION || !tray || !summary) return;
     lv_display_t *display = lv_display_get_default();
@@ -21,13 +21,19 @@ void dice_ui_layout_reflow(const dice_state_t *state, lv_obj_t *const controls[1
     const int bh = portrait ? 86 : 94;
     const int y0 = portrait ? 48 : 52;
 
-    for (int i = 0; i < 11; ++i) {
+    for (int i = 0; i < 10; ++i) {
         if (!controls[i]) continue;
         int row, col, button_width;
         if (!portrait && i >= 7) {
+            // Three action buttons evenly fill landscape's second row.
             row = 1;
             col = i - 7;
-            button_width = (usable - 3 * gap) / 4;
+            button_width = (usable - 2 * gap) / 3;
+        } else if (portrait && i >= 8) {
+            // Only DIS and ROLL remain in portrait's final row.
+            row = 2;
+            col = i - 8;
+            button_width = (usable - gap) / 2;
         } else {
             row = i / cols;
             col = i % cols;
