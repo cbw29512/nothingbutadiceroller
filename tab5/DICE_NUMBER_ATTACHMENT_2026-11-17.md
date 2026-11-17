@@ -44,3 +44,20 @@
 ## Source
 
 - ESP-IDF 6.1.1 ESP32-P4 random: https://docs.espressif.com/projects/esp-idf/en/v6.1.1/esp32p4/api-reference/system/random.html
+
+
+## Settled result illumination (follow-up to physical feedback)
+
+- The source-mapped result is face index 0; the existing mesh orientation
+  places that face nearest the viewer when motion ends.
+- While spinning, do **not** highlight a face just because its surface is bright.
+- After the roll settles, color **only** the selected die's result face with a
+  darker contrasting fill, bright amber numeral, and bright amber border.
+- Every other visible face retains legible but subdued numerals. ADV/DIS
+  discarded dice never get a winning highlight; ties can leave both selected.
+- The two d10 widgets of a d100 each illuminate their result digit, without
+  introducing a second roll or changing the percentile interpretation.
+- This changes presentation only. RNG, rejection sampling, result-before-
+  animation, charging, and recovery behavior remain unchanged.
+- Host geometry and mapping tests plus visual contract and firmware CI must
+  pass; actual readability/color on Tab5 remains a physical acceptance test.
