@@ -19,12 +19,16 @@ test("each button maps to its own actual polyhedron", () => {
   assert.match(mesh, /case 10: case 100: SELECT\(deca,df\)/);
 });
 
-test("d100 displays two independent 10-sided solids and percentile numbers", () => {
-  const shape = source("dice_shapes.c");
-  assert.match(shape, /state->sides!=100/);
-  assert.match(shape, /draw_one\(layer,&tens,state,0\)/);
-  assert.match(shape, /draw_one\(layer,&units,state,1\)/);
-  assert.match(shape, /sides==100\?10:sides/);
+test("d100 uses two full-sized dice instead of one half-sized composite", () => {
+  const results = source("dice_results.c");
+  assert.match(results, /uses_pair\(state, i\) \|\| is_percentile\(state, i\)/);
+  assert.match(results, /const size_t slots = pair \|\| percentile \? 2 : 1/);
+  assert.match(results, /percentile_tens = percentile && !secondary/);
+  const shapes = source("dice_shapes.c");
+  assert.match(shapes, /dice_mesh_paint\(layer, &area, state->sides/);
+  assert.doesNotMatch(shapes, /lv_area_t tens/);
+  const tray = source("dice_tray.c");
+  assert.match(tray, /face\.percentile_tens/);
   const values = source("dice_face_values.c");
   assert.match(values, /result == 100 \? 0u/);
   assert.match(values, /"%02u"/);
@@ -57,7 +61,8 @@ test("die type text never floats over physical die faces", () => {
   // Preserve the first-child contract used by dice_visual_set_rolling().
   assert.ok(visuals.indexOf("lv_label_create(die)") <
             visuals.indexOf("if (discarded) {"));
-  // Keep one visible muted-die marker for advantage/disadvantage.
-  assert.match(visuals, /lv_label_set_text\(out_label, "OUT"\)/);
-  assert.match(visuals, /lv_obj_align\(out_label, LV_ALIGN_BOTTOM_MID, 0, 0\)/);
+  // The visual discard state is color-only; never put text on dice.
+  assert.doesNotMatch(visuals, /lv_label_set_text\(out_label/);
+  const painter = source("dice_mesh_painter.c");
+  assert.match(painter, /base_color\(sides,discarded\)/);
 });
