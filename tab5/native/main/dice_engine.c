@@ -2,6 +2,14 @@
 #include <limits.h>
 #include <string.h>
 
+// Single whitelist for queued and executed D&D die types.
+static bool valid_sides(uint8_t sides) {
+    switch (sides) {
+        case 4: case 6: case 8: case 10: case 12:
+        case 20: case 100: return true;
+        default: return false;
+    }
+}
 void dice_state_reset(dice_state_t *s) {
     if (s) { memset(s, 0, sizeof(*s)); s->phase = DICE_CHOOSE; }
 }
@@ -19,10 +27,7 @@ bool dice_confirm(dice_state_t *s) {
 bool dice_add(dice_state_t *s, uint8_t sides) {
     if (!s || s->phase != DICE_SESSION) return false;
     // Validate before changing state: invalid taps must never erase a result.
-    switch (sides) {
-        case 4: case 6: case 8: case 10: case 12: case 20: case 100: break;
-        default: return false;
-    }
+    if (!valid_sides(sides)) return false;
     // The first new selection after a completed roll begins a fresh pool.
     // ROLL alone still reuses the previous pool; CLEAR is an explicit reset.
     if (s->has_result) dice_clear(s);
@@ -53,7 +58,13 @@ uint32_t dice_unbiased(uint32_t sides, dice_rng_t rng) {
     return 0; // Fail closed; never substitute a predictable face.
 }
 bool dice_roll(dice_state_t *s, dice_rng_t rng) {
-    if (!s || s->phase != DICE_SESSION || !s->count || !rng) return false;
+    if (!s || s->phase != DICE_SESSION || !s->count ||
+        s->count > DICE_MAX || !rng ||
+        (s->mode != DICE_NORMAL && s->mode != DICE_ADV &&
+         s->mode != DICE_DIS)) return false;
+    // Validate the entire pool before consuming entropy or mutating results.
+    for (int i = 0; i < s->count; ++i)
+        if (!valid_sides(s->pool[i])) return false;
     // Resolve each selected die exactly once; ADV/DIS adds one d20 per test.
     // Never commit partially generated faces if entropy generation fails.
     uint16_t first[DICE_MAX] = {0};

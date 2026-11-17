@@ -5,8 +5,9 @@
 
 // Attach a lightweight LVGL draw callback. This changes pixels only,
 // never modifies dice outcomes or input state.
-void dice_shapes_attach(lv_obj_t *object, uint8_t sides,
-                        uint16_t outcome, bool discarded);
+bool dice_shapes_attach(lv_obj_t *object, uint8_t sides,
+                        uint16_t outcome, bool discarded,
+                        bool percentile_tens);
 
 // True when source values are already painted on a physical polyhedral face.
 bool dice_shapes_has_embedded_numbers(lv_obj_t *object);

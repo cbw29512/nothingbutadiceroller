@@ -10,7 +10,8 @@ typedef struct {
     uint8_t sides;
     uint16_t face;
     uint8_t selected_index; // Groups each ADV/DIS pair with its original test.
-    bool secondary;
+    bool secondary;         // Second d20 for ADV/DIS, or percentile units die.
+    bool percentile_tens;   // d100 visual: first d10 is tens, second is units.
     bool discarded;
 } dice_visible_face_t;
 

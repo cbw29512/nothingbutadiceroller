@@ -39,18 +39,24 @@ Status: **initial native ESP32-P4 v1.x dice firmware and large polyhedral visual
 - Scale dice by visible count: single 230 px, two 200 px, 3–4 at 170 px, 5–8 at 136 px, 9–12 at 114 px, and larger pools at 104 px.
 - The selection is immutable during a visual animation: label displays the RNG-generated face, not an animated substitute.
 - Layout is computed from actual tray dimensions and centers short rows; additional rows scroll and never drop results.
-- Draw ADV/DIS discarded dice with muted facets and an OUT label, without hiding either face.
+- Draw ADV/DIS discarded dice with muted facets and no text overlay, without hiding either face.
 - Use LVGL's draw-event triangle and line primitives; no per-die bitmap allocation or external image dependencies.
 - Preserve orientation reflow, touch actions, result totals, clear/reset behavior and the existing guarded flash process.
 - Device quality still requires real Tab5 verification of all four orientations, visual frame rate, and touch alignment.
 
+## Physical d100 and ADV/DIS display policy
+- Each logical d100 produces **two separate full-size d10 visual widgets**, one for tens and one for units, instead of splitting one tiny die tile.
+- Only one unbiased game roll from 1–100 is generated. The visual digits are derived from that same result, with 00+0 representing 100.
+- Up to 32 logical d100 rolls create 64 independent physical dice, with scrollable overflow.
+- ADV/DIS discarded dice are identified by muted facets only. No OUT text overlay or redundant die-type text.
+
 ## Die face cleanup
 - The original UI's `d4/d6/d8/d10/d12/d20/d100` captions no longer float across polyhedron faces. Dice shape and engraved values carry identity.
-- ADV/DIS discarded dice remain muted, with only a small `OUT` marker along the bottom edge; face values, results and footer totals stay unchanged.
+- ADV/DIS discarded dice remain muted, without any floating `OUT` or die-type labels; face values, results and footer totals stay unchanged.
 
 ## Authentic shapes and numbered faces — geometry audit
 - d4 is a tetrahedron, d6 a cube, d8 an octahedron, d10 a mathematically planar pentagonal trapezohedron, d12 a dodecahedron, and d20 an icosahedron.
-- For d100, show **two separate actual d10 solids**: one with percentile tens (00, 10, ..., 90) and one with units (0–9). The combination 00+0 is interpreted as 100, without modifying the secure roll or its total.
+- For d100, show **two separate full-size actual d10 solids**: one with percentile tens (00, 10, ..., 90) and one with units (0–9). The combination 00+0 is interpreted as 100, without modifying the secure roll or its total.
 - For 1–8 visible dice, mesh face numbers are drawn onto projected polygons and fixed to the RNG result before animation. The chosen value appears on the front-facing face when settled; the floating duplicate number is hidden. Large pools use cheap silhouettes while moving, then show authentic numbered solids when settled. This remains **presentation only**, not a new RNG or rules engine.
 - Host certification checks every mesh edge is shared exactly twice, all polygon vertices lie in a plane, Euler topology is closed, each settled number matches the secure result, and all 100 percentile values map correctly.
 - Face assignments preserve distinct values but are not yet certified against the manufacturing face-number adjacency pattern of a particular commercial dice set.
@@ -91,7 +97,7 @@ Status: **initial native ESP32-P4 v1.x dice firmware and large polyhedral visual
 - A die button pressed after a completed result starts a new normal pool. CLEAR resets pool, total, mode, and visible results.
 - Invalid die requests preserve the existing result. A quick ADV/DIS replaces even a full pending pool.
 - The bottom summary clearly displays selected dice quantity, roll mode, and result total using an enlarged 36 px typeface; the footer is reserved in portrait and landscape.
-- Bottom tray displays individual rolled faces with muted OUT dice for ADV/DIS, with scrolling for large pools; it must never silently drop dice.
+- Bottom tray displays individual rolled faces with visibly muted discarded dice for ADV/DIS, with scrolling for large pools; it must never silently drop dice.
 - Buttons and dice rendering change with the selected game system. No customization menu or system switch during play.
 - Only source-verified game profiles are supported; custom user dice are deferred.
 

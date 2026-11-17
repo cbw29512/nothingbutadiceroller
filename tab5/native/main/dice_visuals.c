@@ -5,7 +5,7 @@
 static const char *TAG = "dice_visuals";
 
 lv_obj_t *dice_visual_create(lv_obj_t *tray, uint8_t sides, uint16_t face,
-                             int size, bool discarded) {
+                             int size, bool discarded, bool percentile_tens) {
     if (!tray || size < 40 || face < 1 || face > sides) {
         ESP_LOGE(TAG, "Invalid die object: sides=%u face=%u size=%d",
                  (unsigned)sides, (unsigned)face, size);
@@ -21,7 +21,11 @@ lv_obj_t *dice_visual_create(lv_obj_t *tray, uint8_t sides, uint16_t face,
     lv_obj_set_style_border_width(die, 0, 0);
     lv_obj_set_style_bg_opa(die, LV_OPA_TRANSP, 0);
     lv_obj_clear_flag(die, LV_OBJ_FLAG_SCROLLABLE);
-    dice_shapes_attach(die, sides, face, discarded);
+    if (!dice_shapes_attach(die, sides, face, discarded, percentile_tens)) {
+        ESP_LOGE(TAG, "Cannot register die visual for d%u", (unsigned)sides);
+        lv_obj_delete(die);
+        return NULL;
+    }
 
     lv_obj_t *face_label = lv_label_create(die);
     if (!face_label) { lv_obj_delete(die); return NULL; }
@@ -34,21 +38,8 @@ lv_obj_t *dice_visual_create(lv_obj_t *tray, uint8_t sides, uint16_t face,
     lv_obj_set_style_text_opa(face_label, discarded ? LV_OPA_70 : LV_OPA_COVER, 0);
     lv_obj_align(face_label, LV_ALIGN_CENTER, 0, -size / 18);
 
-    // The die's polyhedron already communicates its type. Never overlay
-    // "D4", "D6", "D20", etc. on its numbered faces.
-    // ADV/DIS still marks the excluded die with a small bottom-edge OUT tag.
-    if (discarded) {
-        lv_obj_t *out_label = lv_label_create(die);
-        if (!out_label) {
-            ESP_LOGE(TAG, "Could not allocate discarded-die marker");
-            lv_obj_delete(die);
-            return NULL;
-        }
-        lv_label_set_text(out_label, "OUT");
-        lv_obj_set_style_text_font(out_label, &lv_font_montserrat_20, 0);
-        lv_obj_set_style_text_color(out_label, lv_color_hex(0xEDF5F6), 0);
-        lv_obj_align(out_label, LV_ALIGN_BOTTOM_MID, 0, 0);
-    }
+    // Shape and physical face numbers identify the die. Discarded dice are
+    // visibly muted by the mesh painter; no OUT or D20 text overlays them.
     return die;
 }
 
@@ -59,4 +50,27 @@ void dice_visual_set_rolling(lv_obj_t *die, bool rolling) {
     if (!face) return;
     if (rolling) lv_obj_add_flag(face, LV_OBJ_FLAG_HIDDEN);
     else lv_obj_remove_flag(face, LV_OBJ_FLAG_HIDDEN);
+}
+
+void dice_visual_resize(lv_obj_t *die, int size) {
+    if (!die || size < 40) {
+        ESP_LOGE(TAG, "Cannot resize missing or undersized die");
+        return;
+    }
+    lv_obj_set_size(die, size, size);
+    lv_obj_set_style_transform_pivot_x(die, size / 2, 0);
+    lv_obj_set_style_transform_pivot_y(die, size / 2, 0);
+
+    // The one and only child is the face label. It may be hidden because
+    // its value is already painted on a physical polygon.
+    lv_obj_t *face_label = lv_obj_get_child(die, 0);
+    if (!face_label) {
+        ESP_LOGE(TAG, "Die is missing its face label during reflow");
+        return;
+    }
+    const lv_font_t *font = size >= 180 ? &lv_font_montserrat_48 :
+                            size >= 126 ? &lv_font_montserrat_36 :
+                                          &lv_font_montserrat_28;
+    lv_obj_set_style_text_font(face_label, font, 0);
+    lv_obj_align(face_label, LV_ALIGN_CENTER, 0, -size / 18);
 }
