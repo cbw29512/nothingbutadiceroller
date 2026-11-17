@@ -4,8 +4,7 @@
 
 Remove the redundant CLEAR button; make selected natural 20 or natural 1
 feel special after dice settle. Physical vibration is not supported by the
-stock Tab5 hardware (no documented vibration motor). This tranche adds only
-nonblocking on-screen feedback; optional speaker effects are separate work.
+stock Tab5 hardware (no documented vibration motor). This tranche adds nonblocking screen effects and two original speaker cues.
 
 ## State and data schema
 
@@ -50,3 +49,20 @@ nonblocking on-screen feedback; optional speaker effects are separate work.
   partition only with existing bootloader/partition layout. Recheck the
   guarded charger recovery and physical USB-to-battery handoff.
 - Only on-device verification can certify actual screen effect readability.
+
+## Native critical sounds
+
+- NAT20: an original rising, brassy five-note mini fanfare lasting 735ms.
+- NAT1: a single 850ms low, descending, hollow cartoon "boooo" tone.
+  It is synthesized, not a recorded crowd or human speech clip.
+- 48kHz / 16-bit mono PCM is built in short blocks from fixed notes.
+  Envelope and peak are limited to 3800/32767. Codec volume is 35/100.
+- A separate FreeRTOS worker initializes the ES8388 through the Tab5 BSP;
+  the LVGL settled callback only queues one nonblocking event.
+- A one-item queue prevents sounds piling up. Audio initialization errors
+  are logged without interrupting visuals, offline gameplay or charging.
+- The board's speaker amplifier enable belongs to the first expander,
+  separate from the second battery-charge expander. Charger pins remain
+  untouched. No haptic motor or new storage/network dependency.
+- The physical speaker timbre, volume, orientation behavior and
+  USB-to-battery operation still need direct Tab5 confirmation.
