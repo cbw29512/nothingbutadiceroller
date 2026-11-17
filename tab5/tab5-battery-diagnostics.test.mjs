@@ -42,6 +42,7 @@ test("prior safety gate and charging controls are unchanged", () => {
   assert.match(power, /tab5_power_pack_present_mv\(mv\)/);
   assert.match(power, /#define CHARGE_ENABLE IO_EXPANDER_PIN_NUM_7/);
   assert.match(power, /#define QUICK_CHARGE_DISABLE IO_EXPANDER_PIN_NUM_5/);
-  assert.match(power, /g_charge_command_enabled = true/);
+  assert.match(power, /g_charge_command_enabled = enable/);
+  assert.match(power, /esp_io_expander_set_level\(io, CHARGE_ENABLE, enable \? 1 : 0\)/);
   assert.doesNotMatch(power, /IO_EXPANDER_PIN_NUM_4/);
 });
