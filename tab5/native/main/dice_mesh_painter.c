@@ -24,7 +24,7 @@ static lv_point_precise_t pixel(const lv_area_t *a,int x,int y){
 }
 static void draw_face_number(lv_layer_t *layer,const lv_area_t *area,
                              const dice_project_face_t *face,const char *text,
-                             bool moving){
+                             bool moving,bool winner,bool discarded){
  if(!text||!text[0])return;
  int x=0,y=0,xlo=32767,xhi=-32768,ylo=32767,yhi=-32768;
  for(unsigned j=0;j<face->corners;++j){
@@ -51,7 +51,11 @@ static void draw_face_number(lv_layer_t *layer,const lv_area_t *area,
  lv_draw_label_dsc_t desc;lv_draw_label_dsc_init(&desc);
  desc.text=text; // Persistent state storage; task may draw asynchronously.
  desc.font=large?&lv_font_montserrat_28:&lv_font_montserrat_20;
- desc.color=lv_color_hex(face->shade<158?0xFFFFFF:0x152538);
+ // Dim every non-winning number; only the completed selected face glows.
+ // Discarded ADV/DIS dice must never illuminate a face.
+ desc.color=lv_color_hex(winner?0xFFF1A0:
+                         discarded?0x758390:
+                         face->shade<158?0xA9B9C6:0x374656);
  desc.align=LV_TEXT_ALIGN_CENTER;desc.opa=LV_OPA_COVER;
  lv_draw_label(layer,&desc,&text_area);
 }
@@ -66,7 +70,10 @@ bool dice_mesh_paint(lv_layer_t *layer,const lv_area_t *area,uint8_t sides,
  const uint32_t base=base_color(sides,discarded);
  for(unsigned i=0;i<projected.count;++i){
   const dice_project_face_t *face=&projected.faces[i];
-  const uint32_t filled=shade_color(base,face->shade);
+  // Face 0 is the source-mapped result and is oriented nearest at rest.
+  // Highlight is presentation-only: never illuminate moving or discarded dice.
+  const bool winner=!moving && !discarded && face->source_index==0;
+  const uint32_t filled=winner?0x293A51:shade_color(base,face->shade);
   for(unsigned j=1;j+1<face->corners;++j){
    lv_draw_triangle_dsc_t triangle;lv_draw_triangle_dsc_init(&triangle);
    triangle.p[0]=pixel(area,face->x[0],face->y[0]);
@@ -80,11 +87,11 @@ bool dice_mesh_paint(lv_layer_t *layer,const lv_area_t *area,uint8_t sides,
    lv_draw_line_dsc_t edge;lv_draw_line_dsc_init(&edge);
    edge.p1=pixel(area,face->x[j],face->y[j]);
    edge.p2=pixel(area,face->x[next],face->y[next]);
-   edge.color=lv_color_hex(discarded?0x36404A:0x202631);
-   edge.opa=LV_OPA_COVER;edge.width=lv_area_get_width(area)>165?3:2;
+   edge.color=lv_color_hex(winner?0xFFF19B:discarded?0x36404A:0x202631);
+   edge.opa=LV_OPA_COVER;edge.width=winner?4:(lv_area_get_width(area)>165?3:2);
    lv_draw_line(layer,&edge);
   }
-  draw_face_number(layer,area,face,face_text[face->source_index],moving);
+  draw_face_number(layer,area,face,face_text[face->source_index],moving,winner,discarded);
  }
  return true;
 }
