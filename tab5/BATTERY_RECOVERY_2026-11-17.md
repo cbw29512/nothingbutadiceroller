@@ -25,7 +25,11 @@
   - P7 (active-high `CHG_EN`) enables IP2326 charger.
   - P5 (active-low `nCHG_QC_EN`) controls quick charging;
     P5 HIGH uses normal/low charging path.
-  - P4 power-off pulse, P3 USB rail, P0 wireless **untouched**.
+  - P4 power-off pulse is restored to its verified factory idle
+    state: output LOW (never pulse HIGH). The native BSP had left it
+    unconfigured/high-impedance; this may affect battery-only power
+    retention, but physical effect is not yet verified.
+  - P3 USB rail and P0 wireless remain untouched.
 - INA226 I2C `0x41` register `0x02`: battery bus
   1.25mV/LSB. A charger-on reading can be a false indication that a
   battery is fitted. Verify with the charger **off** and settled.
