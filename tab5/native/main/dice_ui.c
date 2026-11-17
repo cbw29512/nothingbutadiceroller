@@ -7,6 +7,7 @@
 #include "dice_ui_boot.h"
 #include "dice_nat_event.h"
 #include "dice_nat_fx.h"
+#include "dice_nat_sound.h"
 #include "tab5_power_widget.h"
 #include "bsp/esp-bsp.h"
 #include "esp_log.h"
@@ -21,7 +22,9 @@ static lv_obj_t *g_controls[10];
 static void show_session(void);
 static void roll_start(void);
 static void on_roll_settled(void) {
-    dice_nat_fx_show(g_screen, dice_nat_event_detect(g_state));
+    const dice_nat_event_t event = dice_nat_event_detect(g_state);
+    dice_nat_fx_show(g_screen, event);
+    dice_nat_sound_play(event);
 }
 static void clear_screen(void) {
     dice_nat_fx_cancel();
