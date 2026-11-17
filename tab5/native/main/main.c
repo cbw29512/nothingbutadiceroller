@@ -2,6 +2,7 @@
 #include "dice_ui.h"
 #include "orientation.h"
 #include "tab5_power.h"
+#include "tab5_board_power.h"
 #include "bsp/esp-bsp.h"
 #include "esp_log.h"
 #include "esp_random.h"
@@ -15,6 +16,11 @@ void app_main(void) {
     if (!display) {
         ESP_LOGE(TAG, "Tab5 BSP display initialization failed; refusing to continue");
         return;
+    }
+    // Match the factory's inactive P4 power-off pulse level (LOW).
+    // Without this initialization, the second I/O expander resets high-Z.
+    if (!tab5_board_poweroff_idle_init()) {
+        ESP_LOGW(TAG, "Factory idle power-control level unavailable");
     }
     // Display bring-up initialized the board's shared I2C bus.
     // The BSP does not automatically enable IP2326 battery charging.
