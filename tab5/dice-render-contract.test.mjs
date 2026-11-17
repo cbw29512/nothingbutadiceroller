@@ -48,3 +48,16 @@ test("the secure game engine is separate from visual rendering", () => {
     assert.doesNotMatch(content, /esp_random|dice_roll\s*\(/);
   }
 });
+
+test("die type text never floats over physical die faces", () => {
+  const visuals = source("dice_visuals.c");
+  // Only numbered physical faces may identify the die during a toss.
+  assert.doesNotMatch(visuals, /lv_label_set_text_fmt\(type_label/);
+  assert.doesNotMatch(visuals, /lv_label_set_text_fmt\([^;]*"d%u%s"/);
+  // Preserve the first-child contract used by dice_visual_set_rolling().
+  assert.ok(visuals.indexOf("lv_label_create(die)") <
+            visuals.indexOf("if (discarded) {"));
+  // Keep one visible muted-die marker for advantage/disadvantage.
+  assert.match(visuals, /lv_label_set_text\(out_label, "OUT"\)/);
+  assert.match(visuals, /lv_obj_align\(out_label, LV_ALIGN_BOTTOM_MID, 0, 0\)/);
+});
