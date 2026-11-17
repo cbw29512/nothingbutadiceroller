@@ -48,6 +48,9 @@ int main(void) {
     check_toss(8, 1230, 385, 1729);
     check_toss(32, 1230, 385, 1729);
     check_toss(33, 680, 878, 1729);
+    // At maximum physical percentile capacity the animation remains bounded.
+    check_toss(64, 1230, 385, 1729);
+    check_toss(64, 680, 878, 1729);
     // Same visual seed means reproducible motion for host debugging.
     dice_layout_t layout = dice_layout_make(4, 1200, 380);
     dice_motion_t a, b;
