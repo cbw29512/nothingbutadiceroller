@@ -28,6 +28,12 @@ int main(void) {
     verify_pool(12, 1230, 385, 110);
     verify_pool(32, 1230, 385, 100);
     verify_pool(33, 680, 878, 100); // ADV/DIS draw an extra die.
+    // One d100 is rendered as two independent 200px physical d10s.
+    verify_pool(2, 1230, 385, 195);
+    verify_pool(2, 680, 878, 195);
+    // 32 logical d100s must leave room for all 64 full physical dice.
+    verify_pool(64, 1230, 385, 100);
+    verify_pool(64, 680, 878, 100);
     verify_pool(1, 680, 878, 220);
     int x = -1, y = -1;
     dice_layout_t zero = dice_layout_make(0, 1230, 385);
