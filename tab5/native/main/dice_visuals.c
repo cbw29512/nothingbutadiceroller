@@ -51,3 +51,26 @@ void dice_visual_set_rolling(lv_obj_t *die, bool rolling) {
     if (rolling) lv_obj_add_flag(face, LV_OBJ_FLAG_HIDDEN);
     else lv_obj_remove_flag(face, LV_OBJ_FLAG_HIDDEN);
 }
+
+void dice_visual_resize(lv_obj_t *die, int size) {
+    if (!die || size < 40) {
+        ESP_LOGE(TAG, "Cannot resize missing or undersized die");
+        return;
+    }
+    lv_obj_set_size(die, size, size);
+    lv_obj_set_style_transform_pivot_x(die, size / 2, 0);
+    lv_obj_set_style_transform_pivot_y(die, size / 2, 0);
+
+    // The one and only child is the face label. It may be hidden because
+    // its value is already painted on a physical polygon.
+    lv_obj_t *face_label = lv_obj_get_child(die, 0);
+    if (!face_label) {
+        ESP_LOGE(TAG, "Die is missing its face label during reflow");
+        return;
+    }
+    const lv_font_t *font = size >= 180 ? &lv_font_montserrat_48 :
+                            size >= 126 ? &lv_font_montserrat_36 :
+                                          &lv_font_montserrat_28;
+    lv_obj_set_style_text_font(face_label, font, 0);
+    lv_obj_align(face_label, LV_ALIGN_CENTER, 0, -size / 18);
+}
