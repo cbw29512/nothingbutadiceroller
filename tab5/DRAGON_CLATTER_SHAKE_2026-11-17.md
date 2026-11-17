@@ -58,12 +58,23 @@ source, battery recovery, factory bootloader and 0x100000-byte app partition.
   The synthetic clatter and vector dragon are low-memory approximations,
   not a studio-quality animation or sampled dice sound.
 
-## Critical-art revision after physical feedback
+## Critical-screen revision after on-device feedback
 
-The procedural polygon dragon and cracked d20 looked poor on the real
-display. They have been **removed**, not recolored or hidden behind
-new assets. The replacement uses just two smoothly expanding gold
-shockwave outlines for NAT20, two inward red outlines for NAT1,
-and eight restrained accent streaks around the same large result
-number. The overlay still dismisses automatically. No sound, shake
-logic, dice results, buttons, battery, or roll behavior changes.
+The procedural dragon and shattered die looked poor on the actual Tab5.
+They are **removed**. The proposed abstract shockwave was superseded
+before release by the user's explicit direction: **large flashing 20/1
+with separate background colors and playful text**.
+
+- NAT20: giant gold **20**, top label NATURAL 20!, bottom HELL YEAH!,
+  background alternates warm golden-yellow with deep amber-black.
+- NAT1: giant red **1**, top label NATURAL 1!, bottom OH NO!,
+  background alternates crimson with dark red-black.
+- Two restrained pulses in the existing 1.9-second overlay. The number
+  itself scales between 3.5x and 4x the existing 48pt LVGL font, without
+  compiling a new large font or adding graphics assets.
+- No skull/dragon/die illustrations or expensive polygon renderer; keep
+  it bold and legible even in portrait.
+- No added controls, menus, font assets, bitmap files, data, or persistent
+  objects. The existing trumpet, boo, collision sounds, shake-to-roll,
+  secure dice RNG, and battery path are unchanged.
+- Final legibility and aesthetics still need a physical Tab5 test.
