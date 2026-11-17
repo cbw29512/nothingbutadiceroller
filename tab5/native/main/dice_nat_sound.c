@@ -27,8 +27,7 @@ static bool emit_notes(esp_codec_dev_handle_t speaker,
             const uint32_t n = remaining < PCM_BLOCK ?
                                 remaining : PCM_BLOCK;
             for (uint32_t j = 0; j < n; ++j) {
-                pcm[j] = dice_nat_tone_sample(notes[i].frequency_hz,
-                                               start + j, frames);
+                pcm[j] = dice_nat_tone_sample(&notes[i], start + j, frames);
             }
             if (esp_codec_dev_write(speaker, pcm,
                                     n * sizeof(pcm[0])) != ESP_CODEC_DEV_OK) {
