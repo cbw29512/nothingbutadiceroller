@@ -34,13 +34,21 @@ lv_obj_t *dice_visual_create(lv_obj_t *tray, uint8_t sides, uint16_t face,
     lv_obj_set_style_text_opa(face_label, discarded ? LV_OPA_70 : LV_OPA_COVER, 0);
     lv_obj_align(face_label, LV_ALIGN_CENTER, 0, -size / 18);
 
-    lv_obj_t *type_label = lv_label_create(die);
-    if (!type_label) { lv_obj_delete(die); return NULL; }
-    lv_label_set_text_fmt(type_label, "d%u%s", (unsigned)sides,
-                          discarded ? " OUT" : "");
-    lv_obj_set_style_text_font(type_label, &lv_font_montserrat_20, 0);
-    lv_obj_set_style_text_color(type_label, lv_color_hex(0xEDF5F6), 0);
-    lv_obj_align(type_label, LV_ALIGN_CENTER, 0, size / 4);
+    // The die's polyhedron already communicates its type. Never overlay
+    // "D4", "D6", "D20", etc. on its numbered faces.
+    // ADV/DIS still marks the excluded die with a small bottom-edge OUT tag.
+    if (discarded) {
+        lv_obj_t *out_label = lv_label_create(die);
+        if (!out_label) {
+            ESP_LOGE(TAG, "Could not allocate discarded-die marker");
+            lv_obj_delete(die);
+            return NULL;
+        }
+        lv_label_set_text(out_label, "OUT");
+        lv_obj_set_style_text_font(out_label, &lv_font_montserrat_20, 0);
+        lv_obj_set_style_text_color(out_label, lv_color_hex(0xEDF5F6), 0);
+        lv_obj_align(out_label, LV_ALIGN_BOTTOM_MID, 0, 0);
+    }
     return die;
 }
 
