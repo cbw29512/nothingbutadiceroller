@@ -9,3 +9,7 @@ CONFIG_LV_FONT_MONTSERRAT_48=y
 # Tab5 physical chip is ESP32-P4 rev v1.3. v3.x images are incompatible.
 CONFIG_ESP32P4_SELECTS_REV_LESS_V3=y
 CONFIG_ESP32P4_REV_MIN_100=y
+
+# The Tab5 COM5 port is the ESP32-P4 USB Serial/JTAG peripheral.
+# Route ESP_LOG output here so battery readings appear in Miniterm.
+CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y
