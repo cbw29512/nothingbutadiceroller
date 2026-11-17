@@ -50,7 +50,7 @@ bool dice_project_mesh(const dice_mesh_t *mesh,
      mesh->vertices_count<4 || mesh->vertices_count>DICE_MESH_MAX_VERTICES ||
      mesh->faces_count<4 || mesh->faces_count>DICE_MESH_MAX_FACES) return false;
  memset(out,0,sizeof(*out));
- const float rad=0.0001745329252f; // deci-degree to radians
+ const float rad=0.001745329252f; // 0.1 degree = pi/1800 radians
  const float ax=pitch*rad, ay=yaw*rad, az=roll*rad;
  const float sx=sinf(ax),cx=cosf(ax),sy=sinf(ay),cy=cosf(ay);
  const float sz=sinf(az),cz=cosf(az);
