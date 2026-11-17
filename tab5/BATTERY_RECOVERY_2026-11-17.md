@@ -27,9 +27,12 @@
   chg cmd on"**. This demonstrates that the recovery action raised the
   *measured battery bus voltage* to approximately 7 V and enabled the
   charger command.
-- **Not yet verified:** independent battery-pack voltage, charging current,
-  full charge, safe power-off/on without USB, and actual battery-only
-  runtime. Do not claim those tests passed until observed.
+- **USB-unplug verification passed:** user then unplugged USB-C and reported
+  **"i unplugged it nd it stayed on!"**. This confirms live battery-only
+  operation and USB-to-battery handoff on the actual Tab5.
+- **Not yet verified:** independent battery-pack voltage, measured charging
+  current, full charge, unplugged cold-boot, or extended battery endurance.
+  Do not claim those tests passed until observed.
 - **Regression lesson:** never replace battery recovery with a startup-only
   voltage gate, delete the recovery UI to simplify dice controls, or
   reconfigure the second expander from unrelated new features.
@@ -65,6 +68,19 @@
 - Real-world Tab5 ESPHome project implements a short manual,
   user-declared battery-present recovery pulse and safe charger-off probe:
   https://axellum.github.io/M5-Tab5-ESPHome-LVGL/en/tab5-battery/
+
+## Post-repair UI cleanup
+
+- User requested removal of the temporary battery-testing readout once
+  USB-disconnect worked. Keep battery sensors, log output, charger
+  initialization, and manual recovery state machine installed.
+- During healthy normal play (5.5–8.45V, charge command ON, normal/complete
+  recovery phase), hide the BAT/SHUNT/CHG CMD readout and recovery status
+  controls to restore the full dice interface.
+- If battery detection fails, recovery is active, or a recovery error occurs,
+  display the diagnostic reading and relevant recovery control automatically.
+- Do **not** remove the recovery mechanism, delete fault logs, or turn
+  battery-only success into a claim of measured charging current.
 
 ## Schema / lifecycle
 
