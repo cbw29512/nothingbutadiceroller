@@ -61,3 +61,24 @@ test("recovery UI remains in the battery widget only", () => {
   assert.match(ui, /if \(!g_label\) return;/);
   assert.match(ui, /tab5_power_recovery_poll\(&reading, now\)/);
 });
+
+test("hardware-verified recovery remains a permanent future-feature contract", () => {
+  const readme = read("./README.md");
+  const recovery = read("./BATTERY_RECOVERY_2026-11-17.md");
+  const main = read("./native/main/main.c");
+
+  assert.match(readme, /Battery power — mandatory non-regression contract/);
+  assert.match(readme, /PR #63/);
+  assert.match(readme, /about 7 V with CHG CMD ON/);
+  assert.match(readme, /not yet confirmation of USB-unplug operation/);
+  assert.match(readme, /preserve the visible BAT\/SHUNT\/CHG CMD diagnostics/i);
+
+  assert.match(recovery, /Confirmed recovery on the physical Tab5/);
+  assert.match(recovery, /pushing the button fixed it/);
+  assert.match(recovery, /Not yet verified:/);
+  assert.match(recovery, /Before each future hardware firmware release/);
+
+  assert.match(main, /tab5_board_poweroff_idle_init\(\)/);
+  assert.match(main, /tab5_power_init\(\)/);
+  assert.match(main, /dice_ui_start\(&state\)/);
+});

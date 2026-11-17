@@ -16,6 +16,32 @@
   pack is at 1.014 V. An empty bay, disconnected pack or protected pack
   can also produce a low reading.
 
+## Confirmed recovery on the physical Tab5 (2026-11-17)
+
+- **Firmware:** PR #63 (`09cea60546e0377b9d23d3594dc7d277d739846c`)
+  was hash-verified and flashed on the user's ESP32-P4 revision v1.3.
+- **Before recovery:** the diagnostic firmware showed about **BAT 1.014V**,
+  **SHUNT +0uV**, **CHG CMD OFF**. With USB removed the Tab5 went dark.
+- **Successful user action:** the user pressed the new on-screen battery
+  recovery control. They reported **"pushing the button fixed it. Batt 7V
+  chg cmd on"**. This demonstrates that the recovery action raised the
+  *measured battery bus voltage* to approximately 7 V and enabled the
+  charger command.
+- **Not yet verified:** independent battery-pack voltage, charging current,
+  full charge, safe power-off/on without USB, and actual battery-only
+  runtime. Do not claim those tests passed until observed.
+- **Regression lesson:** never replace battery recovery with a startup-only
+  voltage gate, delete the recovery UI to simplify dice controls, or
+  reconfigure the second expander from unrelated new features.
+- **Must keep:** factory P4 LOW at startup, P7 charger control, P5 normal
+  charge mode, 30-second two-tap supervised recovery, I²C INA226 voltage
+  diagnostics, charger-OFF presence check, correct 8.45 V ceiling and error
+  fail-off path.
+- **Before each future hardware firmware release:** run the C/Node
+  power-contract tests and ESP32-P4 build; then physically check battery
+  voltage, charge command, and USB-disconnect operation. Keep a verified
+  full-flash backup and unchanged partition layout.
+
 ## Verified Tab5 source / wiring
 
 - Official M5Stack Tab5 factory C code:
