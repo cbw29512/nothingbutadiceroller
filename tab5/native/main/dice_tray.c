@@ -48,11 +48,15 @@ static void apply_positions(bool finished) {
                 finished ? 0 : (int)b->yaw,
                 finished ? 0 : (int)b->angle);
         } else {
-            dice_shapes_set_tumble(dice[i], false, 0, 0, 0);
+            // Large pools animate with the cheap path, then settle as
+            // authentic 3D solids so every final die has its actual shape.
+            dice_shapes_set_tumble(dice[i], finished, 0, 0, 0);
             lv_obj_set_style_transform_rotation(dice[i],
                 finished ? 0 : (int)b->angle, 0);
         }
-        dice_visual_set_rolling(dice[i], !finished);
+        // Never float a duplicate result over numbers engraved on 3D faces.
+        dice_visual_set_rolling(dice[i],
+            !finished || dice_shapes_has_embedded_numbers(dice[i]));
     }
 }
 void dice_tray_relayout(void) {

@@ -25,13 +25,16 @@ static const dice_mesh_face_t of[] = {
  F3(0,2,3),F3(0,3,4),F3(0,4,5),F3(0,5,2),
  F3(1,3,2),F3(1,4,3),F3(1,5,4),F3(1,2,5)
 };
-// Ten kite faces approximating a pentagonal trapezohedron.
+// True planar pentagonal trapezohedron: five upper and five lower kites.
+// Apex height = h*(1+cos(36deg))/(1-cos(36deg)); h=.1, radius=1.
+// Both pairs of equal-length kite edges now lie in a single plane.
 static const dice_vec3_t deca[] = {
- {0,0,1.50f},{0,0,-1.50f},
- {1,0,.30f},{.3090f,.9511f,.30f},{-.8090f,.5878f,.30f},
- {-.8090f,-.5878f,.30f},{.3090f,-.9511f,.30f},
- {.8090f,.5878f,-.30f},{-.3090f,.9511f,-.30f},
- {-1,0,-.30f},{-.3090f,-.9511f,-.30f},{.8090f,-.5878f,-.30f}
+ {0,0,.9472136f},{0,0,-.9472136f},
+ {1,0,.1f},{.30901699f,.95105652f,.1f},{-.80901699f,.58778525f,.1f},
+ {-.80901699f,-.58778525f,.1f},{.30901699f,-.95105652f,.1f},
+ {.80901699f,.58778525f,-.1f},{-.30901699f,.95105652f,-.1f},
+ {-1,0,-.1f},{-.30901699f,-.95105652f,-.1f},
+ {.80901699f,-.58778525f,-.1f}
 };
 static const dice_mesh_face_t df[] = {
  F4(0,2,7,3),F4(0,3,8,4),F4(0,4,9,5),
