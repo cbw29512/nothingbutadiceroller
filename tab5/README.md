@@ -44,6 +44,14 @@ Status: **initial native ESP32-P4 v1.x dice firmware and large polyhedral visual
 - Preserve orientation reflow, touch actions, result totals, clear/reset behavior and the existing guarded flash process.
 - Device quality still requires real Tab5 verification of all four orientations, visual frame rate, and touch alignment.
 
+## Authentic shapes and numbered faces — geometry audit
+- d4 is a tetrahedron, d6 a cube, d8 an octahedron, d10 a mathematically planar pentagonal trapezohedron, d12 a dodecahedron, and d20 an icosahedron.
+- For d100, show **two separate actual d10 solids**: one with percentile tens (00, 10, ..., 90) and one with units (0–9). The combination 00+0 is interpreted as 100, without modifying the secure roll or its total.
+- For 1–8 visible dice, mesh face numbers are drawn onto projected polygons and fixed to the RNG result before animation. The chosen value appears on the front-facing face when settled; the floating duplicate number is hidden. Large pools keep source outcomes visible using cheap silhouettes. This remains **presentation only**, not a new RNG or rules engine.
+- Host certification checks every mesh edge is shared exactly twice, all polygon vertices lie in a plane, Euler topology is closed, each settled number matches the secure result, and all 100 percentile values map correctly.
+- Face assignments preserve distinct values but are not yet certified against the manufacturing face-number adjacency pattern of a particular commercial dice set.
+- **Do not flash until firmware CI passes and the real Tab5 image has been verified.** The stand orientation and user-confirmed ADV/DIS behavior remain unchanged.
+
 ## Website DiceBox visual-parity experiment
 - Web uses pinned DiceBox 1.1.4 with Ammo WASM and a browser 3D renderer; the ESP32-P4 native Tab5 does not run that module or provide equivalent WebGL acceleration.
 - Offline native experiment: actual polyhedron meshes for d4, d6, d8, d10, d12, d20 and percentile d10 presentation; three-axis rotation, back-face culling, perspective and directional facet shading on the existing LVGL draw layer.
